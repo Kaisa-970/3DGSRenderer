@@ -9,6 +9,10 @@
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
 
+#ifdef GSRENDERER_OS_WINDOWS
+#include <windows.h>
+#endif
+
 // 鼠标状态
 struct MouseState {
     bool firstMouse = true;
@@ -18,6 +22,11 @@ struct MouseState {
 
 
 int main() {
+#ifdef GSRENDERER_OS_WINDOWS
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
+
     // 初始化日志系统
     Logger::Log::Init();
     

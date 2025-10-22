@@ -8,7 +8,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 设置编译选项
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+if(MSVC)
+    add_compile_options(/W3)
+    add_compile_options(/wd4251)
+    add_compile_options(/utf-8)
+else()
+    add_compile_options(-Wall -Wextra)
+endif()
 
 # 选项: 使用 OpenGL ES 3 而不是 OpenGL
 option(USE_GLES3 "Use OpenGL ES 3 instead of OpenGL" OFF)
@@ -49,25 +55,24 @@ set(HEADERS
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # 链接库
-if(USE_GLES3)
-    target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}
         Logger
         Renderer
-        pthread
-        dl
     )
-else()
-    target_link_libraries(${PROJECT_NAME}
-        Logger
-        Renderer
-        pthread
-        dl
-        X11
-        Xrandr
-        Xinerama
-        Xi
-        Xcursor
-    )
+
+
+if(UNIX)
+    target_link_libraries(${PROJECT_NAME} pthread dl)
+
+    if( NOT USE_GLES3)
+        target_link_libraries(${PROJECT_NAME}
+            X11
+            Xrandr
+            Xinerama
+            Xi
+            Xcursor
+        )
+    endif()
 endif()
 
 # 设置输出目录
