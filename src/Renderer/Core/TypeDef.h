@@ -1,0 +1,7 @@
+#include "RenderCore.h"
+
+RENDERER_NAMESPACE_BEGIN
+
+typedef float FLOAT;
+
+RENDERER_NAMESPACE_END

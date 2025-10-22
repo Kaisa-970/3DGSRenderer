@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(3DGSRenderer)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,20 +10,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 设置编译选项
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
-# 查找依赖库
-find_package(PkgConfig REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
+# 选项: 使用 OpenGL ES 3 而不是 OpenGL
+option(USE_GLES3 "Use OpenGL ES 3 instead of OpenGL" OFF)
 
-# 包含目录
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/src/vendor/glad/include)
-# include_directories(${CMAKE_SOURCE_DIR}/src/vendor/glm)
+# 操作系统判断，并传入宏定义
+if(WIN32)
+    add_definitions(-DGSRENDERER_OS_WINDOWS)
+elseif(APPLE)
+    add_definitions(-DGSRENDERER_OS_MACOS)
+elseif(UNIX)
+    add_definitions(-DGSRENDERER_OS_LINUX)
+endif()
 
-# GLAD 源文件
-set(GLAD_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/vendor/glad/src/glad.c
-)
+# 子目录：spdlog 模块
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_subdirectory(src/vendor/spdlog)
+
+# 子目录：Logger 模块
+add_subdirectory(src/Logger)
+
+# 子目录：Renderer 模块
+add_subdirectory(src/Renderer)
 
 # 主项目源文件
 set(SOURCES
@@ -35,20 +44,29 @@ set(HEADERS
 )
 
 # 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${GLAD_SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # 链接库
-target_link_libraries(${PROJECT_NAME}
-    OpenGL::GL
-    glfw
-    pthread
-    dl
-    X11
-    Xrandr
-    Xinerama
-    Xi
-    Xcursor
-)
+if(USE_GLES3)
+    target_link_libraries(${PROJECT_NAME}
+        Logger
+        Renderer
+        pthread
+        dl
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+        Logger
+        Renderer
+        pthread
+        dl
+        X11
+        Xrandr
+        Xinerama
+        Xi
+        Xcursor
+    )
+endif()
 
 # 设置输出目录
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -58,8 +76,3 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # # 复制着色器文件到构建目录
 # file(COPY ${CMAKE_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR}/bin)
 # file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
-
-# 调试信息
-message(STATUS "OpenGL found: ${OPENGL_FOUND}")
-message(STATUS "GLFW3 found: ${glfw3_FOUND}")
-message(STATUS "GLAD sources: ${GLAD_SOURCES}")
