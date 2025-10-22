@@ -5,6 +5,7 @@ RENDERER_NAMESPACE_BEGIN
 
 RendererContext::RendererContext() {
     // 初始化代码可以放这里
+    glEnable(GL_DEPTH_TEST);
 }
 
 RendererContext::~RendererContext() {

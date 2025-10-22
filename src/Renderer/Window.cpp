@@ -19,6 +19,10 @@ void Window::terminateGLFW() {
     glfwTerminate();
 }
 
+double Window::getTime() {
+    return glfwGetTime();
+}
+
 Window::Window(int width, int height, const std::string& title)
     : width_(width), height_(height), title_(title) {
     
@@ -39,6 +43,9 @@ Window::Window(int width, int height, const std::string& title)
     }
 
     glfwMakeContextCurrent(window_);
+
+    // 设置window的user pointer为this，用于回调
+    glfwSetWindowUserPointer(window_, this);
 
     // 初始化 GLAD
 #ifdef USE_GLES3
@@ -85,6 +92,92 @@ void Window::pollEvents() {
 
 void* Window::getNativeHandle() const {
     return reinterpret_cast<void*>(window_);
+}
+
+// 输入查询实现
+bool Window::isKeyPressed(Key key) const {
+    return glfwGetKey(window_, static_cast<int>(key)) == GLFW_PRESS;
+}
+
+bool Window::isMouseButtonPressed(MouseButton button) const {
+    return glfwGetMouseButton(window_, static_cast<int>(button)) == GLFW_PRESS;
+}
+
+void Window::getMousePosition(double& x, double& y) const {
+    glfwGetCursorPos(window_, &x, &y);
+}
+
+void Window::setMousePosition(double x, double y) {
+    glfwSetCursorPos(window_, x, y);
+}
+
+// 光标模式设置
+void Window::setCursorMode(CursorMode mode) {
+    int glfwMode;
+    switch (mode) {
+        case CursorMode::Normal:
+            glfwMode = GLFW_CURSOR_NORMAL;
+            break;
+        case CursorMode::Hidden:
+            glfwMode = GLFW_CURSOR_HIDDEN;
+            break;
+        case CursorMode::Disabled:
+            glfwMode = GLFW_CURSOR_DISABLED;
+            break;
+        default:
+            glfwMode = GLFW_CURSOR_NORMAL;
+    }
+    glfwSetInputMode(window_, GLFW_CURSOR, glfwMode);
+}
+
+// 设置回调
+void Window::setMouseMoveCallback(MouseMoveCallback callback) {
+    mouseMoveCallback_ = callback;
+    if (callback) {
+        glfwSetCursorPosCallback(window_, glfwMouseCallback);
+    } else {
+        glfwSetCursorPosCallback(window_, nullptr);
+    }
+}
+
+void Window::setMouseScrollCallback(MouseScrollCallback callback) {
+    mouseScrollCallback_ = callback;
+    if (callback) {
+        glfwSetScrollCallback(window_, glfwScrollCallback);
+    } else {
+        glfwSetScrollCallback(window_, nullptr);
+    }
+}
+
+void Window::setKeyCallback(KeyCallback callback) {
+    keyCallback_ = callback;
+    if (callback) {
+        glfwSetKeyCallback(window_, glfwKeyCallback);
+    } else {
+        glfwSetKeyCallback(window_, nullptr);
+    }
+}
+
+// GLFW静态回调实现（转发到成员函数）
+void Window::glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    if (win && win->mouseMoveCallback_) {
+        win->mouseMoveCallback_(xpos, ypos);
+    }
+}
+
+void Window::glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+    Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    if (win && win->mouseScrollCallback_) {
+        win->mouseScrollCallback_(xoffset, yoffset);
+    }
+}
+
+void Window::glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    if (win && win->keyCallback_) {
+        win->keyCallback_(key, scancode, action, mods);
+    }
 }
 
 RENDERER_NAMESPACE_END

@@ -5,6 +5,10 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Camera.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Vector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Matrix.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/Primitive.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.cpp
 )
 
 set(RENDERER_HEADERS
@@ -16,6 +20,10 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/TypeDef.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Vector.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Matrix.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/Primitive.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.h
 )
 
 if(USE_GLES3)
@@ -27,8 +35,6 @@ endif()
 set(MODULE_NAME Renderer)
 
 add_library(${MODULE_NAME} SHARED ${RENDERER_SOURCES} ${RENDERER_HEADERS} ${GLAD_SOURCES})
-
-find_package(glfw3 REQUIRED)
 
 if(USE_GLES3)
     target_compile_definitions(${MODULE_NAME} PUBLIC USE_GLES3)

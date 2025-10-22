@@ -2,8 +2,32 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <stdexcept>
+#include <fstream>
 
 RENDERER_NAMESPACE_BEGIN
+
+std::string Shader::readFile(const std::string &filepath) {
+    std::ifstream file(filepath, std::ios::in | std::ios::binary);
+    if (!file) {
+        throw std::runtime_error("Failed to open shader file: " + filepath);
+    }
+    
+    // 读取整个文件
+    std::string content;
+    file.seekg(0, std::ios::end);
+    content.resize(file.tellg());
+    file.seekg(0, std::ios::beg);
+    file.read(&content[0], content.size());
+    file.close();
+    
+    return content;
+}
+
+Shader Shader::fromFiles(const std::string &vertexPath, const std::string &fragmentPath) {
+    std::string vertexSource = readFile(vertexPath);
+    std::string fragmentSource = readFile(fragmentPath);
+    return Shader(vertexSource, fragmentSource);
+}
 
 static void checkShaderCompile(GLuint shader, const char *stageName) {
     GLint success = 0;
@@ -86,6 +110,46 @@ Shader &Shader::operator=(Shader &&other) noexcept {
 
 void Shader::use() const {
     glUseProgram(programId_);
+}
+
+void Shader::setMat4(const char* name, const float* value) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniformMatrix4fv(location, 1, GL_FALSE, value);
+    }
+}
+
+void Shader::setVec3(const char* name, float x, float y, float z) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniform3f(location, x, y, z);
+    }
+}
+
+void Shader::setVec4(const char* name, float x, float y, float z, float w) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniform4f(location, x, y, z, w);
+    }
+}
+
+void Shader::setFloat(const char* name, float value) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniform1f(location, value);
+    }
+}
+
+void Shader::setInt(const char* name, int value) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniform1i(location, value);
+    }
 }
 
 RENDERER_NAMESPACE_END

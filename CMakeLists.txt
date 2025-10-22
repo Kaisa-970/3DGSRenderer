@@ -26,6 +26,8 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(src/vendor/spdlog)
 
+add_subdirectory(src/vendor/glfw)
+
 # 子目录：Logger 模块
 add_subdirectory(src/Logger)
 

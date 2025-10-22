@@ -20,11 +20,15 @@ public:
     // 构造函数
     Camera(const Vector3& position = Vector3(0.0f, 0.0f, 3.0f),
            const Vector3& worldUp = Vector3(0.0f, 1.0f, 0.0f),
-           float yaw = -90.0f, float pitch = 0.0f);
+           float yaw = 0.0f, float pitch = 0.0f);
     
     Camera(float posX, float posY, float posZ,
            float upX = 0.0f, float upY = 1.0f, float upZ = 0.0f,
-           float yaw = -90.0f, float pitch = 0.0f);
+           float yaw = 0.0f, float pitch = 0.0f);
+
+    // 让相机看向指定目标点
+    void lookAt(const Vector3& target);
+    void lookAt(float x, float y, float z);
 
     // 获取矩阵（返回Matrix4对象）
     Matrix4 getViewMatrix() const;

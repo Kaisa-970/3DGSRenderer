@@ -5,6 +5,17 @@
 #include "Renderer/RendererContext.h"
 #include "Renderer/Camera.h"
 #include "Logger/Log.h"
+#include "Renderer/Primitives/CubePrimitive.h"
+#include "Renderer/Primitives/SpherePrimitive.h"
+#include "Renderer/Primitives/QuadPrimitive.h"
+
+// 鼠标状态
+struct MouseState {
+    bool firstMouse = true;
+    float lastX = 0.0f;  // 初始值无关紧要，firstMouse 会处理第一次输入
+    float lastY = 0.0f;
+} mouseState;
+
 
 int main() {
     // 初始化日志系统
@@ -21,47 +32,74 @@ int main() {
         LOG_INFO("GLFW 初始化成功");
 
         // 创建窗口（自动初始化 OpenGL 上下文）
-        Renderer::Window window(800, 600, "3DGS Renderer");
-        LOG_INFO("窗口创建成功: 800x600");
+        Renderer::Window window(1600, 1000, "3DGS Renderer");
+        LOG_INFO("窗口创建成功: 1600x1000");
         
         // 创建渲染器上下文
         Renderer::RendererContext rendererContext;
         LOG_INFO("渲染器上下文创建成功");
 
-        // 创建相机
-        Renderer::Camera camera(0.0f, 0.0f, 3.0f);
+        // 创建相机（初始位置在 (0, 0, 3)，朝向 -Z 方向）
+        Renderer::Camera camera(
+            Renderer::Vector3(0.0f, 0.0f, 3.0f),  // 位置
+            Renderer::Vector3(0.0f, 1.0f, 0.0f),  // 世界上方向
+            -90.0f,  // yaw: -90度 朝向 -Z 方向
+            0.0f     // pitch: 0度 水平视角
+        );
         camera.setMovementSpeed(2.5f);
-        camera.setMouseSensitivity(0.1f);
+        camera.setMouseSensitivity(0.1f);  // 修正：使用正常的鼠标灵敏度
         
         float x, y, z;
         camera.getPosition(x, y, z);
         LOG_INFO("相机创建成功，位置: ({}, {}, {})", x, y, z);
 
-        // 创建着色器
-#ifdef USE_GLES3
-        const char* vertSrc = R"(#version 310 es
-precision highp float;
-void main(){
-    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-})";
-        const char* fragSrc = R"(#version 310 es
-precision mediump float;
-out vec4 FragColor;
-void main(){
-    FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-})";
-#else
-        const char* vertSrc = R"(#version 420 core
-void main(){
-    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-})";
-        const char* fragSrc = R"(#version 420 core
-out vec4 FragColor;
-void main(){
-    FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-})";
-#endif
-        Renderer::Shader shader(vertSrc, fragSrc);
+        // 设置鼠标移动回调
+        // 注意：在 GLFW_CURSOR_DISABLED 模式下，xpos/ypos 是虚拟坐标，会持续累加
+        window.setMouseMoveCallback([&camera](double xpos, double ypos) {
+            if (mouseState.firstMouse) {
+                mouseState.lastX = static_cast<float>(xpos);
+                mouseState.lastY = static_cast<float>(ypos);
+                mouseState.firstMouse = false;
+                return;  // 跳过第一次输入，避免初始跳跃
+            }
+
+            float xoffset = static_cast<float>(xpos) - mouseState.lastX;
+            float yoffset = mouseState.lastY - static_cast<float>(ypos);
+            
+            // 防止窗口焦点切换时产生的巨大跳跃（阈值：100像素）
+            if (std::abs(xoffset) > 100.0f || std::abs(yoffset) > 100.0f) {
+                mouseState.lastX = static_cast<float>(xpos);
+                mouseState.lastY = static_cast<float>(ypos);
+                return;  // 忽略异常大的偏移
+            }
+            
+            mouseState.lastX = static_cast<float>(xpos);
+            mouseState.lastY = static_cast<float>(ypos);
+
+            camera.processMouseMovement(xoffset, yoffset);
+        });
+
+        // 设置鼠标滚轮回调
+        window.setMouseScrollCallback([&camera](double xoffset, double yoffset) {
+            camera.processMouseScroll(static_cast<float>(yoffset));
+        });
+
+        // 先设置光标模式为禁用（FPS模式），这会锁定并隐藏鼠标
+        window.setCursorMode(Renderer::Window::CursorMode::Hidden);
+        LOG_INFO("光标模式已设置为 Disabled（FPS 模式）");
+        LOG_INFO("如果鼠标仍然可以移出窗口，请检查系统窗口管理器设置");
+
+        // 创建彩色立方体
+        Renderer::CubePrimitive cubePrimitive(1.0f, false);
+        LOG_INFO("立方体创建成功");
+
+        Renderer::SpherePrimitive spherePrimitive(1.0f, 32, 16, false);
+
+        Renderer::QuadPrimitive quadPrimitive(1.0f, true);
+
+        Renderer::Shader shader = Renderer::Shader::fromFiles(
+            "res/shaders/cube.vs.glsl", 
+            "res/shaders/cube.fs.glsl");
         LOG_INFO("着色器编译成功");
 
         // 测试相机矩阵
@@ -82,27 +120,82 @@ void main(){
         LOG_INFO("按 Ctrl+C 退出");
         LOG_INFO("===================");
         
+        Renderer::Shader lambertShader = Renderer::Shader::fromFiles(
+            "res/shaders/lambert.vs.glsl", 
+            "res/shaders/lambert.fs.glsl"
+        );
+
+        float lastTime = 0.0f;
         while (!window.shouldClose()) {
             
-            // 测试：让相机自动旋转（演示）
-            static float angle = 0.0f;
-            angle += 20.0f * deltaTime; // 每秒旋转 20 度
+            // // 测试：让相机自动旋转（演示）
+            // static float angle = 0.0f;
+            // angle += 20.0f * deltaTime; // 每秒旋转 20 度
             
-            // 更新相机位置（绕圆圈移动）
-            float radius = 3.0f;
-            float camX = radius * std::sin(angle * 3.14159f / 180.0f);
-            float camZ = radius * std::cos(angle * 3.14159f / 180.0f);
-            camera.setPosition(camX, 0.0f, camZ);
-            
+            // // 更新相机位置（绕圆圈移动）
+            // float radius = 3.0f;
+            // float camX = radius * std::sin(angle * 3.14159f / 180.0f);
+            // float camZ = radius * std::cos(angle * 3.14159f / 180.0f);
+            // camera.setPosition(camX, 0.0f, camZ);
+            // camera.lookAt(0.0f, 0.0f, 0.0f);
+
+            {
+                float currentTime = static_cast<float>(Renderer::Window::getTime());
+                float deltaTime = currentTime - lastTime;
+                lastTime = currentTime;
+                
+                // 处理键盘输入
+                if (window.isKeyPressed(Renderer::Key::Escape))
+                    break;
+                
+                if (window.isKeyPressed(Renderer::Key::W))
+                    camera.processKeyboard(Renderer::CameraMovement::Forward, deltaTime);
+                if (window.isKeyPressed(Renderer::Key::S))
+                    camera.processKeyboard(Renderer::CameraMovement::Backward, deltaTime);
+                if (window.isKeyPressed(Renderer::Key::A))
+                    camera.processKeyboard(Renderer::CameraMovement::Left, deltaTime);
+                if (window.isKeyPressed(Renderer::Key::D))
+                    camera.processKeyboard(Renderer::CameraMovement::Right, deltaTime);
+                if (window.isKeyPressed(Renderer::Key::E))
+                    camera.processKeyboard(Renderer::CameraMovement::Up, deltaTime);
+                if (window.isKeyPressed(Renderer::Key::Q))
+                    camera.processKeyboard(Renderer::CameraMovement::Down, deltaTime);
+            }
+
             // 更新视图矩阵
             camera.getViewMatrix(viewMatrix);
             
             rendererContext.clear(0.2f, 0.3f, 0.3f, 1.0f);
             
-            shader.use();
-            // 这里可以传递矩阵到着色器
-            // 例如: shader.setMat4("view", viewMatrix);
+            // shader.use();
+            // // 这里可以传递矩阵到着色器
+            // // 例如: shader.setMat4("view", viewMatrix);
+            // shader.setMat4("model", Renderer::Matrix4::identity().m);
+            // shader.setMat4("view", viewMatrix);
+            // shader.setMat4("projection", projMatrix);
             
+            // cubePrimitive.draw(shader);
+            
+            {
+                lambertShader.use();
+                lambertShader.setMat4("view", viewMatrix);
+                lambertShader.setMat4("projection", projMatrix);
+                lambertShader.setMat4("model", Renderer::Matrix4::identity().m);
+
+                lambertShader.setVec3("lightPos", 1.2f, 1.0f, 2.0f);       // 光源位置
+                lambertShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
+                lambertShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);   // 物体颜色
+                lambertShader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
+
+                // 设置光照强度（可选，有默认值）
+                lambertShader.setFloat("ambientStrength", 0.1f);    // 环境光强度
+                lambertShader.setFloat("specularStrength", 0.5f);   // 镜面反射强度
+                lambertShader.setInt("shininess", 32);    
+
+                //cubePrimitive.draw(lambertShader);
+                spherePrimitive.draw(lambertShader);
+                //quadPrimitive.draw(lambertShader);
+            }
             window.swapBuffers();
             window.pollEvents();
         }

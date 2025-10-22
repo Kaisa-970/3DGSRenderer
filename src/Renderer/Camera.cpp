@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Logger/Log.h"
 #include <algorithm>
 #include <cmath>
 
@@ -31,6 +32,24 @@ Camera::Camera(float posX, float posY, float posZ,
       mouseSensitivity_(0.1f),
       fov_(45.0f) {
     updateCameraVectors();
+}
+
+void Camera::lookAt(const Vector3& target) {
+    // 计算从相机到目标的方向向量
+    Vector3 direction = (target - position_).normalized();
+    
+    // 计算俯仰角 (pitch)
+    pitch_ = std::asin(direction.y) * 180.0f / PI;
+    
+    // 计算偏航角 (yaw)
+    yaw_ = std::atan2(direction.z, direction.x) * 180.0f / PI;
+    
+    // 更新相机向量
+    updateCameraVectors();
+}
+
+void Camera::lookAt(float x, float y, float z) {
+    lookAt(Vector3(x, y, z));
 }
 
 // 更新相机向量
