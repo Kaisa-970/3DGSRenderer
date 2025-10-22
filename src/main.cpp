@@ -94,7 +94,7 @@ int main() {
         });
 
         // 先设置光标模式为禁用（FPS模式），这会锁定并隐藏鼠标
-        window.setCursorMode(Renderer::Window::CursorMode::Hidden);
+        window.setCursorMode(Renderer::Window::CursorMode::Disabled);
         LOG_INFO("光标模式已设置为 Disabled（FPS 模式）");
         LOG_INFO("如果鼠标仍然可以移出窗口，请检查系统窗口管理器设置");
 
