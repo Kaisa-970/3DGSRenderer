@@ -8,6 +8,7 @@
 #include "Renderer/Primitives/CubePrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
+#include "GaussianRenderer/GaussianRenderer.h"
 
 #ifdef GSRENDERER_OS_WINDOWS
 #include <windows.h>
@@ -47,6 +48,11 @@ int main() {
         // 创建渲染器上下文
         Renderer::RendererContext rendererContext;
         LOG_INFO("渲染器上下文创建成功");
+
+        
+        GaussianRenderer::GaussianRenderer gaussianRenderer;
+        gaussianRenderer.loadModel("res/input.ply");
+        
 
         // 创建相机（初始位置在 (0, 0, 3)，朝向 -Z 方向）
         Renderer::Camera camera(
@@ -204,6 +210,10 @@ int main() {
                 //cubePrimitive.draw(lambertShader);
                 spherePrimitive.draw(lambertShader);
                 //quadPrimitive.draw(lambertShader);
+            }
+
+            {
+                gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
             }
             window.swapBuffers();
             window.pollEvents();

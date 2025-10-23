@@ -20,6 +20,7 @@ public:
     Shader &operator=(Shader &&other) noexcept;
 
     void use() const;
+    void unuse() const;
     unsigned int id() const { return programId_; }
 
     void setMat4(const char* name, const float* value) const;

@@ -112,6 +112,10 @@ void Shader::use() const {
     glUseProgram(programId_);
 }
 
+void Shader::unuse() const {
+    glUseProgram(0);
+}
+
 void Shader::setMat4(const char* name, const float* value) const {
     use();
     int location = glGetUniformLocation(programId_, name);
