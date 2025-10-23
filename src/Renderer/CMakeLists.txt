@@ -9,6 +9,8 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.cpp
 )
 
 set(RENDERER_HEADERS
@@ -24,6 +26,8 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.h
 )
 
 if(USE_GLES3)

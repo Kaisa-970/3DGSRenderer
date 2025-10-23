@@ -40,9 +40,6 @@ add_subdirectory(src/Logger)
 # 子目录：Renderer 模块
 add_subdirectory(src/Renderer)
 
-# 子目录：GaussianRenderer 模块
-add_subdirectory(src/GaussianRenderer)
-
 # 主项目源文件
 set(SOURCES
     src/main.cpp
@@ -61,7 +58,6 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_link_libraries(${PROJECT_NAME}
         Logger
         Renderer
-        GaussianRenderer
     )
 
 

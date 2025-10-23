@@ -8,7 +8,7 @@
 #include "Renderer/Primitives/CubePrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
-#include "GaussianRenderer/GaussianRenderer.h"
+#include "Renderer/GaussianSplatting/GaussianRenderer.h"
 
 #ifdef GSRENDERER_OS_WINDOWS
 #include <windows.h>
@@ -17,6 +17,7 @@
 // 鼠标状态
 struct MouseState {
     bool firstMouse = true;
+    bool isRotating = false;
     float lastX = 0.0f;  // 初始值无关紧要，firstMouse 会处理第一次输入
     float lastY = 0.0f;
 } mouseState;
@@ -50,7 +51,7 @@ int main() {
         LOG_INFO("渲染器上下文创建成功");
 
         
-        GaussianRenderer::GaussianRenderer gaussianRenderer;
+        Renderer::GaussianRenderer gaussianRenderer;
         gaussianRenderer.loadModel("res/input.ply");
         
 
@@ -70,7 +71,12 @@ int main() {
 
         // 设置鼠标移动回调
         // 注意：在 GLFW_CURSOR_DISABLED 模式下，xpos/ypos 是虚拟坐标，会持续累加
-        window.setMouseMoveCallback([&camera](double xpos, double ypos) {
+        window.setMouseMoveCallback([&camera, &window](double xpos, double ypos) {
+            if (!window.isMouseButtonPressed(Renderer::MouseButton::Right)) {
+                mouseState.firstMouse = true;  // 重置状态
+                return;
+            }
+
             if (mouseState.firstMouse) {
                 mouseState.lastX = static_cast<float>(xpos);
                 mouseState.lastY = static_cast<float>(ypos);
@@ -100,7 +106,7 @@ int main() {
         });
 
         // 先设置光标模式为禁用（FPS模式），这会锁定并隐藏鼠标
-        window.setCursorMode(Renderer::Window::CursorMode::Disabled);
+        //window.setCursorMode(Renderer::Window::CursorMode::Disabled);
         LOG_INFO("光标模式已设置为 Disabled（FPS 模式）");
         LOG_INFO("如果鼠标仍然可以移出窗口，请检查系统窗口管理器设置");
 
@@ -208,7 +214,7 @@ int main() {
                 lambertShader.setInt("shininess", 32);    
 
                 //cubePrimitive.draw(lambertShader);
-                spherePrimitive.draw(lambertShader);
+                //spherePrimitive.draw(lambertShader);
                 //quadPrimitive.draw(lambertShader);
             }
 

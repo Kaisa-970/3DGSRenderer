@@ -1,11 +1,11 @@
-#include "GaussianRenderer.h"
+#include "GaussianSplatting/GaussianRenderer.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <vector>
 #include <glad/glad.h>
 
-GAUSSIAN_RENDERER_NAMESPACE_BEGIN
+RENDERER_NAMESPACE_BEGIN
 
 GaussianRenderer::GaussianRenderer()
     : m_shader(Renderer::Shader::fromFiles("res/shaders/point.vs.glsl", "res/shaders/point.fs.glsl")) {
@@ -50,9 +50,9 @@ void GaussianRenderer::loadModel(const std::string& path)
     float scale = 1.0f / 255.0f;
     for (int i = 0; i < m_vertexCount; i++) 
     {
-        m_points[i].color[0] *= scale;
-        m_points[i].color[1] *= scale;
-        m_points[i].color[2] *= scale;
+        m_points[i].position[1] = -m_points[i].position[1];
+        //m_points[i].position[0] = -m_points[i].position[0];
+        //m_points[i].position[2] = -m_points[i].position[2];
     }
     ifs.close();
 
@@ -65,6 +65,7 @@ void GaussianRenderer::drawPoints(const Renderer::Matrix4& model, const Renderer
     m_shader.setMat4("model", model.data());
     m_shader.setMat4("view", view.data());
     m_shader.setMat4("projection", projection.data());
+    glPointSize(2.0f);
     glBindVertexArray(m_vao);
     glDrawArrays(GL_POINTS, 0, m_vertexCount);
     glBindVertexArray(0);
@@ -80,6 +81,7 @@ void GaussianRenderer::setupBuffers()
         glDeleteBuffers(1, &m_vbo);
         m_vbo = 0;
     }
+    std::cout << "Size of NormalPoint: " << sizeof(NormalPoint) << std::endl;
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
 
@@ -92,9 +94,9 @@ void GaussianRenderer::setupBuffers()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(NormalPoint), (void*)offsetof(NormalPoint, normal));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(NormalPoint), (void*)offsetof(NormalPoint, color));
+    glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(NormalPoint), (void*)offsetof(NormalPoint, color));
 
     glBindVertexArray(0);
 }
 
-GAUSSIAN_RENDERER_NAMESPACE_END
+RENDERER_NAMESPACE_END

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "TypeDef.h"
+#include "Core/TypeDef.h"
 #include <string>
 #include <vector>
 #include "Renderer/Shader.h"
 #include "Renderer/MathUtils/Matrix.h"
 
-GAUSSIAN_RENDERER_NAMESPACE_BEGIN
+RENDERER_NAMESPACE_BEGIN
 
-class GAUSSIAN_RENDERER_API GaussianRenderer {
+class RENDERER_API GaussianRenderer {
 public:
     GaussianRenderer();
     ~GaussianRenderer();
@@ -27,4 +27,4 @@ private:
     unsigned int m_vertexCount = 0;
 };
 
-GAUSSIAN_RENDERER_NAMESPACE_END
+RENDERER_NAMESPACE_END
