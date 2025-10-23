@@ -52,7 +52,8 @@ int main() {
 
         
         Renderer::GaussianRenderer gaussianRenderer;
-        gaussianRenderer.loadModel("res/input.ply");
+        //gaussianRenderer.loadModel("res/input.ply");
+        gaussianRenderer.loadModel("res/point_cloud.ply");
         
 
         // 创建相机（初始位置在 (0, 0, 3)，朝向 -Z 方向）

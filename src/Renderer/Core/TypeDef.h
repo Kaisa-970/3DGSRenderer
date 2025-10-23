@@ -7,11 +7,19 @@ RENDERER_NAMESPACE_BEGIN
 typedef float FLOAT;
 typedef unsigned char UCHAR;
 
+template<int D>
+struct SHs{
+    FLOAT shs[(D+1)*(D+1)*3];
+};
+
+template<int D>
 struct GaussianPoint {
     FLOAT position[3];
-    FLOAT color[3];
     FLOAT normal[3];
-    FLOAT texCoord[2];
+    SHs<D> shs;
+    FLOAT opacity;
+    FLOAT scale[3];
+    FLOAT rotation[4];
 };
 
 #pragma pack(push, 1)

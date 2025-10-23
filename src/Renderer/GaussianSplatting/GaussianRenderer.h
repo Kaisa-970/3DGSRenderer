@@ -21,6 +21,7 @@ private:
 
 private:
     std::vector<NormalPoint> m_points;
+    std::vector<GaussianPoint<3>> m_gaussianPoints;
     Renderer::Shader m_shader;
     unsigned int m_vao = 0;
     unsigned int m_vbo = 0;

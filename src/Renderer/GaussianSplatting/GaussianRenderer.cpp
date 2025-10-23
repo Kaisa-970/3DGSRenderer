@@ -44,15 +44,12 @@ void GaussianRenderer::loadModel(const std::string& path)
     }
 
     m_vertexCount = count;
-    m_points.resize(m_vertexCount);
-    ifs.read(reinterpret_cast<char*>(m_points.data()), m_vertexCount * sizeof(NormalPoint));
+    m_gaussianPoints.resize(m_vertexCount);
+    ifs.read(reinterpret_cast<char*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<3>));
 
-    float scale = 1.0f / 255.0f;
     for (int i = 0; i < m_vertexCount; i++) 
     {
-        m_points[i].position[1] = -m_points[i].position[1];
-        //m_points[i].position[0] = -m_points[i].position[0];
-        //m_points[i].position[2] = -m_points[i].position[2];
+        m_gaussianPoints[i].position[1] = -m_gaussianPoints[i].position[1];
     }
     ifs.close();
 
@@ -65,7 +62,7 @@ void GaussianRenderer::drawPoints(const Renderer::Matrix4& model, const Renderer
     m_shader.setMat4("model", model.data());
     m_shader.setMat4("view", view.data());
     m_shader.setMat4("projection", projection.data());
-    glPointSize(2.0f);
+    glPointSize(3.0f);
     glBindVertexArray(m_vao);
     glDrawArrays(GL_POINTS, 0, m_vertexCount);
     glBindVertexArray(0);
@@ -81,20 +78,20 @@ void GaussianRenderer::setupBuffers()
         glDeleteBuffers(1, &m_vbo);
         m_vbo = 0;
     }
-    std::cout << "Size of NormalPoint: " << sizeof(NormalPoint) << std::endl;
+    std::cout << "Size of GaussianPoint<3>: " << sizeof(GaussianPoint<3>) << std::endl;
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
 
     glGenBuffers(1, &m_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBufferData(GL_ARRAY_BUFFER, m_vertexCount * sizeof(NormalPoint), m_points.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m_vertexCount * sizeof(GaussianPoint<3>), m_gaussianPoints.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(NormalPoint), (void*)offsetof(NormalPoint, position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<3>), (void*)offsetof(GaussianPoint<3>, position));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(NormalPoint), (void*)offsetof(NormalPoint, normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<3>), (void*)offsetof(GaussianPoint<3>, normal));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(NormalPoint), (void*)offsetof(NormalPoint, color));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<3>), (void*)offsetof(GaussianPoint<3>, shs));
 
     glBindVertexArray(0);
 }
