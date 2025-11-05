@@ -56,15 +56,17 @@ int main() {
         gaussianRenderer.loadModel("res/point_cloud.ply");
         
 
-        // 创建相机（初始位置在 (0, 0, 3)，朝向 -Z 方向）
+        // 创建相机（根据模型自动计算位置）
+        // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
+        // 将相机放在模型前方，距离约为尺寸的1.5倍
         Renderer::Camera camera(
-            Renderer::Vector3(0.0f, 0.0f, 3.0f),  // 位置
-            Renderer::Vector3(0.0f, 1.0f, 0.0f),  // 世界上方向
-            -90.0f,  // yaw: -90度 朝向 -Z 方向
+            Renderer::Vector3(0.0f, 0.0f, 5.0f),  // 位置（模型中心前方）
+            Renderer::Vector3(0.0f, 1.0f, 0.0f),        // 世界上方向
+            -90.0f,  // yaw: -90度 朝向 -Z 方向（看向模型）
             0.0f     // pitch: 0度 水平视角
         );
-        camera.setMovementSpeed(2.5f);
-        camera.setMouseSensitivity(0.1f);  // 修正：使用正常的鼠标灵敏度
+        camera.setMovementSpeed(5.0f);  // 增大移动速度，因为场景较大
+        camera.setMouseSensitivity(0.1f);
         
         float x, y, z;
         camera.getPosition(x, y, z);
@@ -220,7 +222,11 @@ int main() {
             }
 
             {
-                gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
+                // 使用高质量的Splat渲染
+                gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, 1600, 1000);
+                
+                // 如果想看简单的点云渲染，可以切换到：
+                //gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
             }
             window.swapBuffers();
             window.pollEvents();
