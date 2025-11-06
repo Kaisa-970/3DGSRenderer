@@ -38,9 +38,11 @@ private:
     
     // Splat渲染的VAO和VBO
     unsigned int m_splatVAO = 0;
-    unsigned int m_splatVBO = 0;          // 高斯数据
+    unsigned int m_splatVBO = 0;  
+    unsigned int m_quadVAO = 0;        // 高斯数据
     unsigned int m_quadVBO = 0;           // 四边形顶点数据
     unsigned int m_instanceVBO = 0;       // 实例数据（排序后的索引）
+    unsigned int m_orderSSBO = 0;         // 排序后的索引的SSBO
 };
 
 RENDERER_NAMESPACE_END

@@ -5,6 +5,23 @@ param(
     [string]$GraphicsAPI = "opengl"
 )
 
+$VsDevShellScript = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1"
+
+if (-not $env:INCLUDE -or $env:INCLUDE -notlike "*Microsoft Visual Studio*") {
+    Write-Host "Initializing Visual Studio development environment..." -ForegroundColor Cyan
+    
+    if (Test-Path $VsDevShellScript) {
+        # 初始化 VS 环境
+        & $VsDevShellScript -Arch amd64 -SkipAutomaticLocation
+        Write-Host "Visual Studio environment initialized successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Could not find Visual Studio Dev Shell script" -ForegroundColor Yellow
+        Write-Host "Please run this script from 'Developer PowerShell for VS 2022'" -ForegroundColor Yellow
+        Write-Host "Or adjust the path to your Visual Studio installation" -ForegroundColor Yellow
+        exit 1
+    }
+}
+
 # 将构建类型转换为首字母大写
 $BuildType = (Get-Culture).TextInfo.ToTitleCase($BuildType.ToLower())
 
@@ -56,7 +73,7 @@ Write-Host "================================" -ForegroundColor Cyan
 
 # 配置 CMake
 Write-Host "`nConfiguring CMake..." -ForegroundColor Yellow
-cmake -B build @CMAKE_OPTIONS
+cmake -B build -G Ninja @CMAKE_OPTIONS
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "CMake configuration failed!" -ForegroundColor Red
@@ -73,8 +90,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 复制 Logger 库文件
-$LoggerLib = "build\src\Logger\$BuildType\Logger.lib"
-$LoggerDll = "build\src\Logger\$BuildType\Logger.dll"
+$LoggerLib = "build\src\Logger\Logger.lib"
+$LoggerDll = "build\src\Logger\Logger.dll"
 if (Test-Path $LoggerDll) {
     Copy-Item $LoggerDll -Destination "$OUTPUT_BIN_DIR\Logger.dll" -Force
     Write-Host "Copied Logger.dll to output directory" -ForegroundColor Green
@@ -94,8 +111,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 复制 Renderer 库文件
-$RendererLib = "build\src\Renderer\$BuildType\Renderer.lib"
-$RendererDll = "build\src\Renderer\$BuildType\Renderer.dll"
+$RendererLib = "build\src\Renderer\Renderer.lib"
+$RendererDll = "build\src\Renderer\Renderer.dll"
 if (Test-Path $RendererDll) {
     Copy-Item $RendererDll -Destination "$OUTPUT_BIN_DIR\Renderer.dll" -Force
     Write-Host "Copied Renderer.dll to output directory" -ForegroundColor Green
@@ -115,7 +132,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 复制可执行文件
-$ExePath = "build\bin\$BuildType\3DGSRenderer.exe"
+# Ninja 生成器输出到 build\bin\，Visual Studio 生成器输出到 build\bin\$BuildType\
+$ExePath = "build\bin\3DGSRenderer.exe"
+if (-not (Test-Path $ExePath)) {
+    # 尝试 Visual Studio 生成器的路径
+    $ExePath = "build\bin\$BuildType\3DGSRenderer.exe"
+}
 if (-not (Test-Path $ExePath)) {
     # 尝试另一个可能的路径
     $ExePath = "build\$BuildType\3DGSRenderer.exe"

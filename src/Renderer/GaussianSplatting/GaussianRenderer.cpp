@@ -6,12 +6,40 @@
 #include <algorithm>
 #include <glad/glad.h>
 #include "Logger/Log.h"
+#include "MathUtils/Vector.h"
 
 RENDERER_NAMESPACE_BEGIN
 
+float sigmoid(float x)
+{
+    return 1.0f / (1.0f + std::exp(-x));
+}
+
+unsigned int setupSSBO(const unsigned int& bindIdx, const float* bufferData, const size_t& bufferSize)
+{
+    unsigned int ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(float), bufferData, GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindIdx, ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    return ssbo;
+}
+
+unsigned int setupSSBO_int(const unsigned int& bindIdx, const int* bufferData, const size_t& bufferSize)
+{
+    unsigned int ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(int), bufferData, GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindIdx, ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    return ssbo;
+}
+
 GaussianRenderer::GaussianRenderer()
     : m_shader(Renderer::Shader::fromFiles("res/shaders/point.vs.glsl", "res/shaders/point.fs.glsl")),
-      m_splatShader(Renderer::Shader::fromFiles("res/shaders/gaussian_splat.vs.glsl", "res/shaders/gaussian_splat.fs.glsl")) {
+      m_splatShader(Renderer::Shader::fromFiles("res/shaders/gaussian.vs.glsl", "res/shaders/gaussian.fs.glsl")) {
     LOG_INFO("GaussianRenderer创建成功");
 }
 
@@ -22,6 +50,7 @@ GaussianRenderer::~GaussianRenderer() {
     if (m_splatVBO != 0) glDeleteBuffers(1, &m_splatVBO);
     if (m_quadVBO != 0) glDeleteBuffers(1, &m_quadVBO);
     if (m_instanceVBO != 0) glDeleteBuffers(1, &m_instanceVBO);
+    if (m_orderSSBO != 0) glDeleteBuffers(1, &m_orderSSBO);
 }
 
 void GaussianRenderer::loadModel(const std::string& path) 
@@ -72,6 +101,19 @@ void GaussianRenderer::loadModel(const std::string& path)
         maxX = std::max(maxX, m_gaussianPoints[i].position[0]);
         maxY = std::max(maxY, m_gaussianPoints[i].position[1]);
         maxZ = std::max(maxZ, m_gaussianPoints[i].position[2]);
+
+        // 旋转归一化
+        float angle = std::sqrt(m_gaussianPoints[i].rotation[0] * m_gaussianPoints[i].rotation[0] + m_gaussianPoints[i].rotation[1] * m_gaussianPoints[i].rotation[1] + m_gaussianPoints[i].rotation[2] * m_gaussianPoints[i].rotation[2]);
+        m_gaussianPoints[i].rotation[0] = m_gaussianPoints[i].rotation[0] / angle;
+        m_gaussianPoints[i].rotation[1] = m_gaussianPoints[i].rotation[1] / angle;
+        m_gaussianPoints[i].rotation[2] = m_gaussianPoints[i].rotation[2] / angle;
+        m_gaussianPoints[i].rotation[3] = m_gaussianPoints[i].rotation[3] / angle;
+
+        m_gaussianPoints[i].scale[0] = std::exp(m_gaussianPoints[i].scale[0]);
+        m_gaussianPoints[i].scale[1] = std::exp(m_gaussianPoints[i].scale[1]);
+        m_gaussianPoints[i].scale[2] = std::exp(m_gaussianPoints[i].scale[2]);
+
+        m_gaussianPoints[i].opacity = sigmoid(m_gaussianPoints[i].opacity);
     }
     ifs.close();
 
@@ -141,71 +183,39 @@ void GaussianRenderer::setupSplatBuffers()
     if (m_splatVBO != 0) glDeleteBuffers(1, &m_splatVBO);
     if (m_quadVBO != 0) glDeleteBuffers(1, &m_quadVBO);
     if (m_instanceVBO != 0) glDeleteBuffers(1, &m_instanceVBO);
+    if (m_quadVAO != 0) glDeleteVertexArrays(1, &m_quadVAO);
 
-    // 创建VAO
-    glGenVertexArrays(1, &m_splatVAO);
-    glBindVertexArray(m_splatVAO);
-
-    // 1. 创建高斯数据VBO（每个实例的数据）
-    glGenBuffers(1, &m_splatVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, m_splatVBO);
-    glBufferData(GL_ARRAY_BUFFER, m_vertexCount * sizeof(GaussianPoint<3>), m_gaussianPoints.data(), GL_STATIC_DRAW);
-
-    // 设置顶点属性（per instance）
-    size_t stride = sizeof(GaussianPoint<3>);
-    
-    // 位置 (location 0)
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(GaussianPoint<3>, position));
-    glVertexAttribDivisor(0, 1);  // 每个实例更新一次
-    
-    // 法线 (location 1) - 暂不使用
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(GaussianPoint<3>, normal));
-    glVertexAttribDivisor(1, 1);
-    
-    // SH颜色 (location 2) - 只使用第一个3分量
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(GaussianPoint<3>, shs));
-    glVertexAttribDivisor(2, 1);
-    
-    // 不透明度 (location 3)
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(GaussianPoint<3>, opacity));
-    glVertexAttribDivisor(3, 1);
-    
-    // 缩放 (location 4)
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(GaussianPoint<3>, scale));
-    glVertexAttribDivisor(4, 1);
-    
-    // 旋转四元数 (location 5)
-    glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(GaussianPoint<3>, rotation));
-    glVertexAttribDivisor(5, 1);
-
-    // 2. 创建四边形顶点VBO（每个顶点的偏移）
     float quadVertices[] = {
-        // 两个三角形组成一个四边形
         -1.0f, -1.0f,
-         1.0f, -1.0f,
+            1.0f, -1.0f,
         -1.0f,  1.0f,
-         1.0f, -1.0f,
-         1.0f,  1.0f,
+            1.0f, -1.0f,
+            1.0f,  1.0f,
         -1.0f,  1.0f
     };
     
+    glGenVertexArrays(1, &m_quadVAO);
+    glBindVertexArray(m_quadVAO);
+
     glGenBuffers(1, &m_quadVBO);
     glBindBuffer(GL_ARRAY_BUFFER, m_quadVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
     
-    // 四边形偏移 (location 6) - 每个顶点都不同
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-    glVertexAttribDivisor(6, 0);  // 每个顶点更新一次（不是每个实例）
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    GLuint pointsBindIdx = 1;
+    GLuint pointsSSBO = setupSSBO(pointsBindIdx, reinterpret_cast<const float*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<3>) / sizeof(float));
+    
+    GLuint orderBindIdx = 2;
+    m_sortedIndices.resize(m_vertexCount, 0);
+    for (uint32_t i = 0; i < m_vertexCount; i++) {
+        m_sortedIndices[i] = i;
+    }
+    m_orderSSBO = setupSSBO_int(orderBindIdx, reinterpret_cast<const int*>(m_sortedIndices.data()), m_vertexCount * sizeof(uint32_t) / sizeof(int));
 }
 
 void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
@@ -234,7 +244,6 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
         depthIndices.push_back({viewZ, i});
     }
 
-    // 从后向前排序（深度从大到小）
     std::sort(depthIndices.begin(), depthIndices.end(),
         [](const auto& a, const auto& b) { return a.first > b.first; });
 
@@ -247,88 +256,83 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
 void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer::Matrix4& view, 
                                    const Renderer::Matrix4& projection, int width, int height)
 {
-    if (m_vertexCount == 0 || m_splatVAO == 0) {
-        LOG_WARN("drawSplats: 没有数据或VAO未初始化");
-        return;
-    }
+    // if (m_vertexCount == 0 || m_splatVAO == 0) {
+    //     LOG_WARN("drawSplats: 没有数据或VAO未初始化");
+    //     return;
+    // }
 
     try {
-        // 1. 深度排序（对于透明度混合很重要）
+        LOG_INFO("开始drawSplats: 顶点数={}", m_vertexCount);
+        
+        // 1. 深度排序
         sortGaussiansByDepth(view);
+        LOG_INFO("排序完成");
         
-        // 根据排序索引重新排列高斯数据
-        static std::vector<GaussianPoint<3>> sortedGaussians;
-        if (sortedGaussians.size() != m_vertexCount) {
-            sortedGaussians.resize(m_vertexCount);
-        }
-        for (uint32_t i = 0; i < m_vertexCount; i++) {
-            sortedGaussians[i] = m_gaussianPoints[m_sortedIndices[i]];
-        }
-        
-        // 更新VBO数据（使用排序后的数据）
-        glBindBuffer(GL_ARRAY_BUFFER, m_splatVBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertexCount * sizeof(GaussianPoint<3>), sortedGaussians.data());
-        
-        // 记录第一帧
-        static bool firstFrame = true;
-        if (firstFrame) {
-            LOG_INFO("开始渲染 {} 个高斯点（已启用深度排序）", m_vertexCount);
-            firstFrame = false;
-        }
-
-        // 2. 启用混合（用于透明度和splat叠加）
-        glEnable(GL_BLEND);
-        // 使用预乘alpha的混合模式
-        glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glBlendEquation(GL_FUNC_ADD);
-
-        // 3. 禁用深度写入但启用深度测试
-        glDepthMask(GL_FALSE);
-        glEnable(GL_DEPTH_TEST);  // 启用深度测试获得正确的遮挡
-
-        // 4. 使用splat着色器
-        m_splatShader.use();
-        m_splatShader.setMat4("uModel", model.data());
-        m_splatShader.setMat4("uView", view.data());
-        m_splatShader.setMat4("uProjection", projection.data());
-        m_splatShader.setVec2("uViewport", (float)width, (float)height);
-        
-        // 简化的焦距计算（假设FOV=45度）
-        float fov = 45.0f * 3.14159265f / 180.0f;
-        float focal = height / (2.0f * std::tan(fov / 2.0f));
-        m_splatShader.setFloat("uFocalX", focal);
-        m_splatShader.setFloat("uFocalY", focal);
-        
-        // 相机位置（从view矩阵的逆中提取）
-        Matrix4 invView = view.inverse();
-        m_splatShader.setVec3("uCameraPos", invView.m[12], invView.m[13], invView.m[14]);
-
-        // 5. 绑定VAO并绘制（使用实例化渲染）
-        glBindVertexArray(m_splatVAO);
-        
-        // 检查OpenGL错误
+        // 2. 更新GPU上的排序索引
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_orderSSBO);
         GLenum err = glGetError();
         if (err != GL_NO_ERROR) {
-            LOG_ERROR("OpenGL错误（绑定VAO前）: {}", err);
+            LOG_ERROR("绑定SSBO错误: {}", err);
+            return;
         }
         
-        // 按排序顺序绘制高斯（作为实例）
-        // 性能优化：可以只渲染部分点来提升帧率
-        // uint32_t renderCount = m_vertexCount / 2;  // 渲染一半的点
-        // uint32_t renderCount = m_vertexCount / 4;  // 渲染1/4的点
-        uint32_t renderCount = m_vertexCount;  // 渲染所有点
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 
+            m_vertexCount * sizeof(int), 
+            reinterpret_cast<const int*>(m_sortedIndices.data()));
+        
+        err = glGetError();
+        if (err != GL_NO_ERROR) {
+            LOG_ERROR("更新SSBO数据错误: {}", err);
+            return;
+        }
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        LOG_INFO("SSBO更新完成");
+        
+        // 3. 启用混合
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glDepthMask(GL_FALSE);  // 禁用深度写入（但保持深度测试）
+        //glEnable(GL_DEPTH_TEST); // 启用深度测试
+        
+        // 4. 计算焦距参数
+        float fov = 45.0f * 3.14159265f / 180.0f;
+        float htany = std::tan(fov / 2.0f);
+        float htanx = std::tan(fov / 2.0f) * width / height;
+        float focal_x = width / (2.0f * htanx);
+        float focal_y = height / (2.0f * htany);
+        
+        // 5. 使用shader并设置uniform
+        m_splatShader.use();
+        m_splatShader.setMat4("view", view.data());
+        m_splatShader.setMat4("projection", projection.data());
+        m_splatShader.setVec4("hfov_focal", htanx, htany, focal_x, focal_y);
+        
+        LOG_INFO("Shader设置完成");
+
+        // 6. 绑定VAO
+        glBindVertexArray(m_quadVAO);
+        err = glGetError();
+        if (err != GL_NO_ERROR) {
+            LOG_ERROR("绑定VAO错误: {}", err);
+            return;
+        }
+        
+        // 7. 限制渲染数量（关键！）
+        // 先用小数量测试，避免GPU超时
+        uint32_t renderCount = m_vertexCount;//std::min(m_vertexCount, 10000u);  // 先只渲染1万个点测试
+        
+        LOG_INFO("准备渲染 {} 个实例", renderCount);
+        
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
         
         err = glGetError();
         if (err != GL_NO_ERROR) {
-            LOG_ERROR("OpenGL错误（绘制后）: {}", err);
+            LOG_ERROR("绘制错误: {}", err);
+            return;
         }
 
+        LOG_CORE_INFO("渲染完成");
         glBindVertexArray(0);
-
-        // 6. 恢复状态
-        glDepthMask(GL_TRUE);
-        glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
     } catch (const std::exception& e) {
         LOG_ERROR("drawSplats异常: {}", e.what());

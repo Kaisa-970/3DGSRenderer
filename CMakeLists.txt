@@ -12,8 +12,10 @@ if(MSVC)
     add_compile_options(/W3)
     add_compile_options(/wd4251)
     add_compile_options(/utf-8)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od")
 else()
     add_compile_options(-Wall -Wextra)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 endif()
 
 # 选项: 使用 OpenGL ES 3 而不是 OpenGL

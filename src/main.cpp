@@ -150,6 +150,7 @@ int main() {
         );
 
         float lastTime = 0.0f;
+        bool isDrawPoints = false;
         while (!window.shouldClose()) {
             
             // // 测试：让相机自动旋转（演示）
@@ -184,6 +185,13 @@ int main() {
                     camera.processKeyboard(Renderer::CameraMovement::Up, deltaTime);
                 if (window.isKeyPressed(Renderer::Key::Q))
                     camera.processKeyboard(Renderer::CameraMovement::Down, deltaTime);
+            
+                isDrawPoints = false;
+                if (window.isKeyPressed(Renderer::Key::P))
+                {
+                    isDrawPoints = true;//!isDrawPoints;
+                    LOG_ERROR("切换点云渲染模式: {}", isDrawPoints ? "Points" : "Splats");
+                }
             }
 
             // 更新视图矩阵
@@ -200,6 +208,7 @@ int main() {
             
             // cubePrimitive.draw(shader);
             
+            if (isDrawPoints)
             {
                 lambertShader.use();
                 lambertShader.setMat4("view", viewMatrix);
@@ -219,14 +228,12 @@ int main() {
                 //cubePrimitive.draw(lambertShader);
                 //spherePrimitive.draw(lambertShader);
                 //quadPrimitive.draw(lambertShader);
+                gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
             }
-
+            else
             {
                 // 使用高质量的Splat渲染
                 gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, 1600, 1000);
-                
-                // 如果想看简单的点云渲染，可以切换到：
-                //gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
             }
             window.swapBuffers();
             window.pollEvents();
