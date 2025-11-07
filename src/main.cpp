@@ -65,7 +65,7 @@ int main() {
             -90.0f,  // yaw: -90度 朝向 -Z 方向（看向模型）
             0.0f     // pitch: 0度 水平视角
         );
-        camera.setMovementSpeed(5.0f);  // 增大移动速度，因为场景较大
+        camera.setMovementSpeed(2.0f);  // 增大移动速度，因为场景较大
         camera.setMouseSensitivity(0.1f);
         
         float x, y, z;
@@ -130,7 +130,7 @@ int main() {
         float viewMatrix[16];
         float projMatrix[16];
         camera.getViewMatrix(viewMatrix);
-        camera.getPerspectiveMatrix(projMatrix, 45.0f, 800.0f / 600.0f, 0.1f, 100.0f);
+        camera.getPerspectiveMatrix(projMatrix, 50.0f, 1600.0f / 1000.0f, 0.1f, 100.0f);
         
         LOG_INFO("视图矩阵（前4个元素）: {}, {}, {}, {}", 
                      viewMatrix[0], viewMatrix[1], viewMatrix[2], viewMatrix[3]);

@@ -103,11 +103,22 @@ void GaussianRenderer::loadModel(const std::string& path)
         maxZ = std::max(maxZ, m_gaussianPoints[i].position[2]);
 
         // 旋转归一化
-        float angle = std::sqrt(m_gaussianPoints[i].rotation[0] * m_gaussianPoints[i].rotation[0] + m_gaussianPoints[i].rotation[1] * m_gaussianPoints[i].rotation[1] + m_gaussianPoints[i].rotation[2] * m_gaussianPoints[i].rotation[2]);
-        m_gaussianPoints[i].rotation[0] = m_gaussianPoints[i].rotation[0] / angle;
-        m_gaussianPoints[i].rotation[1] = m_gaussianPoints[i].rotation[1] / angle;
-        m_gaussianPoints[i].rotation[2] = m_gaussianPoints[i].rotation[2] / angle;
-        m_gaussianPoints[i].rotation[3] = m_gaussianPoints[i].rotation[3] / angle;
+        float angle = std::sqrt(m_gaussianPoints[i].rotation[0] * m_gaussianPoints[i].rotation[0] + m_gaussianPoints[i].rotation[1] * m_gaussianPoints[i].rotation[1] 
+            + m_gaussianPoints[i].rotation[2] * m_gaussianPoints[i].rotation[2] + m_gaussianPoints[i].rotation[3] * m_gaussianPoints[i].rotation[3]);
+        
+        
+        if (angle > 0.00001f) {
+            m_gaussianPoints[i].rotation[0] = m_gaussianPoints[i].rotation[0] / angle;
+            m_gaussianPoints[i].rotation[1] = m_gaussianPoints[i].rotation[1] / angle;
+            m_gaussianPoints[i].rotation[2] = m_gaussianPoints[i].rotation[2] / angle;
+            m_gaussianPoints[i].rotation[3] = m_gaussianPoints[i].rotation[3] / angle;
+        }
+        else {
+            m_gaussianPoints[i].rotation[0] = 1.0f;
+            m_gaussianPoints[i].rotation[1] = 0.0f;
+            m_gaussianPoints[i].rotation[2] = 0.0f;
+            m_gaussianPoints[i].rotation[3] = 0.0f;
+        }
 
         m_gaussianPoints[i].scale[0] = std::exp(m_gaussianPoints[i].scale[0]);
         m_gaussianPoints[i].scale[1] = std::exp(m_gaussianPoints[i].scale[1]);
@@ -291,11 +302,11 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         // 3. 启用混合
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        //glDepthMask(GL_FALSE);  // 禁用深度写入（但保持深度测试）
-        //glEnable(GL_DEPTH_TEST); // 启用深度测试
+        glDepthMask(GL_FALSE);  // 禁用深度写入（但保持深度测试）
+        glDisable(GL_DEPTH_TEST); // 启用深度测试
         
         // 4. 计算焦距参数
-        float fov = 45.0f * 3.14159265f / 180.0f;
+        float fov = 50.0f * 3.14159265f / 180.0f;
         float htany = std::tan(fov / 2.0f);
         float htanx = std::tan(fov / 2.0f) * width / height;
         float focal_x = width / (2.0f * htanx);

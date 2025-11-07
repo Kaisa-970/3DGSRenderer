@@ -39,24 +39,35 @@ mat3 computeCov3D(vec4 rots, vec3 scales) {
 
   float scaleMod = 1.0f;
 
-  vec3 firstRow = vec3(
-    1.f - 2.f * (rots.z * rots.z + rots.w * rots.w),
-    2.f * (rots.y * rots.z - rots.x * rots.w),      
-    2.f * (rots.y * rots.w + rots.x * rots.z)       
-  );
+  // vec3 firstRow = vec3(
+  //   1.f - 2.f * (rots.z * rots.z + rots.w * rots.w),
+  //   2.f * (rots.y * rots.z - rots.x * rots.w),      
+  //   2.f * (rots.y * rots.w + rots.x * rots.z)       
+  // );
 
-  vec3 secondRow = vec3(
-    2.f * (rots.y * rots.z + rots.x * rots.w),       
-    1.f - 2.f * (rots.y * rots.y + rots.w * rots.w), 
-    2.f * (rots.z * rots.w - rots.x * rots.y)        
-  );
+  // vec3 secondRow = vec3(
+  //   2.f * (rots.y * rots.z + rots.x * rots.w),       
+  //   1.f - 2.f * (rots.y * rots.y + rots.w * rots.w), 
+  //   2.f * (rots.z * rots.w - rots.x * rots.y)        
+  // );
 
-  vec3 thirdRow = vec3(
-    2.f * (rots.y * rots.w - rots.x * rots.z),       
-    2.f * (rots.z * rots.w + rots.x * rots.y),     
-    1.f - 2.f * (rots.y * rots.y + rots.z * rots.z) 
-  );
+  // vec3 thirdRow = vec3(
+  //   2.f * (rots.y * rots.w - rots.x * rots.z),       
+  //   2.f * (rots.z * rots.w + rots.x * rots.y),     
+  //   1.f - 2.f * (rots.y * rots.y + rots.z * rots.z) 
+  // );
 
+  // rots = (x, y, z, w)
+  float x = rots.y, y = rots.z, z = rots.w, r = rots.x;
+  float xx = x*x, yy = y*y, zz = z*z;
+  float xy = x*y, xz = x*z, yz = y*z;
+  float rx = r*x, ry = r*y, rz = r*z;
+
+  mat3 rotMatrix = mat3(
+    1.0 - 2.0*(yy + zz),  2.0*(xy - rz),       2.0*(xz + ry),
+    2.0*(xy + rz),        1.0 - 2.0*(xx + zz), 2.0*(yz - rx),
+    2.0*(xz - ry),        2.0*(yz + rx),       1.0 - 2.0*(xx + yy)
+  );
 
   mat3 scaleMatrix = mat3(
     scaleMod * scales.x, 0, 0, 
@@ -64,11 +75,11 @@ mat3 computeCov3D(vec4 rots, vec3 scales) {
     0, 0, scaleMod * scales.z
   );
 
-  mat3 rotMatrix = mat3(
-    firstRow,
-    secondRow,
-    thirdRow
-  );
+  // mat3 rotMatrix = mat3(
+  //   firstRow,
+  //   secondRow,
+  //   thirdRow
+  // );
 
   mat3 mMatrix = scaleMatrix * rotMatrix;
 
@@ -95,7 +106,7 @@ void main()
     projPos.xyz /= projPos.w;
     projPos.w = 1.0;
 
-    vec2 wh = 2 * hfov_focal.xy * hfov_focal.z;
+    vec2 wh = 2 * hfov_focal.xy * hfov_focal.zw;
 
     float limx = 1.3 * hfov_focal.x;
     float limy = 1.3 * hfov_focal.y;
