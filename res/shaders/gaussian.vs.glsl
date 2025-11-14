@@ -29,6 +29,7 @@ vec4 get_vec4(int offset) {
 uniform mat4 view;
 uniform mat4 projection;
 uniform vec4 hfov_focal;
+uniform float scaleMod;
 
 out vec3 outColor;
 out float opacity;
@@ -37,7 +38,7 @@ out vec2 coordxy;
 
 mat3 computeCov3D(vec4 rots, vec3 scales) {
 
-  float scaleMod = 1.0f;
+  //float scaleMod = scaleMod;
 
   // vec3 firstRow = vec3(
   //   1.f - 2.f * (rots.z * rots.z + rots.w * rots.w),
@@ -69,6 +70,8 @@ mat3 computeCov3D(vec4 rots, vec3 scales) {
     2.0*(xz - ry),        2.0*(yz + rx),       1.0 - 2.0*(xx + yy)
   );
 
+  //rotMatrix = transpose(rotMatrix);
+
   mat3 scaleMatrix = mat3(
     scaleMod * scales.x, 0, 0, 
     0, scaleMod * scales.y, 0,
@@ -84,14 +87,20 @@ mat3 computeCov3D(vec4 rots, vec3 scales) {
   mat3 mMatrix = scaleMatrix * rotMatrix;
 
   mat3 sigma = transpose(mMatrix) * mMatrix;
+  //mat3 sigma = mMatrix * transpose(mMatrix);
   return sigma;
 };
 
+out float quadId;
+out float distance;
+uniform int instanceID;
+uniform int loop;
 void main()
 {
-    int quadId = sortedGaussianIdx[gl_InstanceID];
+    quadId = float(sortedGaussianIdx[loop * 1000 + gl_InstanceID]);
     int total_dim = 62;//3 + 4 + 3 + 1 + SH_DIM;
-    int start = quadId * total_dim;
+    int start = int(quadId) * total_dim;
+    quadId = float(loop * 1000 + gl_InstanceID);
 
     vec3 center = get_vec3(start + POS_IDX);
     vec3 colorVal = get_vec3(start + SHS_IDX);
@@ -101,10 +110,12 @@ void main()
     mat3 cov3d = computeCov3D(rotations, scale);
 
     vec4 viewPos = view * vec4(center, 1.0);
-    vec4 projPos = projection * viewPos;
+    vec4 homPos =  projection * viewPos;
+    distance = -viewPos.z;
+    distance = distance / 10.0;
+    distance = clamp(distance, 0.0, 1.0);
 
-    projPos.xyz /= projPos.w;
-    projPos.w = 1.0;
+    vec3 projPos = homPos.xyz / (homPos.w + 0.0000001);
 
     vec2 wh = 2 * hfov_focal.xy * hfov_focal.zw;
 
@@ -130,7 +141,7 @@ void main()
         0, focal_y / viewPos.z, -(focal_y * ty) / (viewPos.z * viewPos.z),
         0, 0, 0);
 
-    mat3 T = transpose(mat3(view)) * J;
+    mat3 T = mat3(view) * J;
     mat3 cov2d = transpose(T) * cov3d * T;
 
     cov2d[0][0] += 0.3;
@@ -148,12 +159,22 @@ void main()
         cov2d[0][0] * det_inv
     );
 
+    float trace = cov2d[0][0] + cov2d[1][1];  
+    float mid = trace * 0.5;
+    float discriminant = max(0.1, mid * mid - det);
+    float lambda1 = mid + sqrt(discriminant);
+    float lambda2 = mid - sqrt(discriminant);
+    // float maxAspectRatio = 3.0;
+    // if(lambda1 > lambda2 * maxAspectRatio * maxAspectRatio) {
+    //     lambda1 = lambda2 * maxAspectRatio * maxAspectRatio;  
+    // }
+    float radius = 3.0 * sqrt(max(lambda1, lambda2));
     
     // Project quad into screen space
-    vec2 quadwh_scr = vec2(3.f * sqrt(cov2d[0][0]), 3.f * sqrt(cov2d[1][1]));
+    vec2 quadwh_scr = vec2(radius, radius); //vec2(3.f * sqrt(cov2d[0][0]), 3.f * sqrt(cov2d[1][1]));
 
     // Convert screenspace quad to NDC
-    vec2 quadwh_ndc = quadwh_scr / wh * 2;
+    vec2 quadwh_ndc = quadwh_scr / wh * 2.0;
 
     // Update gaussian's position w.r.t the quad in NDC
     projPos.xy = projPos.xy + quadPosition * quadwh_ndc;
@@ -162,9 +183,13 @@ void main()
     coordxy = quadPosition * quadwh_scr;
 
     // Set position
-    gl_Position = projPos;
+    gl_Position = vec4(projPos.xyz, 1.0);
+    //gl_Position = homPos;
 
     // Send values to fragment shader 
-    outColor = colorVal;
+    const float SH_C0 = 0.28209479177387814; // 0.5 * sqrt(1/PI)
+    outColor = (0.5 + SH_C0 * colorVal);
+    outColor = max(vec3(0.0), outColor);
+    // outColor = colorVal;
     opacity = gData[start + OPA_IDX];
 }

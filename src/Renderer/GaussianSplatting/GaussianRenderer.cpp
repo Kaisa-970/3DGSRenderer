@@ -26,12 +26,12 @@ unsigned int setupSSBO(const unsigned int& bindIdx, const float* bufferData, con
     return ssbo;
 }
 
-unsigned int setupSSBO_int(const unsigned int& bindIdx, const int* bufferData, const size_t& bufferSize)
+unsigned int setupSSBO_int(const unsigned int& bindIdx, const uint32_t* bufferData, const size_t& bufferSize)
 {
     unsigned int ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(int), bufferData, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize * sizeof(uint32_t), bufferData, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindIdx, ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     return ssbo;
@@ -92,6 +92,7 @@ void GaussianRenderer::loadModel(const std::string& path)
     
     for (size_t i = 0; i < m_vertexCount; i++) 
     {
+        m_gaussianPoints[i].position[0] = -m_gaussianPoints[i].position[0];
         m_gaussianPoints[i].position[1] = -m_gaussianPoints[i].position[1];
         
         // 更新边界框
@@ -213,20 +214,20 @@ void GaussianRenderer::setupSplatBuffers()
     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
     
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLuint pointsBindIdx = 1;
     GLuint pointsSSBO = setupSSBO(pointsBindIdx, reinterpret_cast<const float*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<3>) / sizeof(float));
-    
+
     GLuint orderBindIdx = 2;
     m_sortedIndices.resize(m_vertexCount, 0);
     for (uint32_t i = 0; i < m_vertexCount; i++) {
         m_sortedIndices[i] = i;
     }
-    m_orderSSBO = setupSSBO_int(orderBindIdx, reinterpret_cast<const int*>(m_sortedIndices.data()), m_vertexCount * sizeof(uint32_t) / sizeof(int));
+    m_orderSSBO = setupSSBO_int(orderBindIdx, reinterpret_cast<const uint32_t*>(m_sortedIndices.data()), m_vertexCount);
 }
 
 void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
@@ -244,24 +245,37 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
     depthIndices.reserve(m_vertexCount);
 
     const float* viewData = view.data();
-    
+    Matrix4 transposedView = view.transpose();
     for (uint32_t i = 0; i < m_vertexCount; i++) {
         const float* pos = m_gaussianPoints[i].position;
         
         // 手动计算 view * position（只需要z分量）
-        float viewZ = viewData[8] * pos[0] + viewData[9] * pos[1] + 
-                      viewData[10] * pos[2] + viewData[11];
-        
+        float viewZ;// = viewData[8] * pos[0] + viewData[9] * pos[1] + 
+                     // viewData[10] * pos[2] + viewData[11];
+        Vector3 viewPos = transposedView * Vector3(pos[0], pos[1], pos[2]);
+        viewZ = viewPos.z;
         depthIndices.push_back({viewZ, i});
     }
 
     std::sort(depthIndices.begin(), depthIndices.end(),
-        [](const auto& a, const auto& b) { return a.first > b.first; });
+        [](const auto& a, const auto& b) { return a.first < b.first; });
 
     // 更新排序后的索引
     for (size_t i = 0; i < depthIndices.size(); i++) {
         m_sortedIndices[i] = depthIndices[i].second;
     }
+
+        // // 调试输出：打印前10个和后10个点的深度
+        // LOG_INFO("=== 排序验证 ===");
+        // LOG_INFO("前10个（应该最远）:");
+        // for (int i = 0; i < std::min(10, (int)depthIndices.size()); i++) {
+        //     LOG_INFO("  [{}] 索引:{}, 深度:{:.3f}", i, depthIndices[i].second, depthIndices[i].first);
+        // }
+        // LOG_INFO("后10个（应该最近）:");
+        // for (int i = std::max(0, (int)depthIndices.size()-10); i < depthIndices.size(); i++) {
+        //     LOG_INFO("  [{}] 索引:{}, 深度:{:.3f}", i, depthIndices[i].second, depthIndices[i].first);
+        // }
+        // LOG_INFO("==================");
 }
 
 void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer::Matrix4& view, 
@@ -273,12 +287,16 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
     // }
 
     try {
-        LOG_INFO("开始drawSplats: 顶点数={}", m_vertexCount);
-        
+        static bool isSorted = false;
+        static Renderer::Vector3 camPosition;
+        if (!isSorted) {
         // 1. 深度排序
         sortGaussiansByDepth(view);
-        LOG_INFO("排序完成");
-        
+        Renderer::Matrix4 invViewMatrix = Renderer::Matrix4(view).inverse();
+        camPosition = Renderer::Vector3(invViewMatrix.m[12], invViewMatrix.m[13], invViewMatrix.m[14]);
+        LOG_INFO("Camera Position: ({}, {}, {})", camPosition.x, camPosition.y, camPosition.z);
+        //isSorted = true;
+        }
         // 2. 更新GPU上的排序索引
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_orderSSBO);
         GLenum err = glGetError();
@@ -288,8 +306,8 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         }
         
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 
-            m_vertexCount * sizeof(int), 
-            reinterpret_cast<const int*>(m_sortedIndices.data()));
+            m_vertexCount * sizeof(uint32_t), 
+            reinterpret_cast<const uint32_t*>(m_sortedIndices.data()));
         
         err = glGetError();
         if (err != GL_NO_ERROR) {
@@ -297,18 +315,22 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
             return;
         }
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        LOG_INFO("SSBO更新完成");
         
         // 3. 启用混合
+        //glDisable(GL_CULL_FACE);
+        //glCullFace(GL_BACK);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDepthMask(GL_FALSE);  // 禁用深度写入（但保持深度测试）
+        //glEnable(GL_DEPTH_TEST);
         glDisable(GL_DEPTH_TEST); // 启用深度测试
+        //glEnable(GL_DEPTH_TEST); // 启用深度测试
         
         // 4. 计算焦距参数
         float fov = 50.0f * 3.14159265f / 180.0f;
+        float aspect = width * 1.0f / height;
         float htany = std::tan(fov / 2.0f);
-        float htanx = std::tan(fov / 2.0f) * width / height;
+        float htanx = std::tan(fov / 2.0f) * aspect;
         float focal_x = width / (2.0f * htanx);
         float focal_y = height / (2.0f * htany);
         
@@ -317,9 +339,8 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         m_splatShader.setMat4("view", view.data());
         m_splatShader.setMat4("projection", projection.data());
         m_splatShader.setVec4("hfov_focal", htanx, htany, focal_x, focal_y);
+        m_splatShader.setFloat("scaleMod", 1.0f);
         
-        LOG_INFO("Shader设置完成");
-
         // 6. 绑定VAO
         glBindVertexArray(m_quadVAO);
         err = glGetError();
@@ -330,11 +351,20 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         
         // 7. 限制渲染数量（关键！）
         // 先用小数量测试，避免GPU超时
+        // static uint32_t renderCount = 0;
+        // renderCount += 10000;
+        // if (renderCount > m_vertexCount) {
+        //     renderCount = m_vertexCount;
+        // }
         uint32_t renderCount = m_vertexCount;//std::min(m_vertexCount, 10000u);  // 先只渲染1万个点测试
-        
-        LOG_INFO("准备渲染 {} 个实例", renderCount);
-        
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
+        int loop = 0;
+        for (uint32_t i = 0; i < renderCount; i+=1000) {
+            m_splatShader.setInt("loop", loop);
+            m_splatShader.setInt("instanceID", i);
+            glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1000);
+            loop++;
+        }
         
         err = glGetError();
         if (err != GL_NO_ERROR) {
@@ -342,9 +372,10 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
             return;
         }
 
-        LOG_CORE_INFO("渲染完成");
         glBindVertexArray(0);
         glDisable(GL_BLEND);
+        glFlush();
+        glFinish();
     } catch (const std::exception& e) {
         LOG_ERROR("drawSplats异常: {}", e.what());
     }

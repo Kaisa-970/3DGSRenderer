@@ -59,11 +59,12 @@ int main() {
         // 创建相机（根据模型自动计算位置）
         // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
         // 将相机放在模型前方，距离约为尺寸的1.5倍
+        Renderer::Vector3 camPos(4.42, 0.6, -3.63);
         Renderer::Camera camera(
-            Renderer::Vector3(0.0f, 0.0f, 5.0f),  // 位置（模型中心前方）
+            camPos,  // 位置（模型中心前方）
             Renderer::Vector3(0.0f, 1.0f, 0.0f),        // 世界上方向
-            -90.0f,  // yaw: -90度 朝向 -Z 方向（看向模型）
-            0.0f     // pitch: 0度 水平视角
+            133.5f,  // yaw: -90度 朝向 -Z 方向（看向模型）
+            -14.0f     // pitch: 0度 水平视角
         );
         camera.setMovementSpeed(2.0f);  // 增大移动速度，因为场景较大
         camera.setMouseSensitivity(0.1f);
@@ -130,17 +131,23 @@ int main() {
         float viewMatrix[16];
         float projMatrix[16];
         camera.getViewMatrix(viewMatrix);
-        camera.getPerspectiveMatrix(projMatrix, 50.0f, 1600.0f / 1000.0f, 0.1f, 100.0f);
+        camera.getPerspectiveMatrix(projMatrix, 50.0f, 1600.0f / 1000.0f, 0.01f, 1000.0f);
         
-        LOG_INFO("视图矩阵（前4个元素）: {}, {}, {}, {}", 
-                     viewMatrix[0], viewMatrix[1], viewMatrix[2], viewMatrix[3]);
+        // Renderer::Matrix4 invViewMatrix = Renderer::Matrix4(viewMatrix).inverse();
+        // LOG_INFO("逆视图矩阵: {}, {}, {}, {}\n"
+        //     "{}, {}, {}, {}\n"
+        //     "{}, {}, {}, {}\n"
+        //     "{}, {}, {}, {}\n",
+        //              invViewMatrix.m[0], invViewMatrix.m[1], invViewMatrix.m[2], invViewMatrix.m[3],
+        //              invViewMatrix.m[4], invViewMatrix.m[5], invViewMatrix.m[6], invViewMatrix.m[7],
+        //              invViewMatrix.m[8], invViewMatrix.m[9], invViewMatrix.m[10], invViewMatrix.m[11],
+        //              invViewMatrix.m[12], invViewMatrix.m[13], invViewMatrix.m[14], invViewMatrix.m[15]);
 
         // 渲染循环
         float deltaTime = 0.016f; // 简化版：假设 60 FPS
         
         LOG_INFO("=== 相机控制 ===");
         LOG_INFO("这是一个基本的相机测试");
-        LOG_INFO("相机初始位置 (0, 0, 3)");
         LOG_INFO("按 Ctrl+C 退出");
         LOG_INFO("===================");
         
@@ -208,6 +215,8 @@ int main() {
             
             // cubePrimitive.draw(shader);
             
+            // LOG_INFO("Camera Position: ({}, {}, {})", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+            // LOG_INFO("Camera Rotation: ({}, {}, {})", camera.getYaw(), camera.getPitch(), 0.0f);
             if (isDrawPoints)
             {
                 lambertShader.use();

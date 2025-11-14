@@ -4,7 +4,8 @@ in vec3 outColor;
 in float opacity;
 in vec3 conic;
 in vec2 coordxy;
-
+in float quadId;
+in float distance;
 out vec4 FragColor;
 
 void main() {			
@@ -13,5 +14,9 @@ void main() {
     float alpha = min(0.99f, opacity * exp(power));
     if(alpha < 1.f / 255.f) discard;
     FragColor = vec4(outColor, alpha);
-    //FragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);
+    //FragColor = vec4(outColor, 1.0);
+    float value = quadId / 559263.0;
+    // value = distance;
+    // value = 1.0 / (1.0 + exp(-value));
+    //FragColor = vec4(value, value, value, 1.0);
 }
