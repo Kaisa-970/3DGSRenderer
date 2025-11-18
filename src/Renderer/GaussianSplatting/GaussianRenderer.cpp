@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <chrono>
+#include <execution>
 #include <glad/glad.h>
 #include "Logger/Log.h"
 #include "MathUtils/Vector.h"
@@ -92,8 +94,8 @@ void GaussianRenderer::loadModel(const std::string& path)
     
     for (size_t i = 0; i < m_vertexCount; i++) 
     {
-        m_gaussianPoints[i].position[0] = -m_gaussianPoints[i].position[0];
-        m_gaussianPoints[i].position[1] = -m_gaussianPoints[i].position[1];
+        m_gaussianPoints[i].position[0] = m_gaussianPoints[i].position[0];
+        m_gaussianPoints[i].position[1] = m_gaussianPoints[i].position[1];
         
         // 更新边界框
         minX = std::min(minX, m_gaussianPoints[i].position[0]);
@@ -230,6 +232,62 @@ void GaussianRenderer::setupSplatBuffers()
     m_orderSSBO = setupSSBO_int(orderBindIdx, reinterpret_cast<const uint32_t*>(m_sortedIndices.data()), m_vertexCount);
 }
 
+// 将float转换为可排序的uint32_t（保持排序顺序）
+inline uint32_t floatFlip(float f) {
+    uint32_t u;
+    std::memcpy(&u, &f, sizeof(float));
+    uint32_t mask = -int32_t(u >> 31) | 0x80000000;
+    return u ^ mask;
+}
+
+// 并行基数排序（针对深度值优化）
+void radixSortParallel(std::vector<std::pair<float, uint32_t>>& data) {
+    const size_t n = data.size();
+    std::vector<std::pair<uint32_t, uint32_t>> buffer(n);
+    std::vector<std::pair<uint32_t, uint32_t>> sorted(n);
+    
+    // 转换float为可排序的uint32（保持排序关系）
+    #pragma omp parallel for
+    for (int i = 0; i < (int)n; i++) {
+        sorted[i] = {floatFlip(data[i].first), data[i].second};
+    }
+    
+    // 8位基数排序，4轮（处理32位）
+    for (int shift = 0; shift < 32; shift += 8) {
+        size_t count[256] = {0};
+        
+        // 计数
+        for (size_t i = 0; i < n; i++) {
+            uint8_t byte = (sorted[i].first >> shift) & 0xFF;
+            count[byte]++;
+        }
+        
+        // 前缀和
+        size_t total = 0;
+        for (int i = 0; i < 256; i++) {
+            size_t c = count[i];
+            count[i] = total;
+            total += c;
+        }
+        
+        // 分配到buffer
+        for (size_t i = 0; i < n; i++) {
+            uint8_t byte = (sorted[i].first >> shift) & 0xFF;
+            buffer[count[byte]++] = sorted[i];
+        }
+        
+        // 交换buffer和sorted
+        sorted.swap(buffer);
+    }
+    
+    // 写回结果（只需要索引）
+    #pragma omp parallel for
+    for (int i = 0; i < (int)n; i++) {
+        data[i].second = sorted[i].second;
+    }
+}
+
+std::vector<std::pair<float, uint32_t>> depthIndices;
 void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
 {
     // 创建或更新排序索引
@@ -241,25 +299,65 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
     }
 
     // 计算每个高斯在视图空间的深度，并排序
-    std::vector<std::pair<float, uint32_t>> depthIndices;
+    depthIndices.clear();
     depthIndices.reserve(m_vertexCount);
 
-    const float* viewData = view.data();
     Matrix4 transposedView = view.transpose();
-    for (uint32_t i = 0; i < m_vertexCount; i++) {
-        const float* pos = m_gaussianPoints[i].position;
-        
-        // 手动计算 view * position（只需要z分量）
-        float viewZ;// = viewData[8] * pos[0] + viewData[9] * pos[1] + 
-                     // viewData[10] * pos[2] + viewData[11];
-        Vector3 viewPos = transposedView * Vector3(pos[0], pos[1], pos[2]);
-        viewZ = viewPos.z;
-        depthIndices.push_back({viewZ, i});
+    float v8 = view.m[8];
+    float v9 = view.m[9];
+    float v10 = view.m[10];
+    float v11 = view.m[11];
+
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    int thread_num = std::thread::hardware_concurrency(); // 使用CPU核心数
+    if (thread_num == 0) thread_num = 8;
+    
+    // 预分配所有空间
+    depthIndices.resize(m_vertexCount);
+    
+    std::vector<std::thread> threads;
+    threads.reserve(thread_num);
+    
+    // 计算每个线程处理的数据范围
+    uint32_t chunkSize = (m_vertexCount + thread_num - 1) / thread_num;
+    
+    for (int t = 0; t < thread_num; t++) {
+        threads.emplace_back([&, t, chunkSize]() {
+            uint32_t start = t * chunkSize;
+            uint32_t end = std::min(start + chunkSize, m_vertexCount);
+            
+            for (uint32_t i = start; i < end; i++) {
+                const float* pos = m_gaussianPoints[i].position;
+                float viewZ = v8 * pos[0] + v9 * pos[1] + v10 * pos[2] + v11;
+                depthIndices[i] = {viewZ, i};
+            }
+        });
+    }
+    
+    for (auto& thread : threads) {
+        thread.join();
     }
 
-    std::sort(depthIndices.begin(), depthIndices.end(),
-        [](const auto& a, const auto& b) { return a.first < b.first; });
+    // for (uint32_t i = 0; i < m_vertexCount; i++) {
+    //     const float* pos = m_gaussianPoints[i].position;
+        
+    //     // 手动计算 view * position（只需要z分量）
+    //     float viewZ = v8 * pos[0] + v9 * pos[1] + v10 * pos[2] + v11;
+    //     // Vector3 viewPos = transposedView * Vector3(pos[0], pos[1], pos[2]);
+    //     // viewZ = viewPos.z;
+    //     depthIndices[i] = {viewZ, i};
+    // }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    LOG_INFO("计算时间: {}秒", duration.count());
 
+    std::sort(std::execution::par_unseq, depthIndices.begin(), depthIndices.end(),
+        [](const auto& a, const auto& b) { return a.first < b.first; });
+    //radixSortParallel(depthIndices);
+
+    end = std::chrono::steady_clock::now();
+    duration = end - start;
+    LOG_INFO("排序时间: {}秒", duration.count());
     // 更新排序后的索引
     for (size_t i = 0; i < depthIndices.size(); i++) {
         m_sortedIndices[i] = depthIndices[i].second;
@@ -287,14 +385,15 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
     // }
 
     try {
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
         static bool isSorted = false;
         static Renderer::Vector3 camPosition;
         if (!isSorted) {
         // 1. 深度排序
         sortGaussiansByDepth(view);
-        Renderer::Matrix4 invViewMatrix = Renderer::Matrix4(view).inverse();
-        camPosition = Renderer::Vector3(invViewMatrix.m[12], invViewMatrix.m[13], invViewMatrix.m[14]);
-        LOG_INFO("Camera Position: ({}, {}, {})", camPosition.x, camPosition.y, camPosition.z);
+
+        //LOG_INFO("Camera Position: ({}, {}, {})", camPosition.x, camPosition.y, camPosition.z);
         //isSorted = true;
         }
         // 2. 更新GPU上的排序索引
@@ -340,7 +439,11 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         m_splatShader.setMat4("projection", projection.data());
         m_splatShader.setVec4("hfov_focal", htanx, htany, focal_x, focal_y);
         m_splatShader.setFloat("scaleMod", 1.0f);
-        
+
+        Renderer::Matrix4 invViewMatrix = Renderer::Matrix4(view).inverse();
+        camPosition = Renderer::Vector3(invViewMatrix.m[12], invViewMatrix.m[13], invViewMatrix.m[14]);
+        m_splatShader.setVec3("campos", camPosition.x, camPosition.y, camPosition.z);
+
         // 6. 绑定VAO
         glBindVertexArray(m_quadVAO);
         err = glGetError();
@@ -358,13 +461,13 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         // }
         uint32_t renderCount = m_vertexCount;//std::min(m_vertexCount, 10000u);  // 先只渲染1万个点测试
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
-        int loop = 0;
-        for (uint32_t i = 0; i < renderCount; i+=1000) {
-            m_splatShader.setInt("loop", loop);
-            m_splatShader.setInt("instanceID", i);
-            glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1000);
-            loop++;
-        }
+        // int loop = 0;
+        // for (uint32_t i = 0; i < renderCount; i+=1000) {
+        //     m_splatShader.setInt("loop", loop);
+        //     m_splatShader.setInt("instanceID", i);
+        //     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1000);
+        //     loop++;
+        // }
         
         err = glGetError();
         if (err != GL_NO_ERROR) {
@@ -376,6 +479,9 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         glDisable(GL_BLEND);
         glFlush();
         glFinish();
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> duration = end - start;
+        LOG_INFO("总绘制时间: {}秒", duration.count());
     } catch (const std::exception& e) {
         LOG_ERROR("drawSplats异常: {}", e.what());
     }

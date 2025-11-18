@@ -22,8 +22,9 @@ struct MouseState {
     float lastY = 0.0f;
 } mouseState;
 
+std::string modelPath = "res/point_cloud_2.ply";
 
-int main() {
+int main(int argc, char* argv[]) {
 #ifdef GSRENDERER_OS_WINDOWS
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
@@ -50,23 +51,28 @@ int main() {
         Renderer::RendererContext rendererContext;
         LOG_INFO("渲染器上下文创建成功");
 
+        if (argc > 1) 
+        {
+            modelPath = std::string(argv[1]);
+            LOG_INFO("使用模型文件: {}", modelPath);
+        }
         
         Renderer::GaussianRenderer gaussianRenderer;
         //gaussianRenderer.loadModel("res/input.ply");
-        gaussianRenderer.loadModel("res/point_cloud.ply");
+        gaussianRenderer.loadModel(modelPath);
         
 
         // 创建相机（根据模型自动计算位置）
         // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
         // 将相机放在模型前方，距离约为尺寸的1.5倍
-        Renderer::Vector3 camPos(4.42, 0.6, -3.63);
+        Renderer::Vector3 camPos(4.42f, 0.6f, -3.63f);
         Renderer::Camera camera(
             camPos,  // 位置（模型中心前方）
-            Renderer::Vector3(0.0f, 1.0f, 0.0f),        // 世界上方向
+            Renderer::Vector3(0.0f, -1.0f, 0.0f),        // 世界上方向
             133.5f,  // yaw: -90度 朝向 -Z 方向（看向模型）
             -14.0f     // pitch: 0度 水平视角
         );
-        camera.setMovementSpeed(2.0f);  // 增大移动速度，因为场景较大
+        camera.setMovementSpeed(1.0f);  // 增大移动速度，因为场景较大
         camera.setMouseSensitivity(0.1f);
         
         float x, y, z;
@@ -111,12 +117,9 @@ int main() {
 
         // 先设置光标模式为禁用（FPS模式），这会锁定并隐藏鼠标
         //window.setCursorMode(Renderer::Window::CursorMode::Disabled);
-        LOG_INFO("光标模式已设置为 Disabled（FPS 模式）");
-        LOG_INFO("如果鼠标仍然可以移出窗口，请检查系统窗口管理器设置");
 
         // 创建彩色立方体
         Renderer::CubePrimitive cubePrimitive(1.0f, false);
-        LOG_INFO("立方体创建成功");
 
         Renderer::SpherePrimitive spherePrimitive(1.0f, 32, 16, false);
 
@@ -125,7 +128,6 @@ int main() {
         Renderer::Shader shader = Renderer::Shader::fromFiles(
             "res/shaders/cube.vs.glsl", 
             "res/shaders/cube.fs.glsl");
-        LOG_INFO("着色器编译成功");
 
         // 测试相机矩阵
         float viewMatrix[16];
@@ -159,18 +161,6 @@ int main() {
         float lastTime = 0.0f;
         bool isDrawPoints = false;
         while (!window.shouldClose()) {
-            
-            // // 测试：让相机自动旋转（演示）
-            // static float angle = 0.0f;
-            // angle += 20.0f * deltaTime; // 每秒旋转 20 度
-            
-            // // 更新相机位置（绕圆圈移动）
-            // float radius = 3.0f;
-            // float camX = radius * std::sin(angle * 3.14159f / 180.0f);
-            // float camZ = radius * std::cos(angle * 3.14159f / 180.0f);
-            // camera.setPosition(camX, 0.0f, camZ);
-            // camera.lookAt(0.0f, 0.0f, 0.0f);
-
             {
                 float currentTime = static_cast<float>(Renderer::Window::getTime());
                 float deltaTime = currentTime - lastTime;
@@ -205,6 +195,7 @@ int main() {
             camera.getViewMatrix(viewMatrix);
             
             rendererContext.clear(0.2f, 0.3f, 0.3f, 1.0f);
+            rendererContext.clear(0.0f, 0.0f, 0.0f, 1.0f);
             
             // shader.use();
             // // 这里可以传递矩阵到着色器
