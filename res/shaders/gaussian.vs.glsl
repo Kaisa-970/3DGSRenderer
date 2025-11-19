@@ -244,9 +244,9 @@ void main()
 
     // Send values to fragment shader 
     //const float SH_C0 = 0.28209479177387814; // 0.5 * sqrt(1/PI)
-    outColor = (0.5 + SH_C0 * colorVal);
-    outColor = max(vec3(0.0), outColor);
-    //outColor = computeColorFromSH(int(quadId), 2, center);
+    // outColor = (0.5 + SH_C0 * colorVal);
+    // outColor = max(vec3(0.0), outColor);
+    outColor = computeColorFromSH(int(quadId), 0, center);
     // outColor = colorVal;
     opacity = gData[start + OPA_IDX];
 }

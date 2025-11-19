@@ -10,6 +10,8 @@
 #include "Logger/Log.h"
 #include "MathUtils/Vector.h"
 
+extern int cudaSortPairs(float* keys, uint32_t* values, int N, bool verbose = false);
+
 RENDERER_NAMESPACE_BEGIN
 
 float sigmoid(float x)
@@ -298,9 +300,13 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
         }
     }
 
+    // 准备深度数组和索引数组
+    std::vector<float> depths(m_vertexCount);
+    std::vector<uint32_t> indices(m_vertexCount);
+
     // 计算每个高斯在视图空间的深度，并排序
-    depthIndices.clear();
-    depthIndices.reserve(m_vertexCount);
+    // depthIndices.clear();
+    // depthIndices.reserve(m_vertexCount);
 
     Matrix4 transposedView = view.transpose();
     float v8 = view.m[8];
@@ -313,7 +319,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
     if (thread_num == 0) thread_num = 8;
     
     // 预分配所有空间
-    depthIndices.resize(m_vertexCount);
+    //depthIndices.resize(m_vertexCount);
     
     std::vector<std::thread> threads;
     threads.reserve(thread_num);
@@ -329,7 +335,9 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
             for (uint32_t i = start; i < end; i++) {
                 const float* pos = m_gaussianPoints[i].position;
                 float viewZ = v8 * pos[0] + v9 * pos[1] + v10 * pos[2] + v11;
-                depthIndices[i] = {viewZ, i};
+                //depthIndices[i] = {viewZ, i};
+                depths[i] = viewZ;
+                indices[i] = i;
             }
         });
     }
@@ -351,17 +359,19 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
     std::chrono::duration<double> duration = end - start;
     LOG_INFO("计算时间: {}秒", duration.count());
 
-    std::sort(std::execution::par_unseq, depthIndices.begin(), depthIndices.end(),
-        [](const auto& a, const auto& b) { return a.first < b.first; });
+    // std::sort(std::execution::par_unseq, depthIndices.begin(), depthIndices.end(),
+    //     [](const auto& a, const auto& b) { return a.first < b.first; });
     //radixSortParallel(depthIndices);
 
+    cudaSortPairs(depths.data(), indices.data(), m_vertexCount);
     end = std::chrono::steady_clock::now();
     duration = end - start;
     LOG_INFO("排序时间: {}秒", duration.count());
-    // 更新排序后的索引
-    for (size_t i = 0; i < depthIndices.size(); i++) {
-        m_sortedIndices[i] = depthIndices[i].second;
-    }
+    // // 更新排序后的索引
+    // for (size_t i = 0; i < depthIndices.size(); i++) {
+    //     m_sortedIndices[i] = depthIndices[i].second;
+    // }
+    m_sortedIndices = std::move(indices);
 
         // // 调试输出：打印前10个和后10个点的深度
         // LOG_INFO("=== 排序验证 ===");

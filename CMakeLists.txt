@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(3DGSRenderer)
+project(3DGSRenderer LANGUAGES C CXX CUDA)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -7,12 +7,26 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+# if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+#     set(CMAKE_CUDA_ARCHITECTURES native)  # 自动检测本地 GPU
+# endif()
+set(CMAKE_CUDA_ARCHITECTURES 75 86 89 90)
+
 # 设置编译选项
 if(MSVC)
-    add_compile_options(/W3)
-    add_compile_options(/wd4251)
-    add_compile_options(/utf-8)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/W3>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4251>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/utf-8>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:/W3>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:/wd4251>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:/utf-8>)
+
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od")
+
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/wd4251")
 else()
     add_compile_options(-Wall -Wextra)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")

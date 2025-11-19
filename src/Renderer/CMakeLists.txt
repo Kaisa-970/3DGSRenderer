@@ -30,6 +30,10 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.h
 )
 
+set(RENDERER_CUDA_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/CudaUtils/sort.cu
+)
+
 if(USE_GLES3)
     set(GLAD_SOURCES ${CMAKE_SOURCE_DIR}/src/vendor/glad-gles3/src/glad.c)
 else()
@@ -38,7 +42,16 @@ endif()
 
 set(MODULE_NAME Renderer)
 
-add_library(${MODULE_NAME} SHARED ${RENDERER_SOURCES} ${RENDERER_HEADERS} ${GLAD_SOURCES})
+add_library(${MODULE_NAME} SHARED ${RENDERER_SOURCES} ${RENDERER_HEADERS} ${GLAD_SOURCES} ${RENDERER_CUDA_SOURCES})
+
+set_target_properties(${MODULE_NAME} PROPERTIES
+    CUDA_SEPARABLE_COMPILATION OFF
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_include_directories(${MODULE_NAME} PRIVATE 
+    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+)
 
 if(USE_GLES3)
     target_compile_definitions(${MODULE_NAME} PUBLIC USE_GLES3)
@@ -47,7 +60,7 @@ else()
     target_link_libraries(${MODULE_NAME} PRIVATE OpenGL::GL)
 endif()
 
-target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger)
+target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger cudart_static)
 
 if(USE_GLES3)
     target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/vendor/glad-gles3/include)
