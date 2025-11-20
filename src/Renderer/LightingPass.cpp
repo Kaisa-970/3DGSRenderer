@@ -1,0 +1,75 @@
+#include "LightingPass.h"
+#include <glad/glad.h>
+#include "RenderHelper/RenderHelper.h"
+
+RENDERER_NAMESPACE_BEGIN
+
+static const float vertices[] = {
+    -1.0f, -1.0f, 0.0f, 0.0f,
+    1.0f, -1.0f, 1.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 1.0f,
+    -1.0f, 1.0f, 0.0f, 1.0f
+};
+
+LightingPass::LightingPass()
+    : m_shader(Renderer::Shader::fromFiles("res/shaders/lambert.vs.glsl", "res/shaders/lambert.fs.glsl")) {
+
+    glGenVertexArrays(1, &m_vao);
+    glGenBuffers(1, &m_vbo);
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    m_lightingTexture = RenderHelper::CreateTexture2D(1600, 900, GL_RGB32F, GL_RGB, GL_FLOAT);
+    m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_lightingTexture);
+}
+
+LightingPass::~LightingPass() {
+    m_frameBuffer.Detach(FrameBuffer::Attachment::Color0);
+    if (m_lightingTexture != 0) glDeleteTextures(1, &m_lightingTexture);
+    if (m_vao != 0) glDeleteVertexArrays(1, &m_vao);
+    if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
+}
+
+void LightingPass::render(int width, int height, Camera& camera, const Renderer::Vector3& lightPos, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& colorTexture) {
+    m_frameBuffer.Bind();
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    m_shader.use();
+
+    m_shader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);       // 光源位置
+    m_shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
+    m_shader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);   // 物体颜色
+    m_shader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
+
+    // 设置光照强度（可选，有默认值）
+    m_shader.setFloat("ambientStrength", 0.1f);    // 环境光强度
+    m_shader.setFloat("specularStrength", 0.5f);   // 镜面反射强度
+    m_shader.setInt("shininess", 32);    
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, positionTexture);
+    m_shader.setInt("u_positionTexture", 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    m_shader.setInt("u_normalTexture", 1);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, colorTexture);
+    m_shader.setInt("u_colorTexture", 2);
+
+    glBindVertexArray(m_vao);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+    m_shader.unuse();
+    m_frameBuffer.Unbind();
+}
+
+RENDERER_NAMESPACE_END

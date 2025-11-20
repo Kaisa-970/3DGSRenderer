@@ -9,8 +9,15 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.cpp
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.cpp
 )
 
 set(RENDERER_HEADERS
@@ -26,8 +33,15 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.h
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.h
 )
 
 set(RENDERER_CUDA_SOURCES
