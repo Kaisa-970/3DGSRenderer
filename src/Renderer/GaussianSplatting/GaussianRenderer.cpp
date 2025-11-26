@@ -15,6 +15,8 @@ extern int cudaSortPairs(float* keys, uint32_t* values, int N, bool verbose = fa
 
 RENDERER_NAMESPACE_BEGIN
 
+static constexpr int SH_ORDER = 3;
+
 float sigmoid(float x)
 {
     return 1.0f / (1.0f + std::exp(-x));
@@ -101,7 +103,7 @@ void GaussianRenderer::loadModel(const std::string& path)
 
     m_vertexCount = count;
     m_gaussianPoints.resize(m_vertexCount);
-    ifs.read(reinterpret_cast<char*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<3>));
+    ifs.read(reinterpret_cast<char*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<SH_ORDER>));
 
     // 计算模型的边界框
     float minX = 1e10f, minY = 1e10f, minZ = 1e10f;
@@ -174,6 +176,14 @@ void GaussianRenderer::drawPoints(const Renderer::Matrix4& model, const Renderer
     m_shader.setMat4("model", model.data());
     m_shader.setMat4("view", view.data());
     m_shader.setMat4("projection", projection.data());
+
+    // Matrix4 transposedView = view.transpose();
+    // transposedView = transposedView.inverse();
+    // float v8 = transposedView.m[3];
+    // float v9 = transposedView.m[7];
+    // float v10 = transposedView.m[11];
+    // float v11 = transposedView.m[15];
+    // LOG_INFO("Camera Position: ({}, {}, {})", v8, v9, v10);
     glPointSize(3.0f);
     glBindVertexArray(m_vao);
     glDrawArrays(GL_POINTS, 0, m_vertexCount);
@@ -191,20 +201,20 @@ void GaussianRenderer::setupBuffers()
         glDeleteBuffers(1, &m_vbo);
         m_vbo = 0;
     }
-    std::cout << "Size of GaussianPoint<3>: " << sizeof(GaussianPoint<3>) << std::endl;
+    std::cout << "Size of GaussianPoint<" << SH_ORDER << ">: " << sizeof(GaussianPoint<SH_ORDER>) << std::endl;
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
 
     glGenBuffers(1, &m_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBufferData(GL_ARRAY_BUFFER, m_vertexCount * sizeof(GaussianPoint<3>), m_gaussianPoints.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m_vertexCount * sizeof(GaussianPoint<SH_ORDER>), m_gaussianPoints.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<3>), (void*)offsetof(GaussianPoint<3>, position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<SH_ORDER>), (void*)offsetof(GaussianPoint<SH_ORDER>, position));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<3>), (void*)offsetof(GaussianPoint<3>, normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<SH_ORDER>), (void*)offsetof(GaussianPoint<SH_ORDER>, normal));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<3>), (void*)offsetof(GaussianPoint<3>, shs));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GaussianPoint<SH_ORDER>), (void*)offsetof(GaussianPoint<SH_ORDER>, shs));
 
     glBindVertexArray(0);
 }
@@ -241,7 +251,7 @@ void GaussianRenderer::setupSplatBuffers()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLuint pointsBindIdx = 1;
-    GLuint pointsSSBO = setupSSBO(pointsBindIdx, reinterpret_cast<const float*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<3>) / sizeof(float));
+    GLuint pointsSSBO = setupSSBO(pointsBindIdx, reinterpret_cast<const float*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<SH_ORDER>) / sizeof(float));
 
     GLuint orderBindIdx = 2;
     m_sortedIndices.resize(m_vertexCount, 0);
@@ -405,7 +415,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
 }
 
 void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer::Matrix4& view, 
-                                   const Renderer::Matrix4& projection, int width, int height)
+                                   const Renderer::Matrix4& projection, int width, int height, unsigned int sceneDepthTexture)
 {
     // if (m_vertexCount == 0 || m_splatVAO == 0) {
     //     LOG_WARN("drawSplats: 没有数据或VAO未初始化");
@@ -460,7 +470,11 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         //glDisable(GL_CULL_FACE);
         //glCullFace(GL_BACK);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFuncSeparate(
+            GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,  // RGB: src*alpha + dst*(1-alpha)
+            GL_ONE, GL_ONE_MINUS_SRC_ALPHA         // Alpha: src + dst*(1-alpha)
+        );
         glDepthMask(GL_FALSE);  // 禁用深度写入（但保持深度测试）
         //glEnable(GL_DEPTH_TEST);
         glDisable(GL_DEPTH_TEST); // 启用深度测试
@@ -483,6 +497,16 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         Renderer::Matrix4 invViewMatrix = Renderer::Matrix4(view).inverse();
         camPosition = Renderer::Vector3(invViewMatrix.m[12], invViewMatrix.m[13], invViewMatrix.m[14]);
         m_splatShader.setVec3("campos", camPosition.x, camPosition.y, camPosition.z);
+
+        if (sceneDepthTexture != 0) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, sceneDepthTexture);
+            m_splatShader.setInt("u_solidDepthTexture", 0);
+            m_splatShader.setInt("u_useSolidDepth", 1);
+            m_splatShader.setVec2("u_screenSize", (float)width, (float)height);
+        } else {
+            m_splatShader.setInt("u_useSolidDepth", 0);
+        }
 
         // 6. 绑定VAO
         glBindVertexArray(m_quadVAO);
@@ -517,6 +541,8 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
 
         glBindVertexArray(0);
         glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
         glFlush();
         glFinish();
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

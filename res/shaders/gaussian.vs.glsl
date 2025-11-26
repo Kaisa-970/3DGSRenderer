@@ -8,6 +8,18 @@
 #define ROT_IDX 58
 #define SH_DIM 3
 
+#define TOTAL_SIZE 62
+
+// #define POS_IDX 0
+// #define NOR_IDX 3
+// #define SHS_IDX 6
+// #define OPA_IDX 9
+// #define SCA_IDX 10
+// #define ROT_IDX 13
+// #define SH_DIM 3
+
+// #define TOTAL_SIZE 17
+
 const float SH_C0 = 0.28209479177387814f;
 const float SH_C1 = 0.4886025119029199f;
 const float SH_C2[5] = {
@@ -89,7 +101,7 @@ vec3 computeColorFromSH(int idx, int deg, vec3 pos)
 	vec3 dir = pos - campos;
 	dir = dir / length(dir);
 
-    int start = idx * 62;
+    int start = idx * TOTAL_SIZE;
     vec3 sh[16];
     sh[0] = get_vec3(start + SHS_IDX);
     sh[1] = get_vec3(start + SHS_IDX + 3);
@@ -154,10 +166,12 @@ out float quadId;
 out float distance;
 uniform int instanceID;
 uniform int loop;
+
+out float viewDepth;
 void main()
 {
     quadId = float(sortedGaussianIdx[gl_InstanceID]);
-    int total_dim = 62;//3 + 4 + 3 + 1 + SH_DIM;
+    int total_dim = TOTAL_SIZE;//3 + 4 + 3 + 1 + SH_DIM;
     int start = int(quadId) * total_dim;
     //quadId = float(gl_InstanceID);
 
@@ -173,6 +187,7 @@ void main()
     distance = -viewPos.z;
     distance = distance / 10.0;
     distance = clamp(distance, 0.0, 1.0);
+    viewDepth = -viewPos.z;
 
     vec3 projPos = homPos.xyz / (homPos.w + 0.0000001);
 

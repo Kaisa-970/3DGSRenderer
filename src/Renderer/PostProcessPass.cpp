@@ -34,7 +34,7 @@ PostProcessPass::~PostProcessPass() {
     if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
 }
 
-void PostProcessPass::render(int width, int height, Camera& camera, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture)
+void PostProcessPass::render(int width, int height, Camera& camera, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture, const unsigned int& gaussianTexture)
 {
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -53,6 +53,9 @@ void PostProcessPass::render(int width, int height, Camera& camera, const unsign
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
     m_shader.setInt("u_depthTexture", 3);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, gaussianTexture);
+    m_shader.setInt("u_gaussianTexture", 4);
 
     m_shader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 
