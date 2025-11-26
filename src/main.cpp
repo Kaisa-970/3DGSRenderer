@@ -9,6 +9,11 @@
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
 #include "Renderer/GaussianSplatting/GaussianRenderer.h"
+#include "Renderer/FinalPass.h"
+#include "Renderer/GeometryPass.h"
+#include "Renderer/LightingPass.h"
+#include "Renderer/MathUtils/Random.h"
+#include "Renderer/PostProcessPass.h"
 
 #ifdef GSRENDERER_OS_WINDOWS
 #include <windows.h>
@@ -22,7 +27,10 @@ struct MouseState {
     float lastY = 0.0f;
 } mouseState;
 
-std::string modelPath = "res/point_cloud_2.ply";
+std::string modelPath = "res/point_cloud.ply";
+
+const int WIN_WIDTH = 1600;
+const int WIN_HEIGHT = 900;
 
 int main(int argc, char* argv[]) {
 #ifdef GSRENDERER_OS_WINDOWS
@@ -44,8 +52,8 @@ int main(int argc, char* argv[]) {
         LOG_INFO("GLFW 初始化成功");
 
         // 创建窗口（自动初始化 OpenGL 上下文）
-        Renderer::Window window(1600, 1000, "3DGS Renderer");
-        LOG_INFO("窗口创建成功: 1600x1000");
+        Renderer::Window window(WIN_WIDTH, WIN_HEIGHT, "3DGS Renderer");
+        LOG_INFO("窗口创建成功: {}x{}", WIN_WIDTH, WIN_HEIGHT);
         
         // 创建渲染器上下文
         Renderer::RendererContext rendererContext;
@@ -65,14 +73,14 @@ int main(int argc, char* argv[]) {
         // 创建相机（根据模型自动计算位置）
         // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
         // 将相机放在模型前方，距离约为尺寸的1.5倍
-        Renderer::Vector3 camPos(4.42f, 0.6f, -3.63f);
+        Renderer::Vector3 camPos(4.42f, -1.0f, -3.63f);
         Renderer::Camera camera(
             camPos,  // 位置（模型中心前方）
             Renderer::Vector3(0.0f, -1.0f, 0.0f),        // 世界上方向
             133.5f,  // yaw: -90度 朝向 -Z 方向（看向模型）
             -14.0f     // pitch: 0度 水平视角
         );
-        camera.setMovementSpeed(1.0f);  // 增大移动速度，因为场景较大
+        camera.setMovementSpeed(2.0f);  // 增大移动速度，因为场景较大
         camera.setMouseSensitivity(0.1f);
         
         float x, y, z;
@@ -121,29 +129,24 @@ int main(int argc, char* argv[]) {
         // 创建彩色立方体
         Renderer::CubePrimitive cubePrimitive(1.0f, false);
 
-        Renderer::SpherePrimitive spherePrimitive(1.0f, 32, 16, false);
+        Renderer::SpherePrimitive spherePrimitive(1.0f, 64, 32, false);
 
-        Renderer::QuadPrimitive quadPrimitive(1.0f, true);
+        Renderer::QuadPrimitive quadPrimitive(10.0f, false);
 
         Renderer::Shader shader = Renderer::Shader::fromFiles(
             "res/shaders/cube.vs.glsl", 
             "res/shaders/cube.fs.glsl");
 
+        // std::vector<Renderer::SpherePrimitive*> spherePrimitives;
+        // for (int i = 0; i < 10; i++)
+        // {
+        //     spherePrimitives.push_back(new Renderer::SpherePrimitive(1.0f, 64, 32, false));
+        // }
         // 测试相机矩阵
         float viewMatrix[16];
         float projMatrix[16];
         camera.getViewMatrix(viewMatrix);
-        camera.getPerspectiveMatrix(projMatrix, 50.0f, 1600.0f / 1000.0f, 0.01f, 1000.0f);
-        
-        // Renderer::Matrix4 invViewMatrix = Renderer::Matrix4(viewMatrix).inverse();
-        // LOG_INFO("逆视图矩阵: {}, {}, {}, {}\n"
-        //     "{}, {}, {}, {}\n"
-        //     "{}, {}, {}, {}\n"
-        //     "{}, {}, {}, {}\n",
-        //              invViewMatrix.m[0], invViewMatrix.m[1], invViewMatrix.m[2], invViewMatrix.m[3],
-        //              invViewMatrix.m[4], invViewMatrix.m[5], invViewMatrix.m[6], invViewMatrix.m[7],
-        //              invViewMatrix.m[8], invViewMatrix.m[9], invViewMatrix.m[10], invViewMatrix.m[11],
-        //              invViewMatrix.m[12], invViewMatrix.m[13], invViewMatrix.m[14], invViewMatrix.m[15]);
+        camera.getPerspectiveMatrix(projMatrix, 50.0f, static_cast<float>(WIN_WIDTH) / static_cast<float>(WIN_HEIGHT), 0.01f, 1000.0f);
 
         // 渲染循环
         float deltaTime = 0.016f; // 简化版：假设 60 FPS
@@ -158,14 +161,39 @@ int main(int argc, char* argv[]) {
             "res/shaders/lambert.fs.glsl"
         );
 
+        Renderer::FinalPass finalPass;
+        Renderer::GeometryPass geometryPass;
+        Renderer::LightingPass lightingPass;
+        Renderer::PostProcessPass postProcessPass;
+        std::vector<Renderer::Matrix4> sphereModels;
+        std::vector<Renderer::Vector3> sphereColors;
+        float minX = -10.0f;
+        float maxX = 10.0f;
+        float minY = -10.0f;
+        float maxY = 10.0f;
+        float minZ = -10.0f;
+        float maxZ = 10.0f;
+        float minRadius = 0.1f;
+        float maxRadius = 1.0f;
+        for (int i = 0; i < 30; i++)
+        {
+            Renderer::Matrix4 sphereModel = Renderer::Matrix4::identity();
+            float radius = Renderer::Random::randomFloat(minRadius, maxRadius);
+            sphereModel.scaleBy(radius, radius, radius);
+            sphereModel.translate(Renderer::Random::randomFloat(minX, maxX), Renderer::Random::randomFloat(minY, maxY), Renderer::Random::randomFloat(minZ, maxZ));
+            sphereModel = sphereModel.transpose();
+            sphereModels.push_back(sphereModel);
+
+            sphereColors.push_back(Renderer::Random::randomColor());
+        }
+
         float lastTime = 0.0f;
         bool isDrawPoints = false;
         while (!window.shouldClose()) {
+            float currentTime = static_cast<float>(Renderer::Window::getTime());
+            float deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
             {
-                float currentTime = static_cast<float>(Renderer::Window::getTime());
-                float deltaTime = currentTime - lastTime;
-                lastTime = currentTime;
-                
                 // 处理键盘输入
                 if (window.isKeyPressed(Renderer::Key::Escape))
                     break;
@@ -191,49 +219,54 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            Renderer::Vector3 lightPos(0.0f, -5.0f, 0.0f);
+            float curX = 5.0f * std::sin(currentTime);
+            float curZ = 5.0f * std::cos(currentTime);
+            lightPos.x = curX;
+            lightPos.z = curZ;
+
             // 更新视图矩阵
             camera.getViewMatrix(viewMatrix);
             
             rendererContext.clear(0.2f, 0.3f, 0.3f, 1.0f);
             rendererContext.clear(0.0f, 0.0f, 0.0f, 1.0f);
             
-            // shader.use();
-            // // 这里可以传递矩阵到着色器
-            // // 例如: shader.setMat4("view", viewMatrix);
-            // shader.setMat4("model", Renderer::Matrix4::identity().m);
-            // shader.setMat4("view", viewMatrix);
-            // shader.setMat4("projection", projMatrix);
-            
-            // cubePrimitive.draw(shader);
-            
-            // LOG_INFO("Camera Position: ({}, {}, {})", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-            // LOG_INFO("Camera Rotation: ({}, {}, {})", camera.getYaw(), camera.getPitch(), 0.0f);
             if (isDrawPoints)
             {
-                lambertShader.use();
-                lambertShader.setMat4("view", viewMatrix);
-                lambertShader.setMat4("projection", projMatrix);
-                lambertShader.setMat4("model", Renderer::Matrix4::identity().m);
-
-                lambertShader.setVec3("lightPos", 1.2f, 1.0f, 2.0f);       // 光源位置
-                lambertShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
-                lambertShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);   // 物体颜色
-                lambertShader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
-
-                // 设置光照强度（可选，有默认值）
-                lambertShader.setFloat("ambientStrength", 0.1f);    // 环境光强度
-                lambertShader.setFloat("specularStrength", 0.5f);   // 镜面反射强度
-                lambertShader.setInt("shininess", 32);    
-
-                //cubePrimitive.draw(lambertShader);
-                //spherePrimitive.draw(lambertShader);
-                //quadPrimitive.draw(lambertShader);
                 gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
+                finalPass.render(WIN_WIDTH, WIN_HEIGHT, gaussianRenderer.getColorTexture());
             }
             else
             {
-                // 使用高质量的Splat渲染
-                gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, 1600, 1000);
+                // // 使用高质量的Splat渲染
+                //gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, 1600, 900);
+                
+                Renderer::Matrix4 model = Renderer::Matrix4::identity();
+
+                model.scaleBy(0.1f, 0.1f, 0.1f);
+                model.translate(lightPos.x, lightPos.y, lightPos.z);
+                model = model.transpose();
+                geometryPass.clear();
+
+                for (int i = 0; i < sphereModels.size(); i++)
+                {
+                    geometryPass.render(&spherePrimitive, sphereModels[i].m, viewMatrix, projMatrix, sphereColors[i]);
+                }
+                geometryPass.render(&spherePrimitive, model.m, viewMatrix, projMatrix, Renderer::Vector3(1.0f, 1.0f, 1.0f));
+                
+                model = Renderer::Matrix4::identity();
+                geometryPass.render(&cubePrimitive, model.m, viewMatrix, projMatrix, Renderer::Vector3(1.0f, 0.0f, 0.0f));
+                
+                model = Renderer::Matrix4::identity();
+                model.scaleBy(10.0f, 10.0f, 10.0f);
+                model.rotate(-90.0f * 3.1415926f / 180.0f, Renderer::Vector3(1.0f, 0.0f, 0.0f));
+                geometryPass.render(&quadPrimitive, model.m, viewMatrix, projMatrix, Renderer::Vector3(0.5f, 0.5f, 0.5f));
+                
+                lightingPass.render(WIN_WIDTH, WIN_HEIGHT, camera, lightPos, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), geometryPass.getColorTexture());
+                
+                postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), lightingPass.getLightingTexture(), geometryPass.getDepthTexture());
+                finalPass.render(WIN_WIDTH, WIN_HEIGHT, postProcessPass.getColorTexture());
+                //finalPass.render(WIN_WIDTH, WIN_HEIGHT, gaussianRenderer.getColorTexture());
             }
             window.swapBuffers();
             window.pollEvents();

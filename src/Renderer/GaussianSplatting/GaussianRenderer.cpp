@@ -9,6 +9,7 @@
 #include <glad/glad.h>
 #include "Logger/Log.h"
 #include "MathUtils/Vector.h"
+#include "FrameBuffer.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -42,6 +43,16 @@ unsigned int setupSSBO_int(const unsigned int& bindIdx, const uint32_t* bufferDa
 GaussianRenderer::GaussianRenderer()
     : m_shader(Renderer::Shader::fromFiles("res/shaders/point.vs.glsl", "res/shaders/point.fs.glsl")),
       m_splatShader(Renderer::Shader::fromFiles("res/shaders/gaussian.vs.glsl", "res/shaders/gaussian.fs.glsl")) {
+    
+    m_frameBuffer = new FrameBuffer();
+    glGenTextures(1, &m_colorTexture);
+    glBindTexture(GL_TEXTURE_2D, m_colorTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1600, 900, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    m_frameBuffer->Attach(FrameBuffer::Attachment::Color0, m_colorTexture);
     LOG_INFO("GaussianRenderer创建成功");
 }
 
@@ -53,6 +64,8 @@ GaussianRenderer::~GaussianRenderer() {
     if (m_quadVBO != 0) glDeleteBuffers(1, &m_quadVBO);
     if (m_instanceVBO != 0) glDeleteBuffers(1, &m_instanceVBO);
     if (m_orderSSBO != 0) glDeleteBuffers(1, &m_orderSSBO);
+    if (m_frameBuffer != nullptr) delete m_frameBuffer;
+    if (m_colorTexture != 0) glDeleteTextures(1, &m_colorTexture);
 }
 
 void GaussianRenderer::loadModel(const std::string& path) 
@@ -152,6 +165,9 @@ void GaussianRenderer::loadModel(const std::string& path)
 
 void GaussianRenderer::drawPoints(const Renderer::Matrix4& model, const Renderer::Matrix4& view, const Renderer::Matrix4& projection)
 {
+    m_frameBuffer->Bind();
+    m_frameBuffer->ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
     m_shader.use();
     m_shader.setMat4("model", model.data());
     m_shader.setMat4("view", view.data());
@@ -160,6 +176,7 @@ void GaussianRenderer::drawPoints(const Renderer::Matrix4& model, const Renderer
     glBindVertexArray(m_vao);
     glDrawArrays(GL_POINTS, 0, m_vertexCount);
     glBindVertexArray(0);
+    m_frameBuffer->Unbind();
 }
 
 void GaussianRenderer::setupBuffers()
@@ -358,7 +375,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
     end = std::chrono::steady_clock::now();
     duration = end - start;
     LOG_INFO("排序时间: {}秒", duration.count());
-    // 更新排序后的索引
+    // // 更新排序后的索引
     for (size_t i = 0; i < depthIndices.size(); i++) {
         m_sortedIndices[i] = depthIndices[i].second;
     }
@@ -385,6 +402,19 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
     // }
 
     try {
+        GLenum err = glGetError();
+        m_frameBuffer->Bind();
+        if (err != GL_NO_ERROR) {
+            LOG_ERROR("绑定帧缓冲区错误: {}", err);
+            return;
+        }
+        m_frameBuffer->ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        m_frameBuffer->ClearDepthStencil(1.0f, 0);
+        err = glGetError();
+        if (err != GL_NO_ERROR) {
+            LOG_ERROR("清除帧缓冲区错误: {}", err);
+            return;
+        }
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
         static bool isSorted = false;
@@ -398,7 +428,7 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         }
         // 2. 更新GPU上的排序索引
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_orderSSBO);
-        GLenum err = glGetError();
+        err = glGetError();
         if (err != GL_NO_ERROR) {
             LOG_ERROR("绑定SSBO错误: {}", err);
             return;
@@ -423,7 +453,6 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         glDepthMask(GL_FALSE);  // 禁用深度写入（但保持深度测试）
         //glEnable(GL_DEPTH_TEST);
         glDisable(GL_DEPTH_TEST); // 启用深度测试
-        //glEnable(GL_DEPTH_TEST); // 启用深度测试
         
         // 4. 计算焦距参数
         float fov = 50.0f * 3.14159265f / 180.0f;
@@ -482,6 +511,7 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4& model, const Renderer
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = end - start;
         LOG_INFO("总绘制时间: {}秒", duration.count());
+        m_frameBuffer->Unbind();
     } catch (const std::exception& e) {
         LOG_ERROR("drawSplats异常: {}", e.what());
     }

@@ -1,9 +1,7 @@
-#version 330 core
-out vec4 FragColor;
+#version 430 core
 
-// 从顶点着色器传入
-in vec3 FragPos;     // 世界空间中的片段位置
-in vec3 Normal;      // 世界空间中的法线
+in vec2 texCoord;
+out vec4 FragColor;
 
 // 光照参数
 uniform vec3 lightPos;       // 光源位置
@@ -16,8 +14,16 @@ uniform float ambientStrength;   // 环境光强度 (默认 0.1)
 uniform float specularStrength;  // 镜面反射强度 (默认 0.5)
 uniform int shininess;           // 镜面反射指数 (默认 32)
 
+uniform sampler2D u_positionTexture;
+uniform sampler2D u_normalTexture;
+uniform sampler2D u_colorTexture;
+
 void main()
 {
+    vec3 FragPos = texture(u_positionTexture, texCoord).rgb;
+    vec3 Normal = texture(u_normalTexture, texCoord).rgb;
+    vec3 objectColor = texture(u_colorTexture, texCoord).rgb;
+
     // 1. 环境光 (Ambient)
     vec3 ambient = ambientStrength * lightColor;
     
@@ -27,15 +33,16 @@ void main()
     float diff = max(dot(norm, lightDir), 0.0);  // Lambert 余弦定律
     vec3 diffuse = diff * lightColor;
     
-    // 3. 镜面反射 (Specular) - Phong 模型
+    // 3. 镜面反射 (Specular) - Blinn-Phong 模型
     vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
     vec3 specular = specularStrength * spec * lightColor;
     
     // 组合所有光照分量
     vec3 result = (ambient + diffuse + specular) * objectColor;
     
     FragColor = vec4(result, 1.0);
+    //FragColor = vec4(norm, 1.0);
 }
 
