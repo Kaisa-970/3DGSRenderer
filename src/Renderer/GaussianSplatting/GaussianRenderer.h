@@ -18,7 +18,7 @@ public:
     void drawPoints(const Renderer::Matrix4& model, const Renderer::Matrix4& view, const Renderer::Matrix4& projection);
     
     // 高质量splat渲染
-    void drawSplats(const Renderer::Matrix4& model, const Renderer::Matrix4& view, const Renderer::Matrix4& projection, int width, int height);
+    void drawSplats(const Renderer::Matrix4& model, const Renderer::Matrix4& view, const Renderer::Matrix4& projection, int width, int height, unsigned int sceneDepthTexture = 0);
 
     unsigned int getColorTexture() const { return m_colorTexture; }
 

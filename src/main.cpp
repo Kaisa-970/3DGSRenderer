@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
             133.5f,  // yaw: -90度 朝向 -Z 方向（看向模型）
             -14.0f     // pitch: 0度 水平视角
         );
+
         camera.setMovementSpeed(2.0f);  // 增大移动速度，因为场景较大
         camera.setMouseSensitivity(0.1f);
         
@@ -238,9 +239,6 @@ int main(int argc, char* argv[]) {
             }
             else
             {
-                // // 使用高质量的Splat渲染
-                //gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, 1600, 900);
-                
                 Renderer::Matrix4 model = Renderer::Matrix4::identity();
 
                 model.scaleBy(0.1f, 0.1f, 0.1f);
@@ -260,11 +258,14 @@ int main(int argc, char* argv[]) {
                 model = Renderer::Matrix4::identity();
                 model.scaleBy(10.0f, 10.0f, 10.0f);
                 model.rotate(-90.0f * 3.1415926f / 180.0f, Renderer::Vector3(1.0f, 0.0f, 0.0f));
-                geometryPass.render(&quadPrimitive, model.m, viewMatrix, projMatrix, Renderer::Vector3(0.5f, 0.5f, 0.5f));
+                //geometryPass.render(&quadPrimitive, model.m, viewMatrix, projMatrix, Renderer::Vector3(0.5f, 0.5f, 0.5f));
                 
                 lightingPass.render(WIN_WIDTH, WIN_HEIGHT, camera, lightPos, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), geometryPass.getColorTexture());
                 
-                postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), lightingPass.getLightingTexture(), geometryPass.getDepthTexture());
+                // 使用高质量的Splat渲染
+                gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
+                
+                postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), lightingPass.getLightingTexture(), geometryPass.getDepthTexture(), gaussianRenderer.getColorTexture());
                 finalPass.render(WIN_WIDTH, WIN_HEIGHT, postProcessPass.getColorTexture());
                 //finalPass.render(WIN_WIDTH, WIN_HEIGHT, gaussianRenderer.getColorTexture());
             }
