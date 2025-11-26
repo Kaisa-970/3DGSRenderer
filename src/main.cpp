@@ -27,7 +27,11 @@ struct MouseState {
     float lastY = 0.0f;
 } mouseState;
 
-std::string modelPath = "res/point_cloud.ply";
+#ifdef RENDERER_DEBUG
+    std::string modelPath = "res/point_cloud.ply";
+#else
+    std::string modelPath = "";
+#endif
 
 const int WIN_WIDTH = 1600;
 const int WIN_HEIGHT = 900;
@@ -59,11 +63,21 @@ int main(int argc, char* argv[]) {
         Renderer::RendererContext rendererContext;
         LOG_INFO("渲染器上下文创建成功");
 
-        if (argc > 1) 
+        if (argc < 2) 
         {
-            modelPath = std::string(argv[1]);
-            LOG_INFO("使用模型文件: {}", modelPath);
+            #ifndef RENDERER_DEBUG
+                LOG_ERROR("Usage: 3DGSRenderer <model_path>");
+                return -1;
+            #endif
         }
+        else 
+        {
+            #ifndef RENDERER_DEBUG
+                modelPath = std::string(argv[1]);
+            #endif
+        }
+        LOG_INFO("使用模型文件: {}", modelPath);
+        
         
         Renderer::GaussianRenderer gaussianRenderer;
         //gaussianRenderer.loadModel("res/input.ply");

@@ -16,3 +16,5 @@
         #define RENDERER_API 
     #endif
 #endif
+
+#define RENDERER_DEBUG
