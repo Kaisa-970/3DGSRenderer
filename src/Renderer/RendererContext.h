@@ -17,6 +17,8 @@ public:
 
     // 清屏
     void clear(float r, float g, float b, float a = 1.0f);
+
+    void viewPort(int x, int y, int width, int height);
 };
 
 RENDERER_NAMESPACE_END

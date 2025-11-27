@@ -24,6 +24,12 @@ void main()
     vec3 Normal = texture(u_normalTexture, texCoord).rgb;
     vec3 objectColor = texture(u_colorTexture, texCoord).rgb;
 
+    if (length(Normal) < 0.001)
+    {
+        FragColor = vec4(0.2f, 0.3f, 0.3f, 1.0);
+        return;
+    }
+
     // 1. 环境光 (Ambient)
     vec3 ambient = ambientStrength * lightColor;
     

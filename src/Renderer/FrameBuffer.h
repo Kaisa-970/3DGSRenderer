@@ -30,6 +30,7 @@ public:
     // void ClearDepth(float depth);
     // void ClearStencil(int stencil);
     void ClearColor(float r, float g, float b, float a);
+    void ClearAttachmentColor(Attachment attachment, float r, float g, float b, float a);
     void ClearDepthStencil(float depth, int stencil);
 
 private:

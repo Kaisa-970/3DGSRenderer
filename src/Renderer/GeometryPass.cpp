@@ -40,7 +40,7 @@ GeometryPass::~GeometryPass() {
 
 void GeometryPass::clear() {
     m_frameBuffer.Bind();
-    m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     m_frameBuffer.ClearDepthStencil(1.0f, 0);
     m_frameBuffer.Unbind();
 }

@@ -65,6 +65,15 @@ void FrameBuffer::ClearColor(float r, float g, float b, float a) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void FrameBuffer::ClearAttachmentColor(Attachment attachment, float r, float g, float b, float a) {
+    int index = static_cast<int>(attachment);
+    int depthIdx = static_cast<int>(Attachment::Depth);
+    if (index < depthIdx) {
+        GLfloat color[4] = {r, g, b, a};
+        glClearBufferfv(GL_COLOR, index, color);
+    }
+}
+
 void FrameBuffer::ClearDepthStencil(float depth, int stencil) {
     glClearDepthf(depth);
     glClearStencil(stencil);
