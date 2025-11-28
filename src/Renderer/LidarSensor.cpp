@@ -7,8 +7,8 @@ RENDERER_NAMESPACE_BEGIN
 
 static const float PI = 3.14159265358979323846f;
 
-LidarSensor::LidarSensor(Vector3 position, Vector3 direction, float fov, float distance)
-    : m_position(position), m_direction(direction), m_fov(fov), m_distance(distance),
+LidarSensor::LidarSensor(Vector3 position, Vector3 direction, float vFov, float hFov, float distance)
+    : m_position(position), m_direction(direction), m_vFov(vFov), m_hFov(hFov), m_distance(distance),
     m_depthShader(Shader::fromFiles("res/shaders/lidar_depth.vs.glsl", "res/shaders/lidar_depth.fs.glsl")),
     m_visShader(Shader::fromFiles("res/shaders/lidar_vis.vs.glsl", "res/shaders/lidar_vis.fs.glsl")),
     m_vao(0), m_vbo(0), m_ebo(0)
@@ -36,7 +36,7 @@ void LidarSensor::renderDepth(const std::vector<std::pair<Primitive*, Matrix4>> 
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    //glDisable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
 
     m_depthShader.use();
     m_depthShader.setMat4("projection", m_cubemapProjection.m);
@@ -46,17 +46,12 @@ void LidarSensor::renderDepth(const std::vector<std::pair<Primitive*, Matrix4>> 
     for (unsigned int i = 0; i < 6; ++i) {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_depthCubemap, 0);
         glClear(GL_DEPTH_BUFFER_BIT);
-        // glEnable(GL_DEPTH_TEST);
-        // glDepthFunc(GL_LESS);
-        // glEnable(GL_CULL_FACE);
-        // glCullFace(GL_BACK);
         
         Matrix4 view = m_cubemapView[i];
         view = view.transpose();
         m_depthShader.setMat4("view", view.m);
         for (const auto& [primitive, model] : primitives) {
             Matrix4 modelMatrix = model;
-            //modelMatrix = modelMatrix.transpose();
             m_depthShader.setMat4("model", modelMatrix.m);
             primitive->draw(m_depthShader);
         }
@@ -65,17 +60,17 @@ void LidarSensor::renderDepth(const std::vector<std::pair<Primitive*, Matrix4>> 
     m_depthShader.unuse();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 }
 
 void LidarSensor::renderVisualization(const float* cameraView, const float* cameraProjection, int width, int height, unsigned int sceneDepthTexture)
 {
     glViewport(0, 0, width, height);
 
-    Matrix4 model = Matrix4::identity();
-    model.scaleBy(m_distance, m_distance, m_distance);
-    model.translate(m_position.x, m_position.y, m_position.z);
-    model = model.transpose();
+    // Matrix4 model = Matrix4::identity();
+    // model.scaleBy(m_distance, m_distance, m_distance);
+    // model.translate(m_position.x, m_position.y, m_position.z);
+    // model = model.transpose();
 
     // 设置渲染状态
     glEnable(GL_BLEND);
@@ -85,14 +80,15 @@ void LidarSensor::renderVisualization(const float* cameraView, const float* came
     glDisable(GL_CULL_FACE);
 
     m_visShader.use();
-    m_visShader.setMat4("model", model.m);
+    //m_visShader.setMat4("model", model.m);
     m_visShader.setMat4("view", cameraView);
     m_visShader.setMat4("projection", cameraProjection);
     m_visShader.setVec3("lidarPosition", m_position.x, m_position.y, m_position.z);
     m_visShader.setVec3("lidarDirection", m_direction.x, m_direction.y, m_direction.z);
-    m_visShader.setFloat("fov", m_fov);
+    m_visShader.setFloat("vFov", m_vFov);
+    m_visShader.setFloat("hFov", m_hFov);
     m_visShader.setFloat("maxDistance", m_distance);
-    m_visShader.setVec3("color", 0.0f, 0.0f, 0.6f);
+    m_visShader.setVec3("color", 0.8f, 0.2f, 0.0f);
     m_visShader.setVec2("screenSize", static_cast<float>(width), static_cast<float>(height));
 
     // 绑定深度Cubemap
@@ -120,8 +116,8 @@ void LidarSensor::generateSphereMesh()
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
-    int stackCount = 64;
-    int sectorCount = 64;
+    int stackCount = 4096;
+    int sectorCount = 4096;
     float radius = 1.0f;
     bool colored = false;
     

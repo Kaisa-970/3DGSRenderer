@@ -12,10 +12,11 @@ RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API LidarSensor {
 public:
-    LidarSensor(Vector3 position, Vector3 direction, float fov, float distance);
+    LidarSensor(Vector3 position, Vector3 direction, float vFov, float hFov, float distance);
     ~LidarSensor();
 
     void setDirection(const Vector3& direction) { m_direction = direction; }
+    void setPosition(const Vector3& position) { m_position = position; }
     void renderDepth(const std::vector<std::pair<Primitive*, Matrix4>> &primitives);
 
     void renderVisualization(const float* cameraView, const float* cameraProjection, int width, int height, unsigned int sceneDepthTexture);
@@ -27,10 +28,10 @@ private:
 private:
     Vector3 m_position;
     Vector3 m_direction;
-    float m_fov;
+    float m_vFov;
+    float m_hFov;
     float m_distance;
 
-    //FrameBuffer m_frameBuffer;
     Shader m_depthShader;
     Shader m_visShader;
 

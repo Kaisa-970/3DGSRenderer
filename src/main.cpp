@@ -1,6 +1,4 @@
-#include <iostream>
 #include <cmath>
-#include "Renderer/Shader.h"
 #include "Renderer/Window.h"
 #include "Renderer/RendererContext.h"
 #include "Renderer/Camera.h"
@@ -8,7 +6,6 @@
 #include "Renderer/Primitives/CubePrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
-#include "Renderer/GaussianSplatting/GaussianRenderer.h"
 #include "Renderer/FinalPass.h"
 #include "Renderer/GeometryPass.h"
 #include "Renderer/LightingPass.h"
@@ -28,6 +25,11 @@ struct MouseState {
     float lastY = 0.0f;
 } mouseState;
 
+static constexpr float PI = 3.1415926f;
+static constexpr float D2R_FACTOR = PI / 180.0f;
+static constexpr float R2D_FACTOR = 180.0f / PI;
+#define DEG2RAD(deg) (deg * D2R_FACTOR)
+#define RAD2DEG(rad) (rad * R2D_FACTOR)
 
 const int WIN_WIDTH = 1600;
 const int WIN_HEIGHT = 900;
@@ -41,25 +43,24 @@ int main(int argc, char* argv[]) {
     // 初始化日志系统
     Logger::Log::Init();
     
-    LOG_INFO("3DGS Renderer 启动中...");
+    LOG_INFO("Start 3DGS Renderer...");
     
     try {
         // 初始化 GLFW
         if (!Renderer::Window::initGLFW()) {
-            LOG_ERROR("初始化 GLFW 失败");
+            LOG_ERROR("Failed to initialize GLFW");
             return -1;
         }
-        LOG_INFO("GLFW 初始化成功");
+        LOG_INFO("Successfully initialized GLFW");
 
         // 创建窗口（自动初始化 OpenGL 上下文）
         Renderer::Window window(WIN_WIDTH, WIN_HEIGHT, "3DGS Renderer");
-        LOG_INFO("窗口创建成功: {}x{}", WIN_WIDTH, WIN_HEIGHT);
+        LOG_INFO("Successfully created window: {}x{}", WIN_WIDTH, WIN_HEIGHT);
         
         // 创建渲染器上下文
         Renderer::RendererContext rendererContext;
-        LOG_INFO("渲染器上下文创建成功");
+        LOG_INFO("Successfully created renderer context");
         
-
         // 创建相机（根据模型自动计算位置）
         Renderer::Vector3 camPos(0.0f, 2.0f, 5.0f);
         Renderer::Camera camera(
@@ -69,12 +70,12 @@ int main(int argc, char* argv[]) {
             -20.0f     // pitch: 0度 水平视角
         );
 
-        camera.setMovementSpeed(2.5f);  // 增大移动速度，因为场景较大
+        camera.setMovementSpeed(3.0f);  // 增大移动速度，因为场景较大
         camera.setMouseSensitivity(0.1f);
         
         float x, y, z;
         camera.getPosition(x, y, z);
-        LOG_INFO("相机创建成功，位置: ({}, {}, {})", x, y, z);
+        LOG_INFO("Successfully created camera at position: ({}, {}, {})", x, y, z);
 
         // 设置鼠标移动回调
         // 注意：在 GLFW_CURSOR_DISABLED 模式下，xpos/ypos 是虚拟坐标，会持续累加
@@ -115,16 +116,10 @@ int main(int argc, char* argv[]) {
         // 先设置光标模式为禁用（FPS模式），这会锁定并隐藏鼠标
         //window.setCursorMode(Renderer::Window::CursorMode::Disabled);
 
-        // 创建彩色立方体
+        // create primitives
         Renderer::CubePrimitive cubePrimitive(1.0f, false);
-
         Renderer::SpherePrimitive spherePrimitive(1.0f, 64, 32, false);
-
         Renderer::QuadPrimitive quadPrimitive(10.0f, false);
-
-        Renderer::Shader shader = Renderer::Shader::fromFiles(
-            "res/shaders/cube.vs.glsl", 
-            "res/shaders/cube.fs.glsl");
 
         // 测试相机矩阵
         float viewMatrix[16];
@@ -132,18 +127,12 @@ int main(int argc, char* argv[]) {
         camera.getViewMatrix(viewMatrix);
         camera.getPerspectiveMatrix(projMatrix, 50.0f, static_cast<float>(WIN_WIDTH) / static_cast<float>(WIN_HEIGHT), 0.01f, 1000.0f);
 
-        // 渲染循环
-        float deltaTime = 0.016f; // 简化版：假设 60 FPS
-
-        Renderer::Shader lambertShader = Renderer::Shader::fromFiles(
-            "res/shaders/lambert.vs.glsl", 
-            "res/shaders/lambert.fs.glsl"
-        );
-
-        Renderer::FinalPass finalPass;
+        // create passes
         Renderer::GeometryPass geometryPass;
         Renderer::LightingPass lightingPass;
         Renderer::PostProcessPass postProcessPass;
+        Renderer::FinalPass finalPass;
+
         std::vector<Renderer::Matrix4> sphereModels;
         std::vector<Renderer::Vector3> sphereColors;
         float minX = -10.0f;
@@ -171,7 +160,8 @@ int main(int argc, char* argv[]) {
         Renderer::LidarSensor lidarSensor(
             Renderer::Vector3(0.0f, 0.0f, 0.0f), 
             Renderer::Vector3(1.0f, 0.0f, 0.0f), 
-            180.0f * 3.1415926f / 180.0f, 
+            DEG2RAD(90.0f), 
+            DEG2RAD(150.0f),
             10.0f);
 
         Renderer::Matrix4 sphereModel = Renderer::Matrix4::identity();
@@ -180,7 +170,8 @@ int main(int argc, char* argv[]) {
         sphereModel = sphereModel.transpose();
 
         float lastTime = 0.0f;
-        bool isDrawPoints = false;
+
+        // render loop
         while (!window.shouldClose()) {
             float currentTime = static_cast<float>(Renderer::Window::getTime());
             float deltaTime = currentTime - lastTime;
@@ -203,12 +194,6 @@ int main(int argc, char* argv[]) {
                 if (window.isKeyPressed(Renderer::Key::Q))
                     camera.processKeyboard(Renderer::CameraMovement::Down, deltaTime);
             
-                isDrawPoints = false;
-                if (window.isKeyPressed(Renderer::Key::P))
-                {
-                    isDrawPoints = true;//!isDrawPoints;
-                    LOG_ERROR("切换点云渲染模式: {}", isDrawPoints ? "Points" : "Splats");
-                }
             }
 
             Renderer::Vector3 lightPos(0.0f, 3.0f, 3.0f);
@@ -217,93 +202,96 @@ int main(int argc, char* argv[]) {
             lightPos.x = curX;
             lightPos.z = curZ;
 
-            // 更新视图矩阵
+            // update view matrix
             camera.getViewMatrix(viewMatrix);
             
-            rendererContext.clear(0.2f, 0.3f, 0.3f, 1.0f);
             rendererContext.clear(0.0f, 0.0f, 0.0f, 1.0f);
             
-            if (isDrawPoints)
-            {
-                //gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
-                //finalPass.render(WIN_WIDTH, WIN_HEIGHT, gaussianRenderer.getColorTexture());
-            }
-            else
-            {
-                Renderer::Vector3 lidarDirection(1.0f, 0.0f, 0.0f);
-                lidarDirection = lightPos.normalized();
-                lidarSensor.setDirection(lidarDirection);
+            Renderer::Vector3 lidarDirection(1.0f, 0.0f, 0.0f);
+            lidarDirection = lightPos.normalized();
+            //lidarSensor.setDirection(lidarDirection);
+            //lidarSensor.setPosition(lightPos);
+            //lidarSensor.setPosition(Renderer::Vector3(0.0f, 5.0f, 0.0f));
 
+            // update model matrices
+            Renderer::Matrix4 sphereModel2 = Renderer::Matrix4::identity();
+            float centX = 3.0f;
+            float posX = centX + std::sin(currentTime);
+            sphereModel2.translate(posX, 0.0f, 0.0f);
+            sphereModel2 = sphereModel2.transpose();
+
+            Renderer::Matrix4 quadModel = Renderer::Matrix4::identity();
+            quadModel.scaleBy(10.0f, 10.0f, 10.0f);
+            quadModel.rotate(DEG2RAD(-90.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
+            quadModel.translate(0.0f, -0.01f, 0.0f);
+            quadModel = quadModel.transpose();
+
+            Renderer::Matrix4 quadModel2 = Renderer::Matrix4::identity();
+            quadModel2.scaleBy(0.2f, 0.2f, 0.2f);
+            quadModel2.rotate(DEG2RAD(30.0f), Renderer::Vector3(0.0f, 1.0f, 0.0f));
+            quadModel2.translate(0.0f, 0.0f, -0.1f);
+            quadModel2 = quadModel2.transpose();
+
+            Renderer::Matrix4 quadModel3 = Renderer::Matrix4::identity();
+            quadModel3.scaleBy(0.2f, 0.2f, 0.2f);
+            quadModel3.rotate(DEG2RAD(-30.0f), Renderer::Vector3(0.0f, 1.0f, 0.0f));
+            quadModel3.translate(0.0f, 0.0f, -0.1f);
+            quadModel3 = quadModel3.transpose();
+
+            // render lidar depth cubemap
+            {
                 std::vector<std::pair<Renderer::Primitive*, Renderer::Matrix4>> primitives;
-                Renderer::Matrix4 sphereModel2 = Renderer::Matrix4::identity();
-                float centX = 3.0f;
-                float posX = centX + std::sin(currentTime);
-                sphereModel2.translate(posX, 0.0f, 0.0f);
-                sphereModel2 = sphereModel2.transpose();
-                primitives.push_back(std::make_pair(&spherePrimitive, sphereModel2));
 
-                Renderer::Matrix4 quadModel = Renderer::Matrix4::identity();
-                quadModel.scaleBy(10.0f, 10.0f, 10.0f);
-                quadModel.rotate(-90.0f * 3.1415926f / 180.0f, Renderer::Vector3(1.0f, 0.0f, 0.0f));
-                quadModel.translate(0.0f, -0.01f, 0.0f);
-                quadModel = quadModel.transpose();
                 primitives.push_back(std::make_pair(&quadPrimitive, quadModel));
+                //primitives.push_back(std::make_pair(&spherePrimitive, sphereModel2));
+                //primitives.push_back(std::make_pair(&quadPrimitive, quadModel2));
+                //primitives.push_back(std::make_pair(&quadPrimitive, quadModel3));
                 
                 for (int i = 0; i < sphereModels.size(); i++)
                 {
                     primitives.push_back(std::make_pair(&spherePrimitive, sphereModels[i]));
                 }
-
+    
                 lidarSensor.renderDepth(primitives);
+            }
 
-                Renderer::Matrix4 model = Renderer::Matrix4::identity();
+            rendererContext.viewPort(0, 0, WIN_WIDTH, WIN_HEIGHT);
 
-                rendererContext.viewPort(0, 0, WIN_WIDTH, WIN_HEIGHT);
-                // model.scaleBy(0.1f, 0.1f, 0.1f);
-                // model.translate(lightPos.x, lightPos.y, lightPos.z);
-                model = model.transpose();
-                geometryPass.clear();
+            // geometry pass
+            {
+                geometryPass.begin(viewMatrix, projMatrix);
 
                 for (int i = 0; i < sphereModels.size(); i++)
                 {
-                    geometryPass.render(&spherePrimitive, sphereModels[i].m, viewMatrix, projMatrix, sphereColors[i]);
+                    geometryPass.render(&spherePrimitive, sphereModels[i].m, sphereColors[i]);
                 }
-                geometryPass.render(&spherePrimitive, sphereModel2.m, viewMatrix, projMatrix, sphereColor);
-                
-
-                geometryPass.render(&spherePrimitive, sphereModel.m, viewMatrix, projMatrix, Renderer::Vector3(1.0f, 0.0f, 0.0f));
-                
-                // model = Renderer::Matrix4::identity();
-                // geometryPass.render(&cubePrimitive, model.m, viewMatrix, projMatrix, Renderer::Vector3(1.0f, 0.0f, 0.0f));
-                
-                // model = Renderer::Matrix4::identity();
-                // model.scaleBy(10.0f, 10.0f, 10.0f);
-                // model.rotate(-90.0f * 3.1415926f / 180.0f, Renderer::Vector3(1.0f, 0.0f, 0.0f));
-                // model.translate(0.0f, -1.0f, 0.0f);
-                // model = model.transpose();
-                geometryPass.render(&quadPrimitive, quadModel.m, viewMatrix, projMatrix, Renderer::Vector3(0.5f, 0.5f, 0.5f));
-                
-                lightingPass.render(WIN_WIDTH, WIN_HEIGHT, camera, lightPos, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), geometryPass.getColorTexture());
-                
-                
-                // 使用高质量的Splat渲染
-                // gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
-                
-                //postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), lightingPass.getLightingTexture(), geometryPass.getDepthTexture(), gaussianRenderer.getColorTexture());
-                //finalPass.render(WIN_WIDTH, WIN_HEIGHT, postProcessPass.getColorTexture());
-                finalPass.render(WIN_WIDTH, WIN_HEIGHT, lightingPass.getLightingTexture());
-                lidarSensor.renderVisualization(viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
+                //geometryPass.render(&spherePrimitive, sphereModel2.m, sphereColor);
+                geometryPass.render(&spherePrimitive, sphereModel.m, Renderer::Vector3(1.0f, 0.0f, 0.0f));
+                geometryPass.render(&quadPrimitive, quadModel.m, Renderer::Vector3(0.5f, 0.5f, 0.5f));
+                //geometryPass.render(&quadPrimitive, quadModel2.m, Renderer::Vector3(0.5f, 0.5f, 0.5f));
+                //geometryPass.render(&quadPrimitive, quadModel3.m, Renderer::Vector3(0.5f, 0.5f, 0.5f));
+                geometryPass.end();
             }
+
+            // lighting pass
+            lightingPass.render(WIN_WIDTH, WIN_HEIGHT, camera, lightPos, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), geometryPass.getColorTexture());
+            
+            // final pass
+            finalPass.render(WIN_WIDTH, WIN_HEIGHT, lightingPass.getLightingTexture());
+            
+            // lidar sensor visualization
+            lidarSensor.renderVisualization(viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
+            
             window.swapBuffers();
             window.pollEvents();
         }
 
         Renderer::Window::terminateGLFW();
-        LOG_INFO("程序正常退出");
+        LOG_INFO("Quit 3DGS Renderer");
         return 0;
 
     } catch (const std::exception& e) {
-        LOG_ERROR("发生错误: {}", e.what());
+        LOG_ERROR("Error: {}", e.what());
         Renderer::Window::terminateGLFW();
         return -1;
     }

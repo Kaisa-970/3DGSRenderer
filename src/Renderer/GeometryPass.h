@@ -14,8 +14,9 @@ public:
     GeometryPass();
     ~GeometryPass();
 
-    void clear();
-    void render(Primitive* primitive, const float* model, const float* view, const float* projection, const Vector3& color = Vector3(1.0f, 1.0f, 1.0f));
+    void begin(const float* view, const float* projection);
+    void render(Primitive* primitive, const float* model, const Vector3& color = Vector3(1.0f, 1.0f, 1.0f));
+    void end();
 
     unsigned int getPositionTexture() const { return m_positionTexture; }
     unsigned int getNormalTexture() const { return m_normalTexture; }
@@ -28,6 +29,9 @@ private:
     unsigned int m_normalTexture;
     unsigned int m_colorTexture;
     unsigned int m_depthTexture;
+
+    float m_view[16];
+    float m_projection[16];
 
     //std::vector<Primitive*> m_primitives;
 };

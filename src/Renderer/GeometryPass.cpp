@@ -38,31 +38,34 @@ GeometryPass::~GeometryPass() {
     if (m_depthTexture != 0) glDeleteTextures(1, &m_depthTexture);
 }
 
-void GeometryPass::clear() {
+void GeometryPass::begin(const float* view, const float* projection) {
+    memcpy(m_view, view, sizeof(float) * 16);
+    memcpy(m_projection, projection, sizeof(float) * 16);
     m_frameBuffer.Bind();
     m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     m_frameBuffer.ClearDepthStencil(1.0f, 0);
-    m_frameBuffer.Unbind();
-}
 
-void GeometryPass::render(Primitive* primitive, const float* model, const float* view, const float* projection, const Vector3& color) {
-    m_frameBuffer.Bind();
-    // m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    // glDepthMask(GL_TRUE);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
     m_shader.use();
+    m_shader.setMat4("view", m_view);
+    m_shader.setMat4("projection", m_projection);
+}
+
+void GeometryPass::render(Primitive* primitive, const float* model, const Vector3& color) {
+
     m_shader.setMat4("model", model);
-    m_shader.setMat4("view", view);
-    m_shader.setMat4("projection", projection);
     m_shader.setVec3("uColor", color.x, color.y, color.z);
 
     primitive->draw(m_shader);
-
-    m_frameBuffer.Unbind(); 
 }   
+
+void GeometryPass::end() {
+    m_frameBuffer.Unbind();
+    m_shader.unuse();
+}
 
 RENDERER_NAMESPACE_END
