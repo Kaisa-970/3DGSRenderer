@@ -12,7 +12,6 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
@@ -37,7 +36,6 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h

@@ -4,7 +4,6 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "FrameBuffer.h"
-#include "GaussianSplatting/GaussianRenderer.h"
 
 RENDERER_NAMESPACE_BEGIN
 
