@@ -223,5 +223,57 @@ Vector3 operator*(FLOAT scalar, const Vector3& vec) {
     return vec * scalar;
 }
 
+// 构造函数
+Vector2::Vector2(FLOAT x, FLOAT y)
+    : x(x), y(y) {
+}
+
+Vector2::~Vector2() {
+}
+
+Vector2 Vector2::operator+(const Vector2& other) const {
+    return Vector2(x + other.x, y + other.y);
+}
+
+Vector2 Vector2::operator-(const Vector2& other) const {
+    return Vector2(x - other.x, y - other.y);
+}
+
+Vector2 Vector2::operator*(FLOAT scalar) const {
+    return Vector2(x * scalar, y * scalar);
+}
+
+Vector2 Vector2::operator/(FLOAT scalar) const {
+    if (std::abs(scalar) < 1e-6f) {
+        throw std::runtime_error("Division by zero in Vector2");
+    }
+    return Vector2(x / scalar, y / scalar);
+}
+
+Vector2 Vector2::operator-() const {
+    return Vector2(-x, -y);
+}
+
+FLOAT& Vector2::operator[](int index) {
+    switch (index) {
+        case 0: return x;
+        case 1: return y;
+        default: throw std::out_of_range("Vector2 index out of range");
+    }
+}
+
+const FLOAT& Vector2::operator[](int index) const {
+    switch (index) {
+        case 0: return x;
+        case 1: return y;
+        default: throw std::out_of_range("Vector2 index out of range");
+    }
+}
+
+// 友元运算符实现
+Vector2 operator*(FLOAT scalar, const Vector2& vec) {
+    return vec * scalar;
+}
+
 RENDERER_NAMESPACE_END
 

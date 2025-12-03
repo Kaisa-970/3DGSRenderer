@@ -74,4 +74,30 @@ public:
 // 友元运算符：支持 2.0f * vec（scalar 在左边）
 RENDERER_API Vector3 operator*(FLOAT scalar, const Vector3& vec);
 
+
+class RENDERER_API Vector2 {
+public:
+    FLOAT x;
+    FLOAT y;
+
+    // 构造函数
+    Vector2(FLOAT x = 0, FLOAT y = 0);
+    ~Vector2();
+
+    Vector2 operator+(const Vector2& other) const;
+    Vector2 operator-(const Vector2& other) const;
+    Vector2 operator*(FLOAT scalar) const;
+    Vector2 operator/(FLOAT scalar) const;
+    Vector2 operator-() const;  // 取负：-vec
+        
+    FLOAT& operator[](int index);
+    const FLOAT& operator[](int index) const;
+    
+    FLOAT dot(const Vector2& other) const;
+    static Vector2 lerp(const Vector2& a, const Vector2& b, FLOAT t);
+};
+    
+// 友元运算符：支持 2.0f * vec（scalar 在左边）
+RENDERER_API Vector2 operator*(FLOAT scalar, const Vector2& vec);
+    
 RENDERER_NAMESPACE_END

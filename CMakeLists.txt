@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
     add_compile_options(/W3)
     add_compile_options(/wd4251)
-    add_compile_options(/utf-8)
+    # 移除 /utf-8 以避免与Assimp的 /source-charset:utf-8 冲突
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od")
 else()
     add_compile_options(-Wall -Wextra)
@@ -35,6 +35,20 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(src/vendor/spdlog)
 
 add_subdirectory(src/vendor/glfw)
+
+include_directories(${CMAKE_BINARY_DIR}/src/vendor/assimp/contrib/draco)
+# 子目录：Assimp 模块
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_DRACO ON CACHE BOOL "" FORCE)
+# set(ASSIMP_BUILD_DRACO_STATIC ON CACHE BOOL "" FORCE)  # 添加这行
+set(BUILD_SHARED_LIBS ON)
+add_subdirectory(src/vendor/assimp)
+target_include_directories(assimp PUBLIC ${CMAKE_BINARY_DIR})
+set(BUILD_SHARED_LIBS OFF)
 
 # 子目录：Logger 模块
 add_subdirectory(src/Logger)
@@ -61,6 +75,9 @@ target_link_libraries(${PROJECT_NAME}
         Logger
         Renderer
     )
+
+# 包含Assimp生成的头文件目录
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/src/vendor/assimp/include)
 
 
 if(UNIX)

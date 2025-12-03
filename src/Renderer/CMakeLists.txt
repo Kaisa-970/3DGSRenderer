@@ -9,13 +9,16 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/MeshPrimitive.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.cpp
-
+    
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
@@ -35,6 +38,9 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/MeshPrimitive.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.h
@@ -65,7 +71,7 @@ else()
     target_link_libraries(${MODULE_NAME} PRIVATE OpenGL::GL)
 endif()
 
-target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger)
+target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger assimp::assimp)
 
 if(USE_GLES3)
     target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/vendor/glad-gles3/include)
@@ -74,7 +80,7 @@ else()
 endif()
 
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
-
+target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src/vendor/assimp/include)
 target_compile_definitions(${MODULE_NAME} PRIVATE RENDERER_EXPORTS)
 
 if(UNIX)
