@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <execution>
+#include <cstdint>
 #include <glad/glad.h>
 #include "Logger/Log.h"
 #include "MathUtils/Vector.h"
@@ -66,6 +67,7 @@ GaussianRenderer::~GaussianRenderer() {
     if (m_quadVBO != 0) glDeleteBuffers(1, &m_quadVBO);
     if (m_instanceVBO != 0) glDeleteBuffers(1, &m_instanceVBO);
     if (m_orderSSBO != 0) glDeleteBuffers(1, &m_orderSSBO);
+    if (m_pointsSSBO != 0) glDeleteBuffers(1, &m_pointsSSBO);
     if (m_frameBuffer != nullptr) delete m_frameBuffer;
     if (m_colorTexture != 0) glDeleteTextures(1, &m_colorTexture);
 }
@@ -146,6 +148,9 @@ void GaussianRenderer::loadModel(const std::string& path)
     }
     ifs.close();
 
+    // 执行Morton排序以提高空间局部性
+    mortonSort();
+
     setupBuffers();  // 点云渲染需要这个
     setupSplatBuffers();
     
@@ -187,6 +192,101 @@ void GaussianRenderer::drawPoints(const Renderer::Matrix4& model, const Renderer
     glDrawArrays(GL_POINTS, 0, m_vertexCount);
     glBindVertexArray(0);
     m_frameBuffer->Unbind();
+}
+
+// Morton码编码（21位/轴，总63位，与官方实现一致）
+uint64_t encodeMorton3D21(float x, float y, float z) {
+    // 量化到[0, 2^21 - 1]
+    constexpr uint32_t kMax = (1u << 21) - 1u;
+    auto quantize = [kMax](float v) -> uint32_t {
+        float q = std::clamp(v, 0.0f, 1.0f) * static_cast<float>(kMax);
+        return static_cast<uint32_t>(q + 0.5f); // 四舍五入
+    };
+
+    uint32_t ix = quantize(x);
+    uint32_t iy = quantize(y);
+    uint32_t iz = quantize(z);
+
+    // 逐位交织
+    uint64_t code = 0;
+    for (int i = 0; i < 21; ++i) {
+        code |= (uint64_t(ix & (1u << i)) << (2 * i + 0));
+        code |= (uint64_t(iy & (1u << i)) << (2 * i + 1));
+        code |= (uint64_t(iz & (1u << i)) << (2 * i + 2));
+    }
+    return code;
+}
+
+void GaussianRenderer::mortonSort()
+{
+    if (m_gaussianPoints.empty()) {
+        return;
+    }
+
+    // 计算边界框
+    float minX = 1e10f, minY = 1e10f, minZ = 1e10f;
+    float maxX = -1e10f, maxY = -1e10f, maxZ = -1e10f;
+
+    for (const auto& point : m_gaussianPoints) {
+        minX = std::min(minX, point.position[0]);
+        minY = std::min(minY, point.position[1]);
+        minZ = std::min(minZ, point.position[2]);
+        maxX = std::max(maxX, point.position[0]);
+        maxY = std::max(maxY, point.position[1]);
+        maxZ = std::max(maxZ, point.position[2]);
+    }
+
+    // 计算范围
+    float rangeX = maxX - minX;
+    float rangeY = maxY - minY;
+    float rangeZ = maxZ - minZ;
+
+    // 避免除零错误
+    if (rangeX < 1e-6f) rangeX = 1.0f;
+    if (rangeY < 1e-6f) rangeY = 1.0f;
+    if (rangeZ < 1e-6f) rangeZ = 1.0f;
+
+    // 创建包含Morton码和原始索引的向量
+    struct MortonIndex {
+        uint64_t mortonCode;
+        uint32_t originalIndex;
+    };
+
+    std::vector<MortonIndex> mortonIndices;
+    mortonIndices.reserve(m_vertexCount);
+
+    // 为每个点计算Morton码
+    for (uint32_t i = 0; i < m_vertexCount; ++i) {
+        // 归一化坐标到[0,1]范围
+        float nx = (m_gaussianPoints[i].position[0] - minX) / rangeX;
+        float ny = (m_gaussianPoints[i].position[1] - minY) / rangeY;
+        float nz = (m_gaussianPoints[i].position[2] - minZ) / rangeZ;
+
+        uint64_t mortonCode = encodeMorton3D21(nx, ny, nz);
+        mortonIndices.push_back({mortonCode, i});
+    }
+
+    // 按Morton码排序
+    std::sort(mortonIndices.begin(), mortonIndices.end(),
+              [](const MortonIndex& a, const MortonIndex& b) {
+                  return a.mortonCode < b.mortonCode;
+              });
+
+    // 创建排序后的索引数组
+    m_sortedIndices.resize(m_vertexCount);
+    for (uint32_t i = 0; i < m_vertexCount; ++i) {
+        m_sortedIndices[i] = mortonIndices[i].originalIndex;
+    }
+
+    // 根据Morton顺序重排实际数据，保证CPU/GPU访问的局部性
+    std::vector<GaussianPoint<SH_ORDER>> sortedPoints(m_vertexCount);
+    for (uint32_t i = 0; i < m_vertexCount; ++i) {
+        sortedPoints[i] = m_gaussianPoints[m_sortedIndices[i]];
+        m_sortedIndices[i] = i; // 重排后索引与数据顺序一致
+    }
+    m_gaussianPoints.swap(sortedPoints);
+
+    LOG_INFO("Morton排序完成，共{}个点", m_vertexCount);
 }
 
 void GaussianRenderer::setupBuffers()
@@ -249,12 +349,15 @@ void GaussianRenderer::setupSplatBuffers()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLuint pointsBindIdx = 1;
-    GLuint pointsSSBO = setupSSBO(pointsBindIdx, reinterpret_cast<const float*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<SH_ORDER>) / sizeof(float));
+    m_pointsSSBO = setupSSBO(pointsBindIdx, reinterpret_cast<const float*>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<SH_ORDER>) / sizeof(float));
 
     GLuint orderBindIdx = 2;
-    m_sortedIndices.resize(m_vertexCount, 0);
-    for (uint32_t i = 0; i < m_vertexCount; i++) {
-        m_sortedIndices[i] = i;
+    // 如果尚未生成排序索引，则使用顺序索引
+    if (m_sortedIndices.size() != m_vertexCount) {
+        m_sortedIndices.resize(m_vertexCount);
+        for (uint32_t i = 0; i < m_vertexCount; i++) {
+            m_sortedIndices[i] = i;
+        }
     }
     m_orderSSBO = setupSSBO_int(orderBindIdx, reinterpret_cast<const uint32_t*>(m_sortedIndices.data()), m_vertexCount);
 }
@@ -325,9 +428,9 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
         }
     }
 
-    // 计算每个高斯在视图空间的深度，并排序
-    depthIndices.clear();
-    depthIndices.reserve(m_vertexCount);
+    // // 计算每个高斯在视图空间的深度，并排序
+    // depthIndices.clear();
+    // depthIndices.reserve(m_vertexCount);
 
     Matrix4 transposedView = view.transpose();
     float v8 = view.m[8];
@@ -340,7 +443,9 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
     if (thread_num == 0) thread_num = 8;
     
     // 预分配所有空间
-    depthIndices.resize(m_vertexCount);
+    if (depthIndices.size() != m_vertexCount) {
+        depthIndices.resize(m_vertexCount);
+    }
     
     std::vector<std::thread> threads;
     threads.reserve(thread_num);
@@ -356,7 +461,8 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
             for (uint32_t i = start; i < end; i++) {
                 const float* pos = m_gaussianPoints[i].position;
                 float viewZ = v8 * pos[0] + v9 * pos[1] + v10 * pos[2] + v11;
-                depthIndices[i] = {viewZ, i};
+                depthIndices[i].first = viewZ;
+                depthIndices[i].second = i;
             }
         });
     }
@@ -380,7 +486,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4& view)
 
     std::sort(std::execution::par_unseq, depthIndices.begin(), depthIndices.end(),
         [](const auto& a, const auto& b) { return a.first < b.first; });
-    //radixSortParallel(depthIndices);
+    // radixSortParallel(depthIndices);
 
     end = std::chrono::steady_clock::now();
     duration = end - start;

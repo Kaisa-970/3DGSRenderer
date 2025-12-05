@@ -23,6 +23,7 @@ public:
     unsigned int getColorTexture() const { return m_colorTexture; }
 
 private:
+    void mortonSort();
     void setupBuffers();
     void setupSplatBuffers();
     void sortGaussiansByDepth(const Renderer::Matrix4& view);
@@ -46,6 +47,7 @@ private:
     unsigned int m_quadVBO = 0;           // 四边形顶点数据
     unsigned int m_instanceVBO = 0;       // 实例数据（排序后的索引）
     unsigned int m_orderSSBO = 0;  
+    unsigned int m_pointsSSBO = 0;
     
     FrameBuffer* m_frameBuffer = nullptr; // 帧缓冲区
     unsigned int m_colorTexture = 0; // 颜色纹理
