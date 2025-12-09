@@ -1,6 +1,7 @@
 #include "Texture2D.h"
 #include <glad/glad.h>
 #include "stbimage/stb_image.h"
+#include "Logger/Log.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -54,6 +55,10 @@ std::shared_ptr<Texture2D> Texture2D::createFromFile(const std::string& path) {
     stbi_set_flip_vertically_on_load(1);
     int width, height, channels;
     unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+    if (!data) {
+        LOG_CORE_ERROR("Failed to load texture2D from path: {}", path);
+        return nullptr;
+    }
     texture->setData(data, width, height, channels);
     stbi_image_free(data);
     return texture;

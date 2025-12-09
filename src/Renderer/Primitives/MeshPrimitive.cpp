@@ -71,41 +71,9 @@ void MeshPrimitive::updateBuffers() {
     const auto& vertices = mesh_->getVertices();
     //const auto& indices = mesh_->getIndices();
     std::vector<unsigned int> indices = mesh_->getIndices();
-    // for (const auto& subMesh : mesh_->getSubMeshes()) {
-    //     indices.insert(indices.end(), subMesh.indices.begin(), subMesh.indices.end());
-    // }
-
-    // 转换顶点数据为Primitive期望的格式
-    std::vector<Vertex> primitiveVertices;
-    primitiveVertices.reserve(vertices.size());
-
-    for (const auto& meshVertex : vertices) {
-        Vertex v;
-        v.position[0] = meshVertex.position.x;
-        v.position[1] = meshVertex.position.y;
-        v.position[2] = meshVertex.position.z;
-
-        v.normal[0] = meshVertex.normal.x;
-        v.normal[1] = meshVertex.normal.y;
-        v.normal[2] = meshVertex.normal.z;
-
-        v.texCoord[0] = meshVertex.texCoord.x;
-        v.texCoord[1] = meshVertex.texCoord.y;
-
-        // 为网格顶点设置默认颜色（白色）
-        // v.color[0] = 1.0f;
-        // v.color[1] = 1.0f;
-        // v.color[2] = 1.0f;
-        v.color[0] = mesh_->getMaterials()[0].diffuseColor.x;
-        v.color[1] = mesh_->getMaterials()[0].diffuseColor.y;
-        v.color[2] = mesh_->getMaterials()[0].diffuseColor.z;
-
-        primitiveVertices.push_back(v);
-    }
-
 
     // 设置缓冲区
-    setupBuffers(primitiveVertices, indices);
+    setupBuffers(vertices, indices);
     buffersDirty_ = false;
 }
 

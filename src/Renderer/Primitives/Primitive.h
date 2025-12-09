@@ -3,14 +3,14 @@
 #include "Core/RenderCore.h"
 #include "Shader.h"
 #include <vector>
+#include "MathUtils/Vector.h"
 
 RENDERER_NAMESPACE_BEGIN
 
 struct Vertex {
-    float position[3];
-    float color[3];
-    float normal[3];
-    float texCoord[2];
+    Vector3 position;
+    Vector3 normal;
+    Vector2 texCoord;
 };
 
 class RENDERER_API Primitive {
@@ -28,7 +28,7 @@ public:
 
     // 绘制
     virtual void draw() const;
-    void draw(const Shader& shader) const;
+    virtual void draw(const Shader& shader) const;
     
     // 获取信息
     unsigned int getVertexCount() const { return vertexCount_; }

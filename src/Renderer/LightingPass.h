@@ -4,16 +4,17 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "FrameBuffer.h"
-#include "GaussianSplatting/GaussianRenderer.h"
 
 RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API LightingPass {
 public:
-    LightingPass();
+    LightingPass(const int& width, const int& height);
     ~LightingPass();
 
-    void render(int width, int height, Camera& camera, const Renderer::Vector3& lightPos, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& colorTexture);
+    void Begin(const Camera& camera, const Renderer::Vector3& lightPos);
+    void Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture);
+    void End();
 
     unsigned int getLightingTexture() const { return m_lightingTexture; }
 

@@ -9,7 +9,7 @@ RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API PostProcessPass {
 public:
-    PostProcessPass();
+    PostProcessPass(const int& width, const int& height);
     ~PostProcessPass();
 
     void render(int width, int height, Camera& camera, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture, const unsigned int& gaussianTexture);

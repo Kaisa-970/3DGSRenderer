@@ -69,6 +69,9 @@ public:
     // 静态工具方法
     static FLOAT distance(const Vector3& a, const Vector3& b);
     static Vector3 lerp(const Vector3& a, const Vector3& b, FLOAT t);
+
+    static const Vector3 ZERO;
+    static const Vector3 ONE;
 };
 
 // 友元运算符：支持 2.0f * vec（scalar 在左边）

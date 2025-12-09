@@ -5,11 +5,11 @@ RENDERER_NAMESPACE_BEGIN
 
 static const float PI = 3.14159265358979323846f;
 
-SpherePrimitive::SpherePrimitive(float radius, int sectorCount, int stackCount, bool colored) {
-    generateSphere(radius, sectorCount, stackCount, colored);
+SpherePrimitive::SpherePrimitive(float radius, int sectorCount, int stackCount) {
+    generateSphere(radius, sectorCount, stackCount);
 }
 
-void SpherePrimitive::generateSphere(float radius, int sectorCount, int stackCount, bool colored) {
+void SpherePrimitive::generateSphere(float radius, int sectorCount, int stackCount) {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     
@@ -44,23 +44,10 @@ void SpherePrimitive::generateSphere(float radius, int sectorCount, int stackCou
             s = (float)j / sectorCount;
             t = (float)i / stackCount;
             
-            // 颜色（基于位置的渐变色或白色）
-            float r, g, b;
-            if (colored) {
-                r = (nx + 1.0f) * 0.5f;  // 将 -1~1 映射到 0~1
-                g = (ny + 1.0f) * 0.5f;
-                b = (nz + 1.0f) * 0.5f;
-            } else {
-                r = g = b = 1.0f;
-            }
-            
             Vertex vertex;
             vertex.position[0] = x;
             vertex.position[1] = y;
             vertex.position[2] = z;
-            vertex.color[0] = r;
-            vertex.color[1] = g;
-            vertex.color[2] = b;
             vertex.normal[0] = nx;
             vertex.normal[1] = ny;
             vertex.normal[2] = nz;

@@ -3,54 +3,26 @@
 #include "Core/RenderCore.h"
 #include "MathUtils/Vector.h"
 #include <vector>
-#include <string>
-
+#include <memory>
+#include "Material.h"
+#include "Primitives/Primitive.h"
 RENDERER_NAMESPACE_BEGIN
 
-// 网格顶点数据结构
-struct MeshVertex {
-    Vector3 position;    // 位置
-    Vector3 normal;      // 法线
-    Vector2 texCoord;    // UV坐标
-    Vector3 tangent;     // 切线（可选）
-    Vector3 bitangent;   // 副切线（可选）
+// // 网格顶点数据结构
+// struct MeshVertex {
+//     Vector3 position;    // 位置
+//     Vector3 normal;      // 法线
+//     Vector2 texCoord;    // UV坐标
 
-    MeshVertex()
-        : position(0.0f, 0.0f, 0.0f)
-        , normal(0.0f, 0.0f, 1.0f)
-        , texCoord(0.0f, 0.0f)
-        , tangent(1.0f, 0.0f, 0.0f)
-        , bitangent(0.0f, 1.0f, 0.0f) {}
-};
+//     MeshVertex()
+//         : position(0.0f, 0.0f, 0.0f)
+//         , normal(0.0f, 0.0f, 1.0f)
+//         , texCoord(0.0f, 0.0f)
+//     {
+//     }
+// };
 
-// 子网格（材质分组）
-struct SubMesh {
-    std::string name;
-    std::vector<unsigned int> indices;
-    unsigned int materialIndex;
-
-    SubMesh() : materialIndex(0) {}
-};
-
-// 材质信息
-struct Material {
-    std::string name;
-    Vector3 diffuseColor;
-    Vector3 specularColor;
-    Vector3 ambientColor;
-    float shininess;
-    std::string diffuseTexture;
-    std::string normalTexture;
-    std::string specularTexture;
-
-    Material()
-        : diffuseColor(0.8f, 0.8f, 0.8f)
-        , specularColor(0.0f, 0.0f, 0.0f)
-        , ambientColor(0.2f, 0.2f, 0.2f)
-        , shininess(32.0f) {}
-};
-
-class RENDERER_API Mesh {
+class RENDERER_API Mesh : public Primitive {
 public:
     Mesh();
     ~Mesh();
@@ -64,20 +36,21 @@ public:
     Mesh& operator=(Mesh&& other) noexcept;
 
     // 数据设置
-    void setVertices(const std::vector<MeshVertex>& vertices);
-    void appendVertices(const std::vector<MeshVertex>& vertices);  // 追加顶点而不是替换
+    void setVertices(const std::vector<Vertex>& vertices);
     void setIndices(const std::vector<unsigned int>& indices);
-    void addMaterial(const Material& material);
+    void addMaterial(const std::shared_ptr<Material>& material);
+
+    void Setup();
 
     // 数据获取
-    const std::vector<MeshVertex>& getVertices() const { return vertices_; }
+    const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<unsigned int>& getIndices() const { return indices_; }
-    const std::vector<Material>& getMaterials() const { return materials_; }
+    const std::vector<std::shared_ptr<Material>>& getMaterials() const { return m_materials; }
 
     // 统计信息
     size_t getVertexCount() const { return vertices_.size(); }
     size_t getIndexCount() const { return indices_.size(); }
-    size_t getMaterialCount() const { return materials_.size(); }
+    size_t getMaterialCount() const { return m_materials.size(); }
 
     // 边界框计算
     void computeBoundingBox();
@@ -90,10 +63,11 @@ public:
     void clear();
     bool isEmpty() const { return vertices_.empty(); }
 
+    virtual void draw(const Shader& shader) const override;
 private:
-    std::vector<MeshVertex> vertices_;
+    std::vector<Vertex> vertices_;
     std::vector<unsigned int> indices_;
-    std::vector<Material> materials_;
+    std::vector<std::shared_ptr<Material>> m_materials;
 
     // 边界框
     Vector3 bboxMin_;

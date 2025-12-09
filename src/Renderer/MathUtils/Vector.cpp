@@ -4,6 +4,9 @@
 
 RENDERER_NAMESPACE_BEGIN
 
+const Vector3 Vector3::ZERO(0.0f, 0.0f, 0.0f);
+const Vector3 Vector3::ONE(1.0f, 1.0f, 1.0f);
+
 // 构造函数
 Vector3::Vector3(FLOAT x, FLOAT y, FLOAT z)
     : x(x), y(y), z(z) {

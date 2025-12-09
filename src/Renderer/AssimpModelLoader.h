@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Core/RenderCore.h"
-#include "Mesh.h"
 #include <memory>
 #include <string>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "MathUtils/Matrix.h"
+#include "Model.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -17,7 +17,8 @@ public:
     ~AssimpModelLoader();
 
     // 加载模型文件（支持多种格式）
-    std::vector<std::shared_ptr<Mesh>> loadModel(const std::string& filename);
+    //std::vector<std::shared_ptr<Mesh>> loadModel(const std::string& filename);
+    std::shared_ptr<Model> loadModel(const std::string& filename);
 
     // 获取支持的文件格式列表
     static std::vector<std::string> getSupportedFormats();
@@ -35,13 +36,13 @@ private:
     std::vector<std::shared_ptr<Mesh>> processScene(const aiScene* scene, const std::string& filename);
 
     // 处理单个网格
-    void processMesh(aiMesh* mesh, const aiScene* scene, Mesh& outMesh, const Matrix4& transform, const std::vector<Material>& materials);
+    void processMesh(aiMesh* mesh, const aiScene* scene, Mesh& outMesh, const Matrix4& transform, const std::vector<std::shared_ptr<Material>>& materials);
 
     // 处理材质
-    void processMaterial(aiMaterial* material, const aiScene* scene, Material& outMaterial);
+    void processMaterial(aiMaterial* material, const aiScene* scene, const std::string& directory, std::shared_ptr<Material>& outMaterial);
 
     // 处理节点（递归）
-    void processNode(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Mesh>>& meshes, const Matrix4& parentTransform, const std::vector<Material>& materials);
+    void processNode(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Mesh>>& meshes, const Matrix4& parentTransform, const std::vector<std::shared_ptr<Material>>& materials);
 
     // 转换Assimp向量到我们的向量类型
     Vector3 assimpToVector3(const aiVector3D& v);
@@ -52,11 +53,8 @@ private:
     // 转换Assimp矩阵到我们的矩阵类型
     Matrix4 assimpToMatrix4(const aiMatrix4x4& m);
 
-    // 应用变换到顶点列表
-    void applyTransformToVertices(std::vector<MeshVertex>& vertices, const Matrix4& transform);
-
-    // Assimp导入器
-    Assimp::Importer importer_;
+    // // 应用变换到顶点列表
+    // void applyTransformToVertices(std::vector<Vertex>& vertices, const Matrix4& transform);
 
     // 加载统计
     size_t totalVertices_;

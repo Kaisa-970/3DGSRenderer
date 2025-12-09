@@ -11,7 +11,7 @@ static const float vertices[] = {
     -1.0f, 1.0f, 0.0f, 1.0f
 };
 
-PostProcessPass::PostProcessPass()
+PostProcessPass::PostProcessPass(const int& width, const int& height)
     : m_shader(Renderer::Shader::fromFiles("res/shaders/final.vs.glsl", "res/shaders/postprocess.fs.glsl")) {
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
@@ -23,7 +23,7 @@ PostProcessPass::PostProcessPass()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    m_colorTexture = RenderHelper::CreateTexture2D(1600, 900, GL_RGB32F, GL_RGB, GL_FLOAT);
+    m_colorTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_colorTexture);
 }
 
