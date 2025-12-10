@@ -5,7 +5,6 @@
 #include <functional>
 
 struct GLFWwindow;
-//class GLFWwindow;
 RENDERER_NAMESPACE_BEGIN
 
 // 键盘键码枚举

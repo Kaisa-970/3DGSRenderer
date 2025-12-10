@@ -23,7 +23,8 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Scene.cpp
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.cpp
+    
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
@@ -57,11 +58,33 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Scene.h
-    
+    ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.h
+)
+
+set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/src/vendor/imgui)
+set(IMGUI_SOURCES
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+)
+
+set(IMGUI_HEADERS
+    ${IMGUI_DIR}/imgui.h
+    ${IMGUI_DIR}/imgui_internal.h
+    ${IMGUI_DIR}/imstb_rectpack.h
+    ${IMGUI_DIR}/imstb_truetype.h
+    ${IMGUI_DIR}/imstb_textedit.h
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.h
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.h
 )
 
 if(USE_GLES3)
@@ -72,7 +95,7 @@ endif()
 
 set(MODULE_NAME Renderer)
 
-add_library(${MODULE_NAME} SHARED ${RENDERER_SOURCES} ${RENDERER_HEADERS} ${GLAD_SOURCES})
+add_library(${MODULE_NAME} SHARED ${RENDERER_SOURCES} ${RENDERER_HEADERS} ${GLAD_SOURCES} ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
 if(USE_GLES3)
     target_compile_definitions(${MODULE_NAME} PUBLIC USE_GLES3)
@@ -92,6 +115,9 @@ endif()
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src/vendor/assimp/include)
 target_compile_definitions(${MODULE_NAME} PRIVATE RENDERER_EXPORTS)
+
+target_include_directories(${MODULE_NAME} PUBLIC ${IMGUI_DIR})
+target_include_directories(${MODULE_NAME} PUBLIC ${IMGUI_DIR}/backends)
 
 if(UNIX)
     set_target_properties(${MODULE_NAME} PROPERTIES

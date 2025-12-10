@@ -1,7 +1,6 @@
 #include "Window.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
 #include <stdexcept>
 #include "Logger/Log.h"
 
