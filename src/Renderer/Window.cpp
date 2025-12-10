@@ -42,6 +42,7 @@ Window::Window(int width, int height, const std::string& title)
         throw std::runtime_error("Failed to create GLFW window");
     }
 
+    //glfwSwapInterval(0);
     glfwMakeContextCurrent(window_);
 
     // 设置window的user pointer为this，用于回调

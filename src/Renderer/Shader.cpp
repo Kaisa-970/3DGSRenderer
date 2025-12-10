@@ -164,6 +164,22 @@ void Shader::setInt(const char* name, int value) const {
     }
 }
 
+void Shader::setInt2(const char* name, int x, int y) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniform2i(location, x, y);
+    }
+}
+
+void Shader::setUint(const char* name, unsigned int value) const {
+    use();
+    int location = glGetUniformLocation(programId_, name);
+    if (location != -1) {
+        glUniform1ui(location, value);
+    }
+}
+
 RENDERER_NAMESPACE_END
 
 

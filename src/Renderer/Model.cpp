@@ -17,7 +17,6 @@ Model::~Model()
 
 void Model::draw(const Shader& shader)
 {
-    LOG_CORE_INFO("Model meshes count: {}", m_meshes.size());
     for (auto& mesh : m_meshes) 
     {
         mesh->draw(shader);

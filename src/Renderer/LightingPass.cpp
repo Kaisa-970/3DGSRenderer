@@ -46,6 +46,8 @@ void LightingPass::Begin(const Camera& camera, const Renderer::Vector3& lightPos
     m_shader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);       // 光源位置
     m_shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
     m_shader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
+
+    glDisable(GL_DEPTH_TEST);
 }
 
 void LightingPass::Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture) {

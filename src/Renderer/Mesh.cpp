@@ -107,12 +107,16 @@ void Mesh::draw(const Shader& shader) const {
             diffuseTexture->bind(0);
             shader.setInt("u_diffuseTexture", 0);
         }
-        if (material->getNormalTextures().size() > 0) {
+
+        if (material->getNormalTextures().size() > 0) 
+        {
             auto normalTexture = material->getNormalTextures()[0];
             normalTexture->bind(1);
             shader.setInt("u_normalTexture", 1);
         }
-        if (material->getSpecularTextures().size() > 0) {
+
+        if (material->getSpecularTextures().size() > 0) 
+        {
             auto specularTexture = material->getSpecularTextures()[0];
             specularTexture->bind(2);
             shader.setInt("u_specularTexture", 2);

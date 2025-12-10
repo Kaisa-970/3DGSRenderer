@@ -9,7 +9,6 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/MeshPrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.cpp
@@ -42,7 +41,6 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/CubePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/MeshPrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.h
     ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.h

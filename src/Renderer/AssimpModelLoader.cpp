@@ -240,27 +240,46 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
     // }
     // LOG_INFO("Specular texture: {}", outMaterial.specularTexture);
 
-    for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_DIFFUSE); ++i) {
-        aiString diffuseTexture;
-        if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, i, &diffuseTexture)) 
-        {
-            std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + diffuseTexture.C_Str());
-            if (texture) {
-                outMaterial->addDiffuseTexture(texture);
+    if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) 
+    {
+        for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_DIFFUSE); ++i) {
+            aiString diffuseTexture;
+            if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, i, &diffuseTexture)) 
+            {
+                std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + diffuseTexture.C_Str());
+                if (texture) {
+                    outMaterial->addDiffuseTexture(texture);
+                }
+                LOG_CORE_INFO("Loaded diffuse texture: {}", diffuseTexture.C_Str());
             }
-            LOG_CORE_INFO("Loaded diffuse texture: {}", diffuseTexture.C_Str());
         }
     }
-    for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_NORMALS); ++i) {
-        aiString normalTexture;
-        if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, i, &normalTexture)) {
-            std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + normalTexture.C_Str());
-            if (texture) {
-                outMaterial->addNormalTexture(texture);
+    else
+    {
+        outMaterial->addDiffuseTexture(TextureManager::GetInstance()->GetDefaultWhiteTexture());
+        LOG_CORE_INFO("No diffuse texture found for material: {}, using default white texture", outMaterial->getName());
+    }
+    if (material->GetTextureCount(aiTextureType_NORMALS) > 0) 
+    {
+        for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_NORMALS); ++i) {
+            aiString normalTexture;
+            if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, i, &normalTexture)) {
+                std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + normalTexture.C_Str());
+                if (texture) {
+                    outMaterial->addNormalTexture(texture);
+                }
+                LOG_CORE_INFO("Loaded normal texture: {}", normalTexture.C_Str());
             }
-            LOG_CORE_INFO("Loaded normal texture: {}", normalTexture.C_Str());
         }
     }
+    else
+    {
+        outMaterial->addNormalTexture(TextureManager::GetInstance()->GetDefaultBlackTexture());
+        LOG_CORE_INFO("No normal texture found for material: {}, using default black texture", outMaterial->getName());
+    }
+
+    if (material->GetTextureCount(aiTextureType_SPECULAR) > 0) 
+    {
     for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_SPECULAR); ++i) {
         aiString specularTexture;
         if (AI_SUCCESS == material->GetTexture(aiTextureType_SPECULAR, i, &specularTexture)) {
@@ -268,8 +287,14 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
             if (texture) {
                 outMaterial->addSpecularTexture(texture);
             }
-            LOG_CORE_INFO("Loaded specular texture: {}", specularTexture.C_Str());
+                LOG_CORE_INFO("Loaded specular texture: {}", specularTexture.C_Str());
+            }
         }
+    }
+    else
+    {
+        outMaterial->addSpecularTexture(TextureManager::GetInstance()->GetDefaultWhiteTexture());
+        LOG_CORE_INFO("No specular texture found for material: {}, using default white texture", outMaterial->getName());
     }
     LOG_CORE_INFO("Processed material: {}", outMaterial->getName());
 }

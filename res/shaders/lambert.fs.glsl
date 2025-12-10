@@ -26,7 +26,7 @@ void main()
     vec3 Normal = texture(u_normalTexture, texCoord).rgb;
     vec3 diffuseColor = texture(u_diffuseTexture, texCoord).rgb;
     vec3 specularColor = texture(u_specularTexture, texCoord).rgb;
-    float shininessTex = (texture(u_shininessTexture, texCoord).r) * shininess;
+    float shininessTex = (texture(u_shininessTexture, texCoord).r);
 
     vec3 baseColor = diffuseColor;
 

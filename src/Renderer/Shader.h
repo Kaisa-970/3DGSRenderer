@@ -29,6 +29,8 @@ public:
     void setVec4(const char* name, float x, float y, float z, float w) const;
     void setFloat(const char* name, float value) const;
     void setInt(const char* name, int value) const;
+    void setInt2(const char* name, int x, int y) const;
+    void setUint(const char* name, unsigned int value) const;
 private:
     unsigned int programId_ = 0;
 
