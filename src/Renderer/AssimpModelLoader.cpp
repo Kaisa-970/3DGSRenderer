@@ -59,7 +59,7 @@ std::shared_ptr<Model> AssimpModelLoader::loadModel(const std::string& filename)
     }
 
     // 处理场景
-    auto meshes = processScene(scene, directory);
+    auto subMeshes = processScene(scene, directory);
 
     LOG_INFO("Model loaded successfully:");
     LOG_INFO("  Total vertices: {}", totalVertices_);
@@ -68,7 +68,7 @@ std::shared_ptr<Model> AssimpModelLoader::loadModel(const std::string& filename)
     // LOG_INFO("  Final mesh vertices: {}", mesh ? mesh->getVertexCount() : 0);
     // LOG_INFO("  Final mesh indices: {}", mesh ? mesh->getIndexCount() : 0);
 
-    return std::make_shared<Model>(meshes, directory);
+    return std::make_shared<Model>(subMeshes, directory);
 }
 
 std::vector<std::string> AssimpModelLoader::getSupportedFormats() {
@@ -91,7 +91,7 @@ bool AssimpModelLoader::isFormatSupported(const std::string& extension) {
     return std::find(formats.begin(), formats.end(), ext) != formats.end();
 }
 
-std::vector<std::shared_ptr<Mesh>> AssimpModelLoader::processScene(const aiScene* scene, const std::string& directory) {
+std::vector<SubMesh> AssimpModelLoader::processScene(const aiScene* scene, const std::string& directory) {
     std::vector<std::shared_ptr<Material>> materials;
     for (unsigned int i = 0; i < scene->mNumMaterials; ++i) {
         std::shared_ptr<Material> material = std::make_shared<Material>();
@@ -103,14 +103,14 @@ std::vector<std::shared_ptr<Mesh>> AssimpModelLoader::processScene(const aiScene
         MaterialManager::GetInstance()->AddMaterial(material->getName(), material, true);
     }
     
-    std::vector<std::shared_ptr<Mesh>> meshes;
+    std::vector<SubMesh> subMeshes;
 
     // 处理根节点，使用单位矩阵作为初始变换
-    processNode(scene->mRootNode, scene, meshes, Matrix4(), materials);
-    return meshes;
+    processNode(scene->mRootNode, scene, subMeshes, Matrix4(), materials);
+    return subMeshes;
 }
 
-void AssimpModelLoader::processNode(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Mesh>>& meshes, const Matrix4& parentTransform, const std::vector<std::shared_ptr<Material>>& materials) 
+void AssimpModelLoader::processNode(aiNode* node, const aiScene* scene, std::vector<SubMesh>& subMeshes, const Matrix4& parentTransform, const std::vector<std::shared_ptr<Material>>& materials) 
 {
     // 计算当前节点的累积变换
     Matrix4 nodeTransform = parentTransform * assimpToMatrix4(node->mTransformation);
@@ -119,18 +119,20 @@ void AssimpModelLoader::processNode(aiNode* node, const aiScene* scene, std::vec
     for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         auto meshprt = std::make_shared<Mesh>();
-        processMesh(mesh, scene, *meshprt, nodeTransform, materials);
-        meshes.push_back(meshprt);
+        processMesh(mesh, scene, *meshprt, nodeTransform);
+        // 关联材质（若无则传空指针）
+        std::shared_ptr<Material> mat = materials.size() > mesh->mMaterialIndex ? materials[mesh->mMaterialIndex] : nullptr;
+        subMeshes.push_back({meshprt, mat});
         totalMeshes_++;
     }
 
     // 递归处理子节点
     for (unsigned int i = 0; i < node->mNumChildren; ++i) {
-        processNode(node->mChildren[i], scene, meshes, nodeTransform, materials);
+        processNode(node->mChildren[i], scene, subMeshes, nodeTransform, materials);
     }
 }
 
-void AssimpModelLoader::processMesh(aiMesh* mesh, const aiScene* scene, Mesh& outMesh, const Matrix4& transform, const std::vector<std::shared_ptr<Material>>& materials) {
+void AssimpModelLoader::processMesh(aiMesh* mesh, const aiScene* scene, Mesh& outMesh, const Matrix4& transform) {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
@@ -180,7 +182,6 @@ void AssimpModelLoader::processMesh(aiMesh* mesh, const aiScene* scene, Mesh& ou
 
     outMesh.setVertices(vertices);
     outMesh.setIndices(indices);
-    outMesh.addMaterial(materials[mesh->mMaterialIndex]);
     outMesh.Setup();
 
     // 更新统计

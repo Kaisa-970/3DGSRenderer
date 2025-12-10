@@ -3,8 +3,6 @@
 #include "Core/RenderCore.h"
 #include "MathUtils/Vector.h"
 #include <vector>
-#include <memory>
-#include "Material.h"
 #include "Primitives/Primitive.h"
 RENDERER_NAMESPACE_BEGIN
 
@@ -38,19 +36,16 @@ public:
     // 数据设置
     void setVertices(const std::vector<Vertex>& vertices);
     void setIndices(const std::vector<unsigned int>& indices);
-    void addMaterial(const std::shared_ptr<Material>& material);
 
     void Setup();
 
     // 数据获取
     const std::vector<Vertex>& getVertices() const { return vertices_; }
     const std::vector<unsigned int>& getIndices() const { return indices_; }
-    const std::vector<std::shared_ptr<Material>>& getMaterials() const { return m_materials; }
 
     // 统计信息
     size_t getVertexCount() const { return vertices_.size(); }
     size_t getIndexCount() const { return indices_.size(); }
-    size_t getMaterialCount() const { return m_materials.size(); }
 
     // 边界框计算
     void computeBoundingBox();
@@ -67,7 +62,6 @@ public:
 private:
     std::vector<Vertex> vertices_;
     std::vector<unsigned int> indices_;
-    std::vector<std::shared_ptr<Material>> m_materials;
 
     // 边界框
     Vector3 bboxMin_;

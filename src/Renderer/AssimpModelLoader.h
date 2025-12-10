@@ -33,16 +33,16 @@ public:
 
 private:
     // 处理Assimp场景
-    std::vector<std::shared_ptr<Mesh>> processScene(const aiScene* scene, const std::string& filename);
+    std::vector<SubMesh> processScene(const aiScene* scene, const std::string& filename);
 
     // 处理单个网格
-    void processMesh(aiMesh* mesh, const aiScene* scene, Mesh& outMesh, const Matrix4& transform, const std::vector<std::shared_ptr<Material>>& materials);
+    void processMesh(aiMesh* mesh, const aiScene* scene, Mesh& outMesh, const Matrix4& transform);
 
     // 处理材质
     void processMaterial(aiMaterial* material, const aiScene* scene, const std::string& directory, std::shared_ptr<Material>& outMaterial);
 
     // 处理节点（递归）
-    void processNode(aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Mesh>>& meshes, const Matrix4& parentTransform, const std::vector<std::shared_ptr<Material>>& materials);
+    void processNode(aiNode* node, const aiScene* scene, std::vector<SubMesh>& subMeshes, const Matrix4& parentTransform, const std::vector<std::shared_ptr<Material>>& materials);
 
     // 转换Assimp向量到我们的向量类型
     Vector3 assimpToVector3(const aiVector3D& v);
