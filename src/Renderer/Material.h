@@ -4,6 +4,7 @@
 #include "MathUtils/Vector.h"
 #include <vector>
 #include "Texture2D.h"
+#include "Shader.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -32,6 +33,7 @@ public:
     const std::vector<std::shared_ptr<Texture2D>>& getNormalTextures() const { return m_normalTextures; }
     const std::vector<std::shared_ptr<Texture2D>>& getSpecularTextures() const { return m_specularTextures; }
 
+    void UpdateShaderParams(const Shader& shader) const;
 private:
     std::string m_name;
     Vector3 m_diffuseColor;

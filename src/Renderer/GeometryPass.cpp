@@ -103,6 +103,10 @@ void GeometryPass::Render(Model* model, unsigned int uid, const float* modelMatr
     model->draw(m_shader);
 }
 
+void GeometryPass::Render(Renderable* renderable) {
+    renderable->draw(m_shader);
+}
+
 void GeometryPass::End() {
     m_frameBuffer.Unbind();
     m_shader.unuse();

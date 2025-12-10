@@ -3,10 +3,7 @@
 #include "Core/RenderCore.h"
 #include "FrameBuffer.h"
 #include "Shader.h"
-#include "Primitives/Primitive.h"
-#include <vector>
-#include "MathUtils/Matrix.h"
-#include "Model.h"
+#include "Renderable.h"
 RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API GeometryPass {
@@ -17,6 +14,7 @@ public:
     void Begin(const float* view, const float* projection);
     void Render(Primitive* primitive, unsigned int uid, const float* model, const Vector3& color = Vector3(1.0f, 1.0f, 1.0f));
     void Render(Model* model, unsigned int uid, const float* modelMatrix);
+    void Render(Renderable* renderable);
     void End();
     unsigned int getCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY);
     //void render(Model* model, const float* model, const float* view, const float* projection, const Vector3& color = Vector3(1.0f, 1.0f, 1.0f));

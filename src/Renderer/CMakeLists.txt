@@ -21,6 +21,8 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/MaterialManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/TextureManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Scene.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
@@ -53,6 +55,8 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/MaterialManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/TextureManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Scene.h
     
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
