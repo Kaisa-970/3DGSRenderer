@@ -12,6 +12,7 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.cpp
@@ -25,7 +26,7 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Scene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.cpp
-    
+
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
@@ -48,6 +49,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.h
     ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.h
