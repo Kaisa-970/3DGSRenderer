@@ -12,7 +12,8 @@ public:
     PostProcessPass(const int& width, const int& height);
     ~PostProcessPass();
 
-    void render(int width, int height, Camera& camera, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture, const unsigned int& gaussianTexture);
+    void render(int width, int height, Camera& camera, const unsigned int currentSelectedUID, 
+        const unsigned int& uidTexture, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture, const unsigned int& gaussianTexture);
 
     unsigned int getColorTexture() const { return m_colorTexture; }
 

@@ -34,12 +34,14 @@ PostProcessPass::~PostProcessPass() {
     if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
 }
 
-void PostProcessPass::render(int width, int height, Camera& camera, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture, const unsigned int& gaussianTexture)
+void PostProcessPass::render(int width, int height, Camera& camera, const unsigned int currentSelectedUID, 
+    const unsigned int& uidTexture, const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& lightingTexture, const unsigned int& depthTexture, const unsigned int& gaussianTexture)
 {
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
+    glDisable(GL_DEPTH_TEST);
+    
     m_shader.use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, positionTexture);
@@ -56,8 +58,13 @@ void PostProcessPass::render(int width, int height, Camera& camera, const unsign
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, gaussianTexture);
     m_shader.setInt("u_gaussianTexture", 4);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, uidTexture);
+    m_shader.setInt("u_uidTexture", 5);
 
     m_shader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+    
+    m_shader.setUint("u_currentSelectedUID", currentSelectedUID);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

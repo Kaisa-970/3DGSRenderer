@@ -18,6 +18,9 @@ uniform float u_edgeWidth = 1.0;          // 描边宽度
 uniform float u_depthSensitivity = 0.2;   // 深度敏感度
 uniform float u_normalSensitivity = 0.2;  // 法线敏感度
 
+uniform usampler2D u_uidTexture;
+uniform uint u_currentSelectedUID;
+
 float linearizeDepth(float depth, float near, float far) {
     float z = depth * 2.0 - 1.0; // 转换到 NDC [-1, 1]
     return (2.0 * near * far) / (far + near - z * (far - near));
@@ -90,53 +93,61 @@ void main()
     vec3 normal = texture(u_normalTexture, texCoord).rgb;
     normal = normalize(normal);
 
-    // // 获取纹理尺寸
-    // vec2 texelSize = vec2(1.0 / 1600.0, 1.0 / 900.0);//1.0 / textureSize(u_depthTexture, 0);
+    // 获取纹理尺寸
+    vec2 texelSize = vec2(1.0 / 1600.0, 1.0 / 900.0);//1.0 / textureSize(u_depthTexture, 0);
     
-    // // 检测深度边缘
-    // float depthEdge = depthEdgeDetection(texCoord, texelSize);
+    // 检测深度边缘
+    float depthEdge = depthEdgeDetection(texCoord, texelSize);
     
-    // // 检测法线边缘
-    // float normalEdge = normalEdgeDetection(texCoord, texelSize);
+    // 检测法线边缘
+    float normalEdge = normalEdgeDetection(texCoord, texelSize);
     
-    // // 综合边缘强度
-    // float edge = max(depthEdge, normalEdge);
+    // 综合边缘强度
+    float edge = max(depthEdge, normalEdge);
 
-    //     // 应用阈值
-    // float edgeFactor = smoothstep(u_edgeThreshold - 0.05, u_edgeThreshold + 0.05, edge);
+        // 应用阈值
+    float edgeFactor = smoothstep(u_edgeThreshold - 0.05, u_edgeThreshold + 0.05, edge);
     
-    // // 获取原始颜色
-    // vec4 originalColor = texture(u_lightingTexture, texCoord);
-    
-    // // 混合描边颜色
-    // FragColor = mix(originalColor, vec4(u_edgeColor, 1.0), edgeFactor);
-    // return;
-
-    vec3 lighting = texture(u_lightingTexture, texCoord).rgb;
-    vec4 gaussian = texture(u_gaussianTexture, texCoord);
-    float alpha = gaussian.a;
-    alpha  = clamp(alpha, 0.0, 1.0);
-
-    bool hasSolid = depth < 0.99;
-    if (alpha > 0.005) 
-    {
-        if(hasSolid)
-        {
-            FragColor = vec4(gaussian.rgb + lighting * (1.0 - alpha), 1.0);
-            //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        }
-        else
-        {
-            FragColor = vec4(gaussian.rgb, 1.0);
-            //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        }
+    // 获取原始颜色
+    vec4 originalColor = texture(u_lightingTexture, texCoord);
+    uint uid = texture(u_uidTexture, texCoord).r;
+    if (uid == u_currentSelectedUID) {
+        FragColor = originalColor;
+        FragColor = mix(originalColor, vec4(u_edgeColor, 1.0), edgeFactor);
+        //FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        return;
     }
-    else
-    {
-        FragColor = vec4(lighting, 1.0);
-        //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    // vec3 gray = vec3(0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b);
-    // FragColor = vec4(vec3(depth / 100.0), 1.0);
-    //FragColor = vec4(vec3(gray), 1.0);
+    
+    // 混合描边颜色
+    FragColor = mix(originalColor, vec4(u_edgeColor, 1.0), edgeFactor);
+    FragColor = originalColor;
+    return;
+
+    // vec3 lighting = texture(u_lightingTexture, texCoord).rgb;
+    // vec4 gaussian = texture(u_gaussianTexture, texCoord);
+    // float alpha = gaussian.a;
+    // alpha  = clamp(alpha, 0.0, 1.0);
+
+    // bool hasSolid = depth < 0.99;
+    // if (alpha > 0.005) 
+    // {
+    //     if(hasSolid)
+    //     {
+    //         FragColor = vec4(gaussian.rgb + lighting * (1.0 - alpha), 1.0);
+    //         //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //     }
+    //     else
+    //     {
+    //         FragColor = vec4(gaussian.rgb, 1.0);
+    //         //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //     }
+    // }
+    // else
+    // {
+    //     FragColor = vec4(lighting, 1.0);
+    //     //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    // }
+    // // vec3 gray = vec3(0.2126 * FragColor.r + 0.7152 * FragColor.g + 0.0722 * FragColor.b);
+    // // FragColor = vec4(vec3(depth / 100.0), 1.0);
+    // //FragColor = vec4(vec3(gray), 1.0);
 }
