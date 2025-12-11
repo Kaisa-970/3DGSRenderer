@@ -15,6 +15,9 @@ public:
     void EndFrame();
     void RenderGUI();
     void Shutdown();
+
+    bool WantCaptureMouse() const;
+    bool WantCaptureKeyboard() const;
 };
 
 RENDERER_NAMESPACE_END

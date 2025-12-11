@@ -48,4 +48,12 @@ void GuiLayer::Shutdown() {
     ImGui::DestroyContext();
 }
 
+bool GuiLayer::WantCaptureMouse() const {
+    return ImGui::GetIO().WantCaptureMouse;
+}
+
+bool GuiLayer::WantCaptureKeyboard() const {
+    return ImGui::GetIO().WantCaptureKeyboard;
+}
+
 RENDERER_NAMESPACE_END

@@ -149,6 +149,15 @@ void Window::setMouseScrollCallback(MouseScrollCallback callback) {
     }
 }
 
+void Window::setMouseButtonCallback(MouseButtonCallback callback) {
+    mouseButtonCallback_ = callback;
+    if (callback) {
+        glfwSetMouseButtonCallback(window_, glfwMouseButtonCallback);
+    } else {
+        glfwSetMouseButtonCallback(window_, nullptr);
+    }
+}
+
 void Window::setKeyCallback(KeyCallback callback) {
     keyCallback_ = callback;
     if (callback) {
@@ -170,6 +179,16 @@ void Window::glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffs
     Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
     if (win && win->mouseScrollCallback_) {
         win->mouseScrollCallback_(xoffset, yoffset);
+    }
+}
+
+void Window::glfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    if (win && win->mouseButtonCallback_) {
+        double xpos = 0.0;
+        double ypos = 0.0;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        win->mouseButtonCallback_(button, action, mods, xpos, ypos);
     }
 }
 

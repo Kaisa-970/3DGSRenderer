@@ -86,10 +86,12 @@ public:
     // 回调设置（使用std::function便于绑定）
     using MouseMoveCallback = std::function<void(double xpos, double ypos)>;
     using MouseScrollCallback = std::function<void(double xoffset, double yoffset)>;
+    using MouseButtonCallback = std::function<void(int button, int action, int mods, double xpos, double ypos)>;
     using KeyCallback = std::function<void(int key, int scancode, int action, int mods)>;
     
     void setMouseMoveCallback(MouseMoveCallback callback);
     void setMouseScrollCallback(MouseScrollCallback callback);
+    void setMouseButtonCallback(MouseButtonCallback callback);
     void setKeyCallback(KeyCallback callback);
 
     static bool initGLFW();
@@ -104,11 +106,13 @@ private:
      // 回调函数存储
      MouseMoveCallback mouseMoveCallback_;
      MouseScrollCallback mouseScrollCallback_;
+     MouseButtonCallback mouseButtonCallback_;
      KeyCallback keyCallback_;
      
      // GLFW静态回调（转发到成员函数）
      static void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos);
      static void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+     static void glfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
      static void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 

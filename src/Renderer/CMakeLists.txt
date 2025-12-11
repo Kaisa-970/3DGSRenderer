@@ -24,6 +24,7 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Scene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
@@ -59,6 +60,8 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Scene.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Event/Event.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
