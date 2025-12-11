@@ -54,8 +54,8 @@ constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
     std::string pointCloudPath = "";
 #endif
 
-const int WIN_WIDTH = 1600;
-const int WIN_HEIGHT = 900;
+const int WIN_WIDTH = 2560;
+const int WIN_HEIGHT = 1440;
 
 int main(int argc, char* argv[]) {
 #ifdef GSRENDERER_OS_WINDOWS
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         // 创建窗口（自动初始化 OpenGL 上下文）
         Renderer::Window window(WIN_WIDTH, WIN_HEIGHT, "3DGS Renderer");
         LOG_INFO("窗口创建成功: {}x{}", WIN_WIDTH, WIN_HEIGHT);
-        
+
         Renderer::EventBus eventBus;
         InputState inputState;
         // 先注册回调，后续 ImGui 安装的回调会自动进行链式转发
@@ -119,6 +119,30 @@ int main(int argc, char* argv[]) {
         
         Renderer::GuiLayer guiLayer;
         guiLayer.Init(&window);
+        enum class ViewMode {
+            Final = 0,
+            Lighting,
+            Position,
+            Normal,
+            Diffuse,
+            Specular,
+            Shininess,
+            Depth,
+            Gaussian
+        };
+        int gbufferViewMode = static_cast<int>(ViewMode::Final);
+        std::vector<const char*> gbufferViewLabels = {
+            "Final (PostProcess)",
+            "Lighting",
+            "Position",
+            "Normal",
+            "Diffuse",
+            "Specular",
+            "Shininess",
+            "Depth",
+            "Gaussian"
+        };
+        guiLayer.SetGBufferViewModes(&gbufferViewMode, gbufferViewLabels);
         if (argc < 2) 
         {
             #ifndef RENDERER_DEBUG
@@ -144,10 +168,10 @@ int main(int argc, char* argv[]) {
         // 创建相机（根据模型自动计算位置）
         // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
         // 将相机放在模型前方，距离约为尺寸的1.5倍
-        Renderer::Vector3 camPos(4.42f, -1.0f, -3.63f);
+        Renderer::Vector3 camPos(4.42f, 1.0f, -3.63f);
         Renderer::Camera camera(
             camPos,  // 位置（模型中心前方）
-            Renderer::Vector3(0.0f, -1.0f, 0.0f),        // 世界上方向
+            Renderer::Vector3(0.0f, 1.0f, 0.0f),        // 世界上方向
             133.5f,  // yaw: -90度 朝向 -Z 方向（看向模型）
             -14.0f     // pitch: 0度 水平视角
         );
@@ -300,6 +324,7 @@ int main(int argc, char* argv[]) {
         int frameCount = 0;
         float startTime = Renderer::Window::getTime();
         unsigned int currentSelectedUID = 0;
+        std::shared_ptr<Renderer::Renderable> selectedRenderable = nullptr;
         while (!window.shouldClose()) {
             float currentTime = static_cast<float>(Renderer::Window::getTime());
             float deltaTime = currentTime - lastTime;
@@ -315,30 +340,29 @@ int main(int argc, char* argv[]) {
             window.pollEvents();
             guiLayer.BeginFrame();
             eventBus.Dispatch();
-            guiLayer.RenderGUI();
 
             if (inputState.exitRequested)
-                    break;
-                
+                break;
+
             if (inputState.moveForward)
-                    camera.processKeyboard(Renderer::CameraMovement::Forward, deltaTime);
+                camera.processKeyboard(Renderer::CameraMovement::Forward, deltaTime);
             if (inputState.moveBackward)
-                    camera.processKeyboard(Renderer::CameraMovement::Backward, deltaTime);
+                camera.processKeyboard(Renderer::CameraMovement::Backward, deltaTime);
             if (inputState.moveLeft)
-                    camera.processKeyboard(Renderer::CameraMovement::Left, deltaTime);
+                camera.processKeyboard(Renderer::CameraMovement::Left, deltaTime);
             if (inputState.moveRight)
-                    camera.processKeyboard(Renderer::CameraMovement::Right, deltaTime);
+                camera.processKeyboard(Renderer::CameraMovement::Right, deltaTime);
             if (inputState.moveUp)
-                    camera.processKeyboard(Renderer::CameraMovement::Up, deltaTime);
+                camera.processKeyboard(Renderer::CameraMovement::Up, deltaTime);
             if (inputState.moveDown)
-                    camera.processKeyboard(Renderer::CameraMovement::Down, deltaTime);
-            
+                camera.processKeyboard(Renderer::CameraMovement::Down, deltaTime);
+
             bool isDrawPoints = inputState.togglePoints;
 
             unsigned int mouseXInt = static_cast<unsigned int>(inputState.mouseX);
             unsigned int mouseYInt = WIN_HEIGHT - static_cast<unsigned int>(inputState.mouseY);
 
-            Renderer::Vector3 lightPos(0.0f, -5.0f, 0.0f);
+            Renderer::Vector3 lightPos(0.0f, 5.0f, 0.0f);
             float curX = 5.0f * std::sin(currentTime);
             float curZ = 5.0f * std::cos(currentTime);
             lightPos.x = curX;
@@ -352,12 +376,13 @@ int main(int argc, char* argv[]) {
 
             // 更新视图矩阵
             camera.getViewMatrix(viewMatrix);
-            
-            
+
+
             if (isDrawPoints)
             {
                 gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
-                finalPass.render(WIN_WIDTH, WIN_HEIGHT, gaussianRenderer.getColorTexture());
+                unsigned int displayTex = gaussianRenderer.getColorTexture();
+                finalPass.render(WIN_WIDTH, WIN_HEIGHT, displayTex);
             }
             else
             {
@@ -373,8 +398,13 @@ int main(int argc, char* argv[]) {
 
                 if (inputState.pickRequested)
                 {
-                    currentSelectedUID = geometryPass.getCurrentSelectedUID(mouseXInt, mouseYInt);
+                    unsigned int picked = geometryPass.getCurrentSelectedUID(mouseXInt, mouseYInt);
                     inputState.pickRequested = false;
+                    if (picked != 0) {
+                        currentSelectedUID = picked;
+                        selectedRenderable = scene.GetRenderableByUID(picked);
+                    }
+                    currentSelectedUID = picked;
                 }
 
                 lightingPass.Begin(camera, lightPos);
@@ -386,12 +416,34 @@ int main(int argc, char* argv[]) {
                  geometryPass.getShininessTexture());
                 lightingPass.End();
                 // 使用高质量的Splat渲染
-                gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
+                if (gbufferViewMode == static_cast<int>(ViewMode::Gaussian)) {
+                    gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
+                }
+                //gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH, WIN_HEIGHT, geometryPass.getDepthTexture());
                 
-                postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), lightingPass.getLightingTexture(), geometryPass.getDepthTexture(), gaussianRenderer.getColorTexture());
-                finalPass.render(WIN_WIDTH, WIN_HEIGHT, postProcessPass.getColorTexture());
-                //finalPass.render(WIN_WIDTH, WIN_HEIGHT, gaussianRenderer.getColorTexture());
+                postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, currentSelectedUID, geometryPass.getUIDTexture(), geometryPass.getPositionTexture(), geometryPass.getNormalTexture(), lightingPass.getLightingTexture(), geometryPass.getDepthTexture(), gaussianRenderer.getColorTexture());
+
+                unsigned int displayTex = postProcessPass.getColorTexture();
+                switch (static_cast<ViewMode>(gbufferViewMode)) {
+                    case ViewMode::Final: displayTex = postProcessPass.getColorTexture(); break;
+                    case ViewMode::Lighting: displayTex = lightingPass.getLightingTexture(); break;
+                    case ViewMode::Position: displayTex = geometryPass.getPositionTexture(); break;
+                    case ViewMode::Normal: displayTex = geometryPass.getNormalTexture(); break;
+                    case ViewMode::Diffuse: displayTex = geometryPass.getDiffuseTexture(); break;
+                    case ViewMode::Specular: displayTex = geometryPass.getSpecularTexture(); break;
+                    case ViewMode::Shininess: displayTex = geometryPass.getShininessTexture(); break;
+                    case ViewMode::Depth: displayTex = geometryPass.getDepthTexture(); break;
+                    case ViewMode::Gaussian: displayTex = gaussianRenderer.getColorTexture(); break;
+                    default: break;
+                }
+                finalPass.render(WIN_WIDTH, WIN_HEIGHT, displayTex);
+                //finalPass.render(WIN_WIDTH, WIN_HEIGHT, lightingPass.getLightingTexture());
+                //finalPass.render(WIN_WIDTH, WIN_HEIGHT, geometryPass.getUIDTexture());
             }
+            if (selectedRenderable) {
+                guiLayer.SetSelectedRenderable(selectedRenderable, currentSelectedUID);
+            }
+            guiLayer.RenderGUI();
             guiLayer.EndFrame();
             window.swapBuffers();
         }
