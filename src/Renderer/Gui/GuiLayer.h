@@ -2,6 +2,7 @@
 
 #include "Core/RenderCore.h"
 #include "MathUtils/Vector.h"
+#include "Scene.h"
 #include <memory>
 #include <vector>
 
@@ -30,6 +31,7 @@ private:
     void SyncEditableFromTransform(const Renderable& renderable);
     void ApplyEditableToRenderable(Renderable& renderable);
 
+    std::weak_ptr<Scene> scene_;
     std::weak_ptr<Renderable> selected_;
     unsigned int selectedUid_{0};
     Vector3 editPosition_{0.0f, 0.0f, 0.0f};
