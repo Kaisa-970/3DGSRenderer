@@ -67,6 +67,7 @@ out vec3 outColor;
 out float opacity;
 out vec3 conic;
 out vec2 coordxy;
+out vec3 worldPos;
 
 mat3 computeCov3D(vec4 rots, vec3 scales) 
 {
@@ -188,7 +189,7 @@ void main()
     distance = distance / 10.0;
     distance = clamp(distance, 0.0, 1.0);
     viewDepth = -viewPos.z;
-
+    worldPos = center;
     vec3 projPos = homPos.xyz / (homPos.w + 0.0000001);
 
     vec2 wh = 2 * hfov_focal.xy * hfov_focal.zw;

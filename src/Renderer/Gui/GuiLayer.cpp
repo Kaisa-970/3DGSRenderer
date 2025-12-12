@@ -1,4 +1,5 @@
 #include "GuiLayer.h"
+#include "Logger/Log.h"
 #include "Material.h"
 #include "MaterialManager.h"
 #include "MathUtils/Random.h"
@@ -10,7 +11,6 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -54,7 +54,10 @@ void GuiLayer::EndFrame()
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
-
+static bool selectBoxEnabled_ = false;
+static bool deleteSelectPoints_ = false;
+static Vector3 selectColor_ = {0.5f, 0.5f, 0.0f};
+static float gaussianScale_ = 1.0f;
 void GuiLayer::RenderGUI()
 {
     // ImGui::ShowDemoWindow();
@@ -74,8 +77,66 @@ void GuiLayer::RenderGUI()
             scene->AddRenderable(sphereRenderable);
         }
 
+        if (ImGui::SliderFloat("Gaussian Scale", &gaussianScale_, 0.01f, 1.0f, "%.3f"))
+        {
+        }
+
+        if (gbufferViewMode_ && !gbufferViewLabels_.empty())
+        {
+            ImGui::Text("G-Buffer View");
+            ImGui::Combo("Texture", gbufferViewMode_, gbufferViewLabels_.data(),
+                         static_cast<int>(gbufferViewLabels_.size()));
+        }
+
+        ImGui::Separator();
+
+        if (auto selectBoxPtr = selectBox.lock())
+        {
+            if (ImGui::Checkbox("Enable Select Box", &selectBoxEnabled_))
+            {
+                SyncEditableFromTransform(*selectBoxPtr);
+                LOG_INFO("Enable Select Box");
+                LOG_INFO("Position: {}", editPosition_.x, editPosition_.y, editPosition_.z);
+                LOG_INFO("Rotation: {}", editRotationDeg_.x, editRotationDeg_.y, editRotationDeg_.z);
+                LOG_INFO("Scale: {}", editScale_.x, editScale_.y, editScale_.z);
+            }
+            if (selectBoxEnabled_)
+            {
+                bool changed = false;
+                changed |= ImGui::DragFloat3("Position", &editPosition_.x, 0.01f, -FLT_MAX, FLT_MAX, "%.3f");
+                changed |= ImGui::DragFloat3("Rotation (deg XYZ)", &editRotationDeg_.x, 0.1f, -360.0f, 360.0f, "%.3f");
+                changed |= ImGui::DragFloat3("Scale", &editScale_.x, 0.01f, 0.0001f, FLT_MAX, "%.3f");
+                if (changed)
+                {
+                    ApplyEditableToRenderable(*selectBoxPtr);
+                }
+            }
+
+            if (ImGui::Button("Reset Transform"))
+            {
+                editPosition_ = {0.0f, 0.0f, 0.0f};
+                editRotationDeg_ = {0.0f, 0.0f, 0.0f};
+                editScale_ = {1.0f, 1.0f, 1.0f};
+                ApplyEditableToRenderable(*selectBoxPtr);
+            }
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::ColorEdit3("Select Color", &selectColor_.x))
+        {
+            // selectColor_ = selectColor;
+        }
+        if (ImGui::Button("Delete Select Points"))
+        {
+            deleteSelectPoints_ = !deleteSelectPoints_;
+            LOG_INFO("Delete Select Points: {}", deleteSelectPoints_);
+        }
+
         ImGui::End();
     }
+
+    // return;
 
     if (auto selected = selected_.lock())
     {
@@ -85,9 +146,12 @@ void GuiLayer::RenderGUI()
 
         // 变换可编辑
         bool changed = false;
-        changed |= ImGui::DragFloat3("Position", &editPosition_.x, 0.01f, -FLT_MAX, FLT_MAX, "%.3f");
-        changed |= ImGui::DragFloat3("Rotation (deg XYZ)", &editRotationDeg_.x, 0.1f, -360.0f, 360.0f, "%.3f");
-        changed |= ImGui::DragFloat3("Scale", &editScale_.x, 0.01f, 0.0001f, FLT_MAX, "%.3f");
+        if (!selectBoxEnabled_)
+        {
+            changed |= ImGui::DragFloat3("Position", &editPosition_.x, 0.01f, -FLT_MAX, FLT_MAX, "%.3f");
+            changed |= ImGui::DragFloat3("Rotation (deg XYZ)", &editRotationDeg_.x, 0.1f, -360.0f, 360.0f, "%.3f");
+            changed |= ImGui::DragFloat3("Scale", &editScale_.x, 0.01f, 0.0001f, FLT_MAX, "%.3f");
+        }
         if (ImGui::Button("Reset Transform"))
         {
             editPosition_ = {0.0f, 0.0f, 0.0f};
@@ -195,8 +259,58 @@ void GuiLayer::SetScene(const std::shared_ptr<Scene> &scene)
     scene_ = std::weak_ptr<Scene>(scene);
 }
 
+void GuiLayer::SetSelectBox(const std::shared_ptr<Renderable> &renderable)
+{
+    if (!renderable)
+        return;
+    selectBox = renderable;
+    SyncEditableFromTransform(*renderable);
+}
+
+bool GuiLayer::GetSelectBoxEnabled() const
+{
+    return selectBoxEnabled_;
+}
+
+void GuiLayer::GetSelectBoxPosSize(Vector3 &pos, Vector3 &size)
+{
+    if (!selectBoxEnabled_ && !deleteSelectPoints_)
+    {
+        pos = {0.0f, 0.0f, 0.0f};
+        size = {0.0f, 0.0f, 0.0f};
+        return;
+    }
+    if (!selectBox.lock())
+        return;
+    auto selectBoxPtr = selectBox.lock();
+    auto transform = selectBoxPtr->getTransform();
+    pos = Vector3(transform.m[12], transform.m[13], transform.m[14]);
+    auto len = [](float a, float b, float c) { return std::sqrt(a * a + b * b + c * c); };
+    size.x = len(transform.m[0], transform.m[1], transform.m[2]);
+    size.y = len(transform.m[4], transform.m[5], transform.m[6]);
+    size.z = len(transform.m[8], transform.m[9], transform.m[10]);
+}
+
+Vector3 GuiLayer::GetSelectColor() const
+{
+    return selectColor_;
+}
+
+bool GuiLayer::GetDeleteSelectPoints() const
+{
+    // deleteSelectPoints_ != deleteSelectPoints_;
+    return deleteSelectPoints_;
+}
+
+float GuiLayer::GetGaussianScale() const
+{
+    return gaussianScale_;
+}
+
 void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderable> &renderable, unsigned int uid)
 {
+    if (selectBoxEnabled_)
+        return;
     if (!renderable)
         return; // 保留上一选中
     selected_ = renderable;
@@ -265,7 +379,7 @@ void GuiLayer::ApplyEditableToRenderable(Renderable &renderable)
     model.scaleBy(editScale_.x, editScale_.y, editScale_.z);
     const float deg2rad = 3.1415926f / 180.0f;
     model.rotate(editRotationDeg_.x * deg2rad, Vector3(1.0f, 0.0f, 0.0f));
-    model.rotate(editRotationDeg_.y * deg2rad, Vector3(0.0f, 1.0f, 0.0f));
+    model.rotate(editRotationDeg_.y * deg2rad, Vector3(0.0f, -1.0f, 0.0f));
     model.rotate(editRotationDeg_.z * deg2rad, Vector3(0.0f, 0.0f, 1.0f));
     model.translate(editPosition_.x, editPosition_.y, editPosition_.z);
     renderable.setTransform(model.transpose());

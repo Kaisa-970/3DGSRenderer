@@ -7,18 +7,24 @@ in vec2 coordxy;
 in float quadId;
 in float distance;
 in float viewDepth;
+in vec3 worldPos;
 out vec4 FragColor;
 
 uniform sampler2D u_solidDepthTexture;
 uniform int u_useSolidDepth;
 uniform vec2 u_screenSize;
 
+uniform vec3 u_selectBoxPos;
+uniform vec3 u_selectBoxSize;
+uniform int u_deleteSelectPoints;
+uniform vec3 u_selectColor;
+
 float linearizeDepth(float depth, float near, float far) {
     float z = depth * 2.0 - 1.0; // 转换到 NDC [-1, 1]
     return (2.0 * near * far) / (far + near - z * (far - near));
 }
 
-void main() {			
+void main() {
     float power = -0.5f * (conic.x * coordxy.x * coordxy.x + conic.z * coordxy.y * coordxy.y) - conic.y * coordxy.x * coordxy.y;
     if(power > 0.0f) discard;
     float alpha = min(0.99f, opacity * exp(power));
@@ -42,7 +48,20 @@ void main() {
         }
     }
 
-    FragColor = vec4(outColor, alpha);
+    vec3 finalColor = outColor;
+    vec2 screenCoord = gl_FragCoord.xy;
+    vec3 halfSize = u_selectBoxSize / 2.0f;
+    if (worldPos.x > u_selectBoxPos.x - halfSize.x && worldPos.x < u_selectBoxPos.x + halfSize.x
+    && worldPos.y > u_selectBoxPos.y - halfSize.y && worldPos.y < u_selectBoxPos.y + halfSize.y
+    && worldPos.z > u_selectBoxPos.z - halfSize.z && worldPos.z < u_selectBoxPos.z + halfSize.z) {
+        finalColor = finalColor * 0.5f + u_selectColor * 0.5f;
+        finalColor = clamp(finalColor, 0.0f, 1.0f);
+        if (u_deleteSelectPoints == 1) {
+            alpha = 0.0f;
+        }
+        //alpha *= 0.0f;
+    }
+    FragColor = vec4(finalColor, alpha);
     //FragColor = vec4(outColor, 1.0);
     float value = quadId / 559263.0;
     // value = distance;

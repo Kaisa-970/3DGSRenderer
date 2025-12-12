@@ -49,7 +49,7 @@ constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
 #define DEG2RAD(x) (x * DEG_TO_RAD)
 
 #ifdef RENDERER_DEBUG
-std::string pointCloudPath = "E:\\Models\\models\\bonsai\\point_cloud\\iteration_7000\\point_cloud.ply";
+std::string pointCloudPath = "E:\\Models\\models\\bicycle\\point_cloud\\iteration_7000\\point_cloud.ply";
 std::string modelPath = "./res/backpack/backpack.obj";
 std::string model2Path = "./res/SFL-CDD14_Max.fbx";
 // std::string model2Path = "./res/monkey.glb";
@@ -171,11 +171,11 @@ int main(int argc, char *argv[])
         // 创建相机（根据模型自动计算位置）
         // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
         // 将相机放在模型前方，距离约为尺寸的1.5倍
-        Renderer::Vector3 camPos(4.42f, 1.0f, -3.63f);
-        Renderer::Camera camera(camPos,                              // 位置（模型中心前方）
-                                Renderer::Vector3(0.0f, 1.0f, 0.0f), // 世界上方向
-                                133.5f,                              // yaw: -90度 朝向 -Z 方向（看向模型）
-                                -14.0f                               // pitch: 0度 水平视角
+        Renderer::Vector3 camPos(4.42f, -1.0f, -3.63f);
+        Renderer::Camera camera(camPos,                               // 位置（模型中心前方）
+                                Renderer::Vector3(0.0f, -1.0f, 0.0f), // 世界上方向
+                                133.5f,                               // yaw: -90度 朝向 -Z 方向（看向模型）
+                                -14.0f                                // pitch: 0度 水平视角
         );
 
         camera.setMovementSpeed(2.0f); // 增大移动速度，因为场景较大
@@ -317,8 +317,8 @@ int main(int argc, char *argv[])
         scene->AddRenderable(lightSphereRenderable);
         // 特效半透明球体示例（正向渲染，不进入延迟管线）
         Renderer::Matrix4 fxSphereModel = Renderer::Matrix4::identity();
-        fxSphereModel.scaleBy(1.2f, 1.2f, 1.2f);
-        fxSphereModel.translate(0.0f, 2.0f, -2.0f);
+        // fxSphereModel.scaleBy(1.0f, 1.0f, 1.0f);
+        // fxSphereModel.translate(0.0f, 0.0f, 0.0f);
         fxSphereModel = fxSphereModel.transpose();
         auto fxSphereRenderable = std::make_shared<Renderer::Renderable>();
         auto cubePrimPtr = makePrimitiveRef(&cubePrimitive);
@@ -326,6 +326,7 @@ int main(int argc, char *argv[])
         fxSphereRenderable->setTransform(fxSphereModel);
         fxSphereRenderable->setColor(Renderer::Vector3(0.2f, 0.8f, 1.0f));
         forwardRenderables.push_back(fxSphereRenderable);
+        guiLayer.SetSelectBox(fxSphereRenderable);
         // 地面
         auto quadPrimPtr = makePrimitiveRef(&quadPrimitive);
         Renderer::Matrix4 quadModel = Renderer::Matrix4::identity();
@@ -336,8 +337,8 @@ int main(int argc, char *argv[])
         quadRenderable->setPrimitive(quadPrimPtr);
         quadRenderable->setTransform(quadModel);
         quadRenderable->setColor(Renderer::Vector3(0.5f, 0.5f, 0.5f));
-        scene->AddRenderable(quadRenderable);
-        // 模型实例
+        // scene->AddRenderable(quadRenderable);
+        //  模型实例
         Renderer::Matrix4 model1M = Renderer::Matrix4::identity();
         model1M.scaleBy(0.3f, 0.3f, 0.3f);
         model1M.translate(0.0f, 1.0f, 2.0f);
@@ -345,10 +346,12 @@ int main(int argc, char *argv[])
         auto model1Renderable = std::make_shared<Renderer::Renderable>();
         model1Renderable->setModel(loadedModel);
         model1Renderable->setTransform(model1M);
-        scene->AddRenderable(model1Renderable);
+        // scene->AddRenderable(model1Renderable);
 
         Renderer::Matrix4 model2M = Renderer::Matrix4::identity();
         model2M.scaleBy(0.01f, 0.01f, 0.01f);
+        model2M.rotate(DEG2RAD(190.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
+        model2M.translate(-3.0f, 1.5f, 0.0f);
         model2M = model2M.transpose();
         auto model2Renderable = std::make_shared<Renderer::Renderable>();
         model2Renderable->setModel(loadedModel2);
@@ -398,7 +401,7 @@ int main(int argc, char *argv[])
             unsigned int mouseXInt = static_cast<unsigned int>(inputState.mouseX);
             unsigned int mouseYInt = WIN_HEIGHT - static_cast<unsigned int>(inputState.mouseY);
 
-            Renderer::Vector3 lightPos(0.0f, 5.0f, 0.0f);
+            Renderer::Vector3 lightPos(0.0f, -5.0f, 0.0f);
             float curX = 5.0f * std::sin(currentTime);
             float curZ = 5.0f * std::cos(currentTime);
             lightPos.x = curX;
@@ -457,8 +460,13 @@ int main(int argc, char *argv[])
                 // 使用高质量的Splat渲染
                 if (gbufferViewMode == static_cast<int>(ViewMode::Gaussian))
                 {
+                    Renderer::Vector3 selectBoxPos, selectBoxSize;
+                    guiLayer.GetSelectBoxPosSize(selectBoxPos, selectBoxSize);
+                    Renderer::Vector3 selectColor = guiLayer.GetSelectColor();
+                    bool deleteSelectPoints = guiLayer.GetDeleteSelectPoints();
                     gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH,
-                                                WIN_HEIGHT, geometryPass.getDepthTexture());
+                                                WIN_HEIGHT, geometryPass.getDepthTexture(), selectBoxPos, selectBoxSize,
+                                                deleteSelectPoints, selectColor, guiLayer.GetGaussianScale());
                 }
                 // gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH,
                 // WIN_HEIGHT, geometryPass.getDepthTexture());
@@ -467,10 +475,14 @@ int main(int argc, char *argv[])
                                        geometryPass.getPositionTexture(), geometryPass.getNormalTexture(),
                                        lightingPass.getLightingTexture(), geometryPass.getDepthTexture(),
                                        gaussianRenderer.getColorTexture());
-                // 正向渲染队列（半透明/特效物体）叠加到后处理颜色缓冲
-                forwardPass.Render(WIN_WIDTH, WIN_HEIGHT, viewMatrix, projMatrix, postProcessPass.getColorTexture(),
-                                   geometryPass.getDepthTexture(), forwardRenderables, forwardEffectShader,
-                                   currentTime);
+
+                if (guiLayer.GetSelectBoxEnabled())
+                {
+                    // 正向渲染队列（半透明/特效物体）叠加到后处理颜色缓冲
+                    forwardPass.Render(WIN_WIDTH, WIN_HEIGHT, viewMatrix, projMatrix, postProcessPass.getColorTexture(),
+                                       geometryPass.getDepthTexture(), forwardRenderables, forwardEffectShader,
+                                       currentTime);
+                }
 
                 unsigned int displayTex = postProcessPass.getColorTexture();
                 switch (static_cast<ViewMode>(gbufferViewMode))
@@ -500,7 +512,7 @@ int main(int argc, char *argv[])
                     displayTex = geometryPass.getDepthTexture();
                     break;
                 case ViewMode::Gaussian:
-                    displayTex = gaussianRenderer.getColorTexture();
+                    displayTex = postProcessPass.getColorTexture(); // gaussianRenderer.getColorTexture();
                     break;
                 default:
                     break;
