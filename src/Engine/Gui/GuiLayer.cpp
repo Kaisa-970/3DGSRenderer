@@ -1,18 +1,14 @@
 #include "GuiLayer.h"
-#include "Material.h"
-#include "MaterialManager.h"
-#include "MathUtils/Random.h"
-#include "Model.h"
-#include "Primitives/SpherePrimitive.h"
-#include "Renderable.h"
-#include "Window.h"
-#include <cmath>
+#include "Renderer/MaterialManager.h"
+#include "Renderer/MathUtils/Random.h"
+#include "Renderer/Primitives/SpherePrimitive.h"
+#include "Window/Window.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
 
-RENDERER_NAMESPACE_BEGIN
+GSENGINE_NAMESPACE_BEGIN
 
 GuiLayer::GuiLayer()
 {
@@ -64,13 +60,14 @@ void GuiLayer::RenderGUI()
         ImGui::Begin("Settings");
         if (ImGui::Button("Create Sphere"))
         {
-            std::shared_ptr<SpherePrimitive> spherePrimitive = std::make_shared<SpherePrimitive>(1.0f, 36, 18);
+            std::shared_ptr<Renderer::SpherePrimitive> spherePrimitive =
+                std::make_shared<Renderer::SpherePrimitive>(1.0f, 36, 18);
             auto sphereRenderable = std::make_shared<Renderer::Renderable>();
             sphereRenderable->setPrimitive(spherePrimitive);
             sphereRenderable->setTransform(Renderer::Matrix4::identity());
-            Vector3 color = Random::randomColor();
+            Renderer::Vector3 color = Renderer::Random::randomColor();
             sphereRenderable->setColor(color);
-            sphereRenderable->setMaterial(MaterialManager::GetInstance()->GetDefaultMaterial());
+            sphereRenderable->setMaterial(Renderer::MaterialManager::GetInstance()->GetDefaultMaterial());
             scene->AddRenderable(sphereRenderable);
         }
 
@@ -81,7 +78,7 @@ void GuiLayer::RenderGUI()
     {
         ImGui::Begin("Selection");
         ImGui::Text("UID: %u", selectedUid_);
-        ImGui::Text("Type: %s", selected->getType() == RenderableType::Model ? "Model" : "Primitive");
+        ImGui::Text("Type: %s", selected->getType() == Renderer::RenderableType::Model ? "Model" : "Primitive");
 
         // 变换可编辑
         bool changed = false;
@@ -101,13 +98,13 @@ void GuiLayer::RenderGUI()
         }
 
         ImGui::Separator();
-        Vector3 color = selected->getColor();
+        Renderer::Vector3 color = selected->getColor();
         if (ImGui::ColorEdit3("Color", &color.x))
         {
             selected->setColor(color);
         }
 
-        if (selected->getType() == RenderableType::Primitive)
+        if (selected->getType() == Renderer::RenderableType::Primitive)
         {
             auto mat = selected->getMaterial();
             if (mat)
@@ -188,14 +185,14 @@ bool GuiLayer::WantCaptureKeyboard() const
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 
-void GuiLayer::SetScene(const std::shared_ptr<Scene> &scene)
+void GuiLayer::SetScene(const std::shared_ptr<Renderer::Scene> &scene)
 {
     if (!scene)
         return;
-    scene_ = std::weak_ptr<Scene>(scene);
+    scene_ = std::weak_ptr<Renderer::Scene>(scene);
 }
 
-void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderable> &renderable, unsigned int uid)
+void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid)
 {
     if (!renderable)
         return; // 保留上一选中
@@ -210,7 +207,7 @@ void GuiLayer::SetGBufferViewModes(int *modePtr, const std::vector<const char *>
     gbufferViewLabels_ = labels;
 }
 
-void GuiLayer::SyncEditableFromTransform(const Renderable &renderable)
+void GuiLayer::SyncEditableFromTransform(const Renderer::Renderable &renderable)
 {
     const auto &m = renderable.getTransform();
     // 假定存储为列主序（构建后转置过），平移在 m[12/13/14]
@@ -257,19 +254,19 @@ void GuiLayer::SyncEditableFromTransform(const Renderable &renderable)
     hasEditState_ = true;
 }
 
-void GuiLayer::ApplyEditableToRenderable(Renderable &renderable)
+void GuiLayer::ApplyEditableToRenderable(Renderer::Renderable &renderable)
 {
     // 以顺序: Scale -> RotX -> RotY -> RotZ ->
     // Translate，然后转置以匹配列主序存储
-    Matrix4 model = Matrix4::identity();
+    Renderer::Matrix4 model = Renderer::Matrix4::identity();
     model.scaleBy(editScale_.x, editScale_.y, editScale_.z);
     const float deg2rad = 3.1415926f / 180.0f;
-    model.rotate(editRotationDeg_.x * deg2rad, Vector3(1.0f, 0.0f, 0.0f));
-    model.rotate(editRotationDeg_.y * deg2rad, Vector3(0.0f, 1.0f, 0.0f));
-    model.rotate(editRotationDeg_.z * deg2rad, Vector3(0.0f, 0.0f, 1.0f));
+    model.rotate(editRotationDeg_.x * deg2rad, Renderer::Vector3(1.0f, 0.0f, 0.0f));
+    model.rotate(editRotationDeg_.y * deg2rad, Renderer::Vector3(0.0f, 1.0f, 0.0f));
+    model.rotate(editRotationDeg_.z * deg2rad, Renderer::Vector3(0.0f, 0.0f, 1.0f));
     model.translate(editPosition_.x, editPosition_.y, editPosition_.z);
     renderable.setTransform(model.transpose());
     hasEditState_ = true;
 }
 
-RENDERER_NAMESPACE_END
+GSENGINE_NAMESPACE_END

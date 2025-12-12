@@ -5,12 +5,13 @@
 
 RENDERER_NAMESPACE_BEGIN
 
-class RENDERER_API Shader {
+class RENDERER_API Shader
+{
 public:
     Shader(const std::string &vertexSource, const std::string &fragmentSource);
     // 从文件路径构造
     static Shader fromFiles(const std::string &vertexPath, const std::string &fragmentPath);
-    
+
     ~Shader();
 
     Shader(const Shader &) = delete;
@@ -21,16 +22,20 @@ public:
 
     void use() const;
     void unuse() const;
-    unsigned int id() const { return programId_; }
+    unsigned int id() const
+    {
+        return programId_;
+    }
 
-    void setMat4(const char* name, const float* value) const;
-    void setVec2(const char* name, float x, float y) const;
-    void setVec3(const char* name, float x, float y, float z) const;
-    void setVec4(const char* name, float x, float y, float z, float w) const;
-    void setFloat(const char* name, float value) const;
-    void setInt(const char* name, int value) const;
-    void setInt2(const char* name, int x, int y) const;
-    void setUint(const char* name, unsigned int value) const;
+    void setMat4(const char *name, const float *value) const;
+    void setVec2(const char *name, float x, float y) const;
+    void setVec3(const char *name, float x, float y, float z) const;
+    void setVec4(const char *name, float x, float y, float z, float w) const;
+    void setFloat(const char *name, float value) const;
+    void setInt(const char *name, int value) const;
+    void setInt2(const char *name, int x, int y) const;
+    void setUint(const char *name, unsigned int value) const;
+
 private:
     unsigned int programId_ = 0;
 
@@ -39,5 +44,3 @@ private:
 };
 
 RENDERER_NAMESPACE_END
-
-

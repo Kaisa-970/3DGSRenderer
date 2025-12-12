@@ -24,10 +24,13 @@ option(USE_GLES3 "Use OpenGL ES 3 instead of OpenGL" OFF)
 # 操作系统判断，并传入宏定义
 if(WIN32)
     add_definitions(-DGSRENDERER_OS_WINDOWS)
+    add_definitions(-DGSENGINE_OS_WINDOWS)
 elseif(APPLE)
     add_definitions(-DGSRENDERER_OS_MACOS)
+    add_definitions(-DGSENGINE_OS_MACOS)
 elseif(UNIX)
     add_definitions(-DGSRENDERER_OS_LINUX)
+    add_definitions(-DGSENGINE_OS_LINUX)
 endif()
 
 # 子目录：spdlog 模块
@@ -57,6 +60,9 @@ add_subdirectory(src/Logger)
 # 子目录：Renderer 模块
 add_subdirectory(src/Renderer)
 
+# 子目录：Engine 模块
+add_subdirectory(src/Engine)
+
 # 主项目源文件
 set(SOURCES
     src/main.cpp
@@ -75,6 +81,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_link_libraries(${PROJECT_NAME}
         Logger
         Renderer
+        GSEngine
     )
 
 # 包含Assimp生成的头文件目录
