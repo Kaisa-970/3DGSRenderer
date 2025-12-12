@@ -15,7 +15,6 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Material.cpp
@@ -52,7 +51,6 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/GaussianRenderer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.h
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Material.h

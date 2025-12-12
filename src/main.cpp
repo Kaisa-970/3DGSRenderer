@@ -3,7 +3,6 @@
 #include "Renderer/Event/EventBus.h"
 #include "Renderer/FinalPass.h"
 #include "Renderer/ForwardPass.h"
-#include "Renderer/GaussianSplatting/GaussianRenderer.h"
 #include "Renderer/GeometryPass.h"
 #include "Renderer/Gui/GuiLayer.h"
 #include "Renderer/LightingPass.h"
@@ -49,12 +48,10 @@ constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
 #define DEG2RAD(x) (x * DEG_TO_RAD)
 
 #ifdef RENDERER_DEBUG
-std::string pointCloudPath = "E:\\Models\\models\\bonsai\\point_cloud\\iteration_7000\\point_cloud.ply";
 std::string modelPath = "./res/backpack/backpack.obj";
 std::string model2Path = "./res/SFL-CDD14_Max.fbx";
 // std::string model2Path = "./res/monkey.glb";
 #else
-std::string pointCloudPath = "";
 #endif
 
 const int WIN_WIDTH = 2560;
@@ -140,12 +137,10 @@ int main(int argc, char *argv[])
             Specular,
             Shininess,
             Depth,
-            Gaussian
         };
         int gbufferViewMode = static_cast<int>(ViewMode::Final);
         std::vector<const char *> gbufferViewLabels = {
-            "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular",
-            "Shininess",           "Depth",    "Gaussian"};
+            "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Shininess", "Depth"};
         guiLayer.SetGBufferViewModes(&gbufferViewMode, gbufferViewLabels);
         if (argc < 2)
         {
@@ -157,14 +152,8 @@ int main(int argc, char *argv[])
         else
         {
 #ifndef RENDERER_DEBUG
-            pointCloudPath = std::string(argv[1]);
 #endif
         }
-        LOG_INFO("使用模型文件: {}", pointCloudPath);
-
-        Renderer::GaussianRenderer gaussianRenderer;
-        // gaussianRenderer.loadModel("res/input.ply");
-        gaussianRenderer.loadModel(pointCloudPath);
 
         std::shared_ptr<Renderer::Model> loadedModel = Renderer::Model::LoadModelFromFile(modelPath);
         std::shared_ptr<Renderer::Model> loadedModel2 = Renderer::Model::LoadModelFromFile(model2Path);
@@ -418,97 +407,76 @@ int main(int argc, char *argv[])
             forwardEffectShader.setVec3("u_viewPos", vx, vy, vz);
             forwardEffectShader.unuse();
 
-            if (isDrawPoints)
+            geometryPass.Begin(viewMatrix, projMatrix);
+
+            for (auto &r : scene->GetRenderables())
             {
-                gaussianRenderer.drawPoints(Renderer::Matrix4::identity(), viewMatrix, projMatrix);
-                unsigned int displayTex = gaussianRenderer.getColorTexture();
-                finalPass.render(WIN_WIDTH, WIN_HEIGHT, displayTex);
+                if (!r)
+                    continue;
+                geometryPass.Render(r.get());
             }
-            else
+
+            geometryPass.End();
+
+            if (inputState.pickRequested)
             {
-                geometryPass.Begin(viewMatrix, projMatrix);
-
-                for (auto &r : scene->GetRenderables())
+                unsigned int picked = geometryPass.getCurrentSelectedUID(mouseXInt, mouseYInt);
+                inputState.pickRequested = false;
+                if (picked != 0)
                 {
-                    if (!r)
-                        continue;
-                    geometryPass.Render(r.get());
-                }
-
-                geometryPass.End();
-
-                if (inputState.pickRequested)
-                {
-                    unsigned int picked = geometryPass.getCurrentSelectedUID(mouseXInt, mouseYInt);
-                    inputState.pickRequested = false;
-                    if (picked != 0)
-                    {
-                        currentSelectedUID = picked;
-                        selectedRenderable = scene->GetRenderableByUID(picked);
-                    }
                     currentSelectedUID = picked;
+                    selectedRenderable = scene->GetRenderableByUID(picked);
                 }
-
-                lightingPass.Begin(camera, lightPos);
-                lightingPass.Render(geometryPass.getPositionTexture(), geometryPass.getNormalTexture(),
-                                    geometryPass.getDiffuseTexture(), geometryPass.getSpecularTexture(),
-                                    geometryPass.getShininessTexture());
-                lightingPass.End();
-                // 使用高质量的Splat渲染
-                if (gbufferViewMode == static_cast<int>(ViewMode::Gaussian))
-                {
-                    gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH,
-                                                WIN_HEIGHT, geometryPass.getDepthTexture());
-                }
-                // gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH,
-                // WIN_HEIGHT, geometryPass.getDepthTexture());
-
-                postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, currentSelectedUID, geometryPass.getUIDTexture(),
-                                       geometryPass.getPositionTexture(), geometryPass.getNormalTexture(),
-                                       lightingPass.getLightingTexture(), geometryPass.getDepthTexture(),
-                                       gaussianRenderer.getColorTexture());
-                // 正向渲染队列（半透明/特效物体）叠加到后处理颜色缓冲
-                forwardPass.Render(WIN_WIDTH, WIN_HEIGHT, viewMatrix, projMatrix, postProcessPass.getColorTexture(),
-                                   geometryPass.getDepthTexture(), forwardRenderables, forwardEffectShader,
-                                   currentTime);
-
-                unsigned int displayTex = postProcessPass.getColorTexture();
-                switch (static_cast<ViewMode>(gbufferViewMode))
-                {
-                case ViewMode::Final:
-                    displayTex = postProcessPass.getColorTexture();
-                    break;
-                case ViewMode::Lighting:
-                    displayTex = lightingPass.getLightingTexture();
-                    break;
-                case ViewMode::Position:
-                    displayTex = geometryPass.getPositionTexture();
-                    break;
-                case ViewMode::Normal:
-                    displayTex = geometryPass.getNormalTexture();
-                    break;
-                case ViewMode::Diffuse:
-                    displayTex = geometryPass.getDiffuseTexture();
-                    break;
-                case ViewMode::Specular:
-                    displayTex = geometryPass.getSpecularTexture();
-                    break;
-                case ViewMode::Shininess:
-                    displayTex = geometryPass.getShininessTexture();
-                    break;
-                case ViewMode::Depth:
-                    displayTex = geometryPass.getDepthTexture();
-                    break;
-                case ViewMode::Gaussian:
-                    displayTex = gaussianRenderer.getColorTexture();
-                    break;
-                default:
-                    break;
-                }
-                finalPass.render(WIN_WIDTH, WIN_HEIGHT, displayTex);
-                // finalPass.render(WIN_WIDTH, WIN_HEIGHT, lightingPass.getLightingTexture());
-                // finalPass.render(WIN_WIDTH, WIN_HEIGHT, geometryPass.getUIDTexture());
+                currentSelectedUID = picked;
             }
+
+            lightingPass.Begin(camera, lightPos);
+            lightingPass.Render(geometryPass.getPositionTexture(), geometryPass.getNormalTexture(),
+                                geometryPass.getDiffuseTexture(), geometryPass.getSpecularTexture(),
+                                geometryPass.getShininessTexture());
+            lightingPass.End();
+
+            postProcessPass.render(WIN_WIDTH, WIN_HEIGHT, camera, currentSelectedUID, geometryPass.getUIDTexture(),
+                                   geometryPass.getPositionTexture(), geometryPass.getNormalTexture(),
+                                   lightingPass.getLightingTexture(), geometryPass.getDepthTexture());
+            // 正向渲染队列（半透明/特效物体）叠加到后处理颜色缓冲
+            forwardPass.Render(WIN_WIDTH, WIN_HEIGHT, viewMatrix, projMatrix, postProcessPass.getColorTexture(),
+                               geometryPass.getDepthTexture(), forwardRenderables, forwardEffectShader, currentTime);
+
+            unsigned int displayTex = postProcessPass.getColorTexture();
+            switch (static_cast<ViewMode>(gbufferViewMode))
+            {
+            case ViewMode::Final:
+                displayTex = postProcessPass.getColorTexture();
+                break;
+            case ViewMode::Lighting:
+                displayTex = lightingPass.getLightingTexture();
+                break;
+            case ViewMode::Position:
+                displayTex = geometryPass.getPositionTexture();
+                break;
+            case ViewMode::Normal:
+                displayTex = geometryPass.getNormalTexture();
+                break;
+            case ViewMode::Diffuse:
+                displayTex = geometryPass.getDiffuseTexture();
+                break;
+            case ViewMode::Specular:
+                displayTex = geometryPass.getSpecularTexture();
+                break;
+            case ViewMode::Shininess:
+                displayTex = geometryPass.getShininessTexture();
+                break;
+            case ViewMode::Depth:
+                displayTex = geometryPass.getDepthTexture();
+                break;
+            default:
+                break;
+            }
+            finalPass.render(WIN_WIDTH, WIN_HEIGHT, displayTex);
+            // finalPass.render(WIN_WIDTH, WIN_HEIGHT, lightingPass.getLightingTexture());
+            // finalPass.render(WIN_WIDTH, WIN_HEIGHT, geometryPass.getUIDTexture());
+
             if (selectedRenderable)
             {
                 guiLayer.SetSelectedRenderable(selectedRenderable, currentSelectedUID);
