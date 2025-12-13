@@ -7,6 +7,7 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Window/Window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ModelLoader/AssimpModelLoader.cpp
 )
 
 set(ENGINE_HEADERS
@@ -16,6 +17,7 @@ set(ENGINE_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Event/Event.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ModelLoader/AssimpModelLoader.h
 )
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/src/vendor/imgui)
@@ -45,10 +47,11 @@ add_library(${MODULE_NAME} SHARED ${ENGINE_SOURCES} ${ENGINE_HEADERS} ${IMGUI_SO
 
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/Renderer)
+target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src/vendor/assimp/include)
 target_include_directories(${MODULE_NAME} PRIVATE ${IMGUI_DIR})
 target_include_directories(${MODULE_NAME} PRIVATE ${IMGUI_DIR}/backends)
 
-target_link_libraries(${MODULE_NAME} PUBLIC Renderer Logger glfw)
+target_link_libraries(${MODULE_NAME} PUBLIC Renderer Logger glfw assimp::assimp)
 
 target_compile_definitions(${MODULE_NAME} PRIVATE GSENGINE_EXPORTS)
 

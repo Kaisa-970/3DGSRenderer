@@ -8,7 +8,6 @@
 #include "Renderer/GeometryPass.h"
 #include "Renderer/LightingPass.h"
 #include "Renderer/MathUtils/Random.h"
-#include "Renderer/Model.h"
 #include "Renderer/PostProcessPass.h"
 #include "Renderer/Primitives/CubePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
@@ -16,6 +15,7 @@
 #include "Renderer/Renderable.h"
 #include "Renderer/Scene.h"
 #include "Window/Window.h"
+#include "ModelLoader/AssimpModelLoader.h"
 
 GSENGINE_NAMESPACE_BEGIN
 
@@ -47,7 +47,7 @@ constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
 
 #ifdef RENDERER_DEBUG
 std::string modelPath = "./res/backpack/backpack.obj";
-std::string model2Path = "./res/SFL-CDD14_Max.fbx";
+std::string model2Path = "./res/houtou.fbx";
 // std::string model2Path = "./res/monkey.glb";
 #else
 #endif
@@ -171,8 +171,9 @@ bool Application::Init()
 
     guiLayer.SetGBufferViewModes(&gbufferViewMode, gbufferViewLabels);
 
-    std::shared_ptr<Renderer::Model> loadedModel = Renderer::Model::LoadModelFromFile(modelPath);
-    std::shared_ptr<Renderer::Model> loadedModel2 = Renderer::Model::LoadModelFromFile(model2Path);
+    AssimpModelLoader modelLoader;
+    std::shared_ptr<Renderer::Model> loadedModel = modelLoader.loadModel(modelPath);
+    std::shared_ptr<Renderer::Model> loadedModel2 = modelLoader.loadModel(model2Path);
 
     camera.setMovementSpeed(2.0f); // 增大移动速度，因为场景较大
     camera.setMouseSensitivity(0.1f);

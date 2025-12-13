@@ -1,5 +1,4 @@
 #include "Model.h"
-#include "AssimpModelLoader.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -45,9 +44,4 @@ void Model::draw(const std::shared_ptr<Shader>& shader)
     }
 }
 
-std::shared_ptr<Model> Model::LoadModelFromFile(const std::string& path)
-{
-    AssimpModelLoader loader;
-    return loader.loadModel(path);
-}
 RENDERER_NAMESPACE_END
