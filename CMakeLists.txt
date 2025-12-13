@@ -66,12 +66,12 @@ add_subdirectory(src/Engine)
 # 主项目源文件
 set(SOURCES
     src/main.cpp
-
+    src/App/AppDemo.cpp
 )
 
 # 头文件
 set(HEADERS
-
+    src/App/AppDemo.h
 )
 
 # 创建可执行文件
@@ -87,6 +87,7 @@ target_link_libraries(${PROJECT_NAME}
 # 包含Assimp生成的头文件目录
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/src/vendor/assimp/include)
 
+#target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/Engine)
 
 if(UNIX)
     target_link_libraries(${PROJECT_NAME} pthread dl)

@@ -1,4 +1,4 @@
-#include "Engine/Application.h"
+#include "App/AppDemo.h"
 #include <stdexcept>
 #ifdef GSRENDERER_OS_WINDOWS
 #include <windows.h>
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        GSEngine::Application app({WIN_WIDTH, WIN_HEIGHT, "3DGS Engine"});
+        AppDemo app({WIN_WIDTH, WIN_HEIGHT, "3DGS Engine"});
         app.Init();
         app.Run();
         app.Shutdown();
