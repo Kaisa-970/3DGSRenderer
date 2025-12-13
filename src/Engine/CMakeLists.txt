@@ -8,6 +8,9 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ModelLoader/AssimpModelLoader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Assets/TextureManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Assets/MaterialManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Scene/Scene.cpp
 )
 
 set(ENGINE_HEADERS
@@ -18,6 +21,9 @@ set(ENGINE_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Event/EventBus.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Gui/GuiLayer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ModelLoader/AssimpModelLoader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Assets/TextureManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Assets/MaterialManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Scene/Scene.h
 )
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/src/vendor/imgui)

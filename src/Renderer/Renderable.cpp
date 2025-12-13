@@ -1,5 +1,4 @@
 #include "Renderable.h"
-#include "MaterialManager.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -12,7 +11,7 @@ Renderable::Renderable()
     , m_model(nullptr)
     , m_color(Vector3(1.0f, 1.0f, 1.0f))
 {
-    m_material = MaterialManager::GetInstance()->GetDefaultMaterial();
+
 }
 
 Renderable::Renderable(unsigned int uid, const Matrix4& transformMatrix, const std::shared_ptr<Material>& material, const std::shared_ptr<Primitive>& primitive)
@@ -24,9 +23,7 @@ Renderable::Renderable(unsigned int uid, const Matrix4& transformMatrix, const s
     , m_model(nullptr)
     , m_color(Vector3(1.0f, 1.0f, 1.0f))
 {
-    if (!material) {
-        m_material = MaterialManager::GetInstance()->GetDefaultMaterial();
-    }
+
 }
 
 Renderable::Renderable(unsigned int uid, const Matrix4& transformMatrix, const std::shared_ptr<Model>& model)
@@ -89,7 +86,9 @@ void Renderable::draw(const std::shared_ptr<Shader>& shader) const
         shader->setMat4("model", m_transformMatrix.m);
         shader->setInt("uUID", static_cast<int>(m_uid));
         shader->setVec3("uColor", m_color.x, m_color.y, m_color.z);
-        m_material->UpdateShaderParams(shader);
+        if (m_material) {
+            m_material->UpdateShaderParams(shader);
+        }
         m_primitive->draw(shader);
     } else if (m_type == RenderableType::Model && m_model) {
         shader->setMat4("model", m_transformMatrix.m);

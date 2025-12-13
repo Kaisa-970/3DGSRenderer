@@ -13,9 +13,10 @@
 #include "Renderer/Primitives/QuadPrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/Renderable.h"
-#include "Renderer/Scene.h"
+#include "Scene/Scene.h"
 #include "Window/Window.h"
 #include "ModelLoader/AssimpModelLoader.h"
+#include "Assets/MaterialManager.h"
 
 GSENGINE_NAMESPACE_BEGIN
 
@@ -79,7 +80,7 @@ Renderer::LightingPass *lightingPassPtr = nullptr;
 Renderer::PostProcessPass *postProcessPassPtr = nullptr;
 Renderer::ForwardPass *forwardPassPtr = nullptr;
 std::shared_ptr<Renderer::Shader> forwardEffectShaderPtr = nullptr;
-std::shared_ptr<Renderer::Scene> scene = nullptr;
+std::shared_ptr<Scene> scene = nullptr;
 std::vector<std::shared_ptr<Renderer::Renderable>> forwardRenderables;
 std::shared_ptr<Renderer::Renderable> lightSphereRenderable = nullptr;
 
@@ -268,8 +269,9 @@ bool Application::Init()
     postProcessPassPtr = new Renderer::PostProcessPass(WIN_WIDTH, WIN_HEIGHT);
     forwardPassPtr = new Renderer::ForwardPass();
     finalPassPtr = new Renderer::FinalPass();
-    scene = std::make_shared<Renderer::Scene>();
+    scene = std::make_shared<Scene>();
     lightSphereRenderable = std::make_shared<Renderer::Renderable>();
+    std::shared_ptr<Renderer::Material> defaultMaterial = MaterialManager::GetInstance()->GetDefaultMaterial();
 
     guiLayer.SetScene(scene);
     forwardEffectShaderPtr = Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
@@ -292,6 +294,7 @@ bool Application::Init()
         sphereModel = sphereModel.transpose();
         auto renderable = std::make_shared<Renderer::Renderable>();
         renderable->setPrimitive(spherePrimitive);
+        renderable->setMaterial(defaultMaterial);
         renderable->setTransform(sphereModel);
         renderable->setColor(Renderer::Random::randomColor());
         scene->AddRenderable(renderable);
@@ -307,6 +310,7 @@ bool Application::Init()
     fxSphereModel = fxSphereModel.transpose();
     auto fxSphereRenderable = std::make_shared<Renderer::Renderable>();
     fxSphereRenderable->setPrimitive(cubePrimitive);
+    fxSphereRenderable->setMaterial(defaultMaterial);
     fxSphereRenderable->setTransform(fxSphereModel);
     fxSphereRenderable->setColor(Renderer::Vector3(0.2f, 0.8f, 1.0f));
     forwardRenderables.push_back(fxSphereRenderable);
@@ -317,6 +321,7 @@ bool Application::Init()
     quadModel = quadModel.transpose();
     auto quadRenderable = std::make_shared<Renderer::Renderable>();
     quadRenderable->setPrimitive(quadPrimitive);
+    quadRenderable->setMaterial(defaultMaterial);
     quadRenderable->setTransform(quadModel);
     quadRenderable->setColor(Renderer::Vector3(0.5f, 0.5f, 0.5f));
     scene->AddRenderable(quadRenderable);
@@ -339,6 +344,8 @@ bool Application::Init()
     scene->AddRenderable(model2Renderable);
 
     startTime = Window::getTime();
+
+    LOG_INFO("Application Init Success!");
     return true;
 }
 
@@ -407,7 +414,6 @@ void Application::Run()
             geometryPassPtr->Render(r.get());
         }
         geometryPassPtr->End();
-
         if (inputState.pickRequested)
         {
             unsigned int picked = geometryPassPtr->getCurrentSelectedUID(mouseXInt, mouseYInt);

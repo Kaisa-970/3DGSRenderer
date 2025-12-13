@@ -2,8 +2,8 @@
 #include "Logger/Log.h"
 #include <algorithm>
 #include <filesystem>
-#include "Renderer/MaterialManager.h"
-#include "Renderer/TextureManager.h"
+#include "Assets/MaterialManager.h"
+#include "Assets/TextureManager.h"
 
 using namespace Renderer;
 GSENGINE_NAMESPACE_BEGIN

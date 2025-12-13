@@ -1,5 +1,5 @@
 #include "GuiLayer.h"
-#include "Renderer/MaterialManager.h"
+#include "Assets/MaterialManager.h"
 #include "Renderer/MathUtils/Random.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Window/Window.h"
@@ -67,7 +67,7 @@ void GuiLayer::RenderGUI()
             sphereRenderable->setTransform(Renderer::Matrix4::identity());
             Renderer::Vector3 color = Renderer::Random::randomColor();
             sphereRenderable->setColor(color);
-            sphereRenderable->setMaterial(Renderer::MaterialManager::GetInstance()->GetDefaultMaterial());
+            sphereRenderable->setMaterial(MaterialManager::GetInstance()->GetDefaultMaterial());
             scene->AddRenderable(sphereRenderable);
         }
 
@@ -185,11 +185,11 @@ bool GuiLayer::WantCaptureKeyboard() const
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 
-void GuiLayer::SetScene(const std::shared_ptr<Renderer::Scene> &scene)
+void GuiLayer::SetScene(const std::shared_ptr<Scene> &scene)
 {
     if (!scene)
         return;
-    scene_ = std::weak_ptr<Renderer::Scene>(scene);
+    scene_ = std::weak_ptr<Scene>(scene);
 }
 
 void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid)
