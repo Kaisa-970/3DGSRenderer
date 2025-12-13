@@ -2,7 +2,7 @@
 
 #include "Core/RenderCore.h"
 #include <string>
-
+#include <memory>
 RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API Shader
@@ -10,7 +10,7 @@ class RENDERER_API Shader
 public:
     Shader(const std::string &vertexSource, const std::string &fragmentSource);
     // 从文件路径构造
-    static Shader fromFiles(const std::string &vertexPath, const std::string &fragmentPath);
+    static std::shared_ptr<Shader> fromFiles(const std::string &vertexPath, const std::string &fragmentPath);
 
     ~Shader();
 

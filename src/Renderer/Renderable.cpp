@@ -83,19 +83,18 @@ Renderable& Renderable::operator=(Renderable&& other) noexcept
     return *this;
 }
 
-void Renderable::draw(const Shader& shader) const
+void Renderable::draw(const std::shared_ptr<Shader>& shader) const
 {
     if (m_type == RenderableType::Primitive && m_primitive) {
-        shader.setMat4("model", m_transformMatrix.m);
-        shader.setInt("uUID", static_cast<int>(m_uid));
-        shader.setVec3("uColor", m_color.x, m_color.y, m_color.z);
-
+        shader->setMat4("model", m_transformMatrix.m);
+        shader->setInt("uUID", static_cast<int>(m_uid));
+        shader->setVec3("uColor", m_color.x, m_color.y, m_color.z);
         m_material->UpdateShaderParams(shader);
         m_primitive->draw(shader);
     } else if (m_type == RenderableType::Model && m_model) {
-        shader.setMat4("model", m_transformMatrix.m);
-        shader.setInt("uUID", static_cast<int>(m_uid));
-        shader.setVec3("uColor", m_color.x, m_color.y, m_color.z);
+        shader->setMat4("model", m_transformMatrix.m);
+        shader->setInt("uUID", static_cast<int>(m_uid));
+        shader->setVec3("uColor", m_color.x, m_color.y, m_color.z);
         m_model->draw(shader);
     }
 }

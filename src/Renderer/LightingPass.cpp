@@ -42,36 +42,36 @@ void LightingPass::Begin(const Camera& camera, const Renderer::Vector3& lightPos
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    m_shader.use();
-    m_shader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);       // 光源位置
-    m_shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
-    m_shader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
+    m_shader->use();
+    m_shader->setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);       // 光源位置
+    m_shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
+    m_shader->setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
 
     glDisable(GL_DEPTH_TEST);
 }
 
 void LightingPass::Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture) {
     // 设置光照强度（可选，有默认值）
-    m_shader.setFloat("ambientStrength", 0.1f);    // 环境光强度
-    m_shader.setFloat("diffuseStrength", 0.9f);    // 漫反射强度
-    m_shader.setFloat("specularStrength", 0.5f);   // 镜面反射强度
-    m_shader.setInt("shininess", 32);    
+    m_shader->setFloat("ambientStrength", 0.1f);    // 环境光强度
+    m_shader->setFloat("diffuseStrength", 0.9f);    // 漫反射强度
+    m_shader->setFloat("specularStrength", 0.5f);   // 镜面反射强度
+    m_shader->setInt("shininess", 32);    
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, positionTexture);
-    m_shader.setInt("u_positionTexture", 0);
+    m_shader->setInt("u_positionTexture", 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, normalTexture);
-    m_shader.setInt("u_normalTexture", 1);
+    m_shader->setInt("u_normalTexture", 1);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, diffuseTexture);
-    m_shader.setInt("u_diffuseTexture", 2);
+    m_shader->setInt("u_diffuseTexture", 2);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, specularTexture);
-    m_shader.setInt("u_specularTexture", 3);
+    m_shader->setInt("u_specularTexture", 3);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, shininessTexture);
-    m_shader.setInt("u_shininessTexture", 4);
+    m_shader->setInt("u_shininessTexture", 4);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -80,7 +80,7 @@ void LightingPass::Render(const unsigned int& positionTexture, const unsigned in
 
 void LightingPass::End() {
     m_frameBuffer.Unbind();
-    m_shader.unuse();
+    m_shader->unuse();
 }
 
 RENDERER_NAMESPACE_END

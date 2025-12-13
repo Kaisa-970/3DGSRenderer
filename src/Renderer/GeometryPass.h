@@ -27,7 +27,7 @@ public:
     unsigned int getDepthTexture() const { return m_depthTexture; }
 private:
     FrameBuffer m_frameBuffer;
-    Shader m_shader;
+    std::shared_ptr<Shader> m_shader;
     unsigned int m_positionTexture;
     unsigned int m_normalTexture;
     unsigned int m_diffuseTexture;

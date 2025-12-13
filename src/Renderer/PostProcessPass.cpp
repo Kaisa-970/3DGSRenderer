@@ -46,31 +46,31 @@ void PostProcessPass::render(int width, int height, Camera &camera, const unsign
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 
-    m_shader.use();
+    m_shader->use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, positionTexture);
-    m_shader.setInt("u_positionTexture", 0);
+    m_shader->setInt("u_positionTexture", 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, normalTexture);
-    m_shader.setInt("u_normalTexture", 1);
+    m_shader->setInt("u_normalTexture", 1);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, lightingTexture);
-    m_shader.setInt("u_lightingTexture", 2);
+    m_shader->setInt("u_lightingTexture", 2);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
-    m_shader.setInt("u_depthTexture", 3);
+    m_shader->setInt("u_depthTexture", 3);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, uidTexture);
-    m_shader.setInt("u_uidTexture", 4);
+    m_shader->setInt("u_uidTexture", 4);
 
-    m_shader.setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+    m_shader->setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
 
-    m_shader.setUint("u_currentSelectedUID", currentSelectedUID);
+    m_shader->setUint("u_currentSelectedUID", currentSelectedUID);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
-    m_shader.unuse();
+    m_shader->unuse();
     m_frameBuffer.Unbind();
 }
 RENDERER_NAMESPACE_END

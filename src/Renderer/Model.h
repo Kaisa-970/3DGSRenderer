@@ -20,7 +20,7 @@ public:
     Model(std::vector<SubMesh> subMeshes, std::string directory);
     ~Model();
 
-    void draw(const Shader& shader);
+    void draw(const std::shared_ptr<Shader>& shader);
     std::vector<SubMesh>& getSubMeshes() { return m_subMeshes; }
 
     static std::shared_ptr<Model> LoadModelFromFile(const std::string& path);

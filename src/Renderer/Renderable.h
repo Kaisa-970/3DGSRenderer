@@ -27,7 +27,7 @@ public:
     Renderable(Renderable&& other) noexcept;
     Renderable& operator=(Renderable&& other) noexcept;
 
-    virtual void draw(const Shader& shader) const;
+    virtual void draw(const std::shared_ptr<Shader>& shader) const;
 
     // 访问/修改
     unsigned int getUid() const { return m_uid; }

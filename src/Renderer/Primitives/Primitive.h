@@ -28,7 +28,7 @@ public:
 
     // 绘制
     virtual void draw() const;
-    virtual void draw(const Shader& shader) const;
+    virtual void draw(const std::shared_ptr<Shader>& shader) const;
     
     // 获取信息
     unsigned int getVertexCount() const { return vertexCount_; }

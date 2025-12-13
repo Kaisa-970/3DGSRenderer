@@ -19,7 +19,7 @@ public:
     unsigned int getLightingTexture() const { return m_lightingTexture; }
 
 private:
-    Shader m_shader;
+    std::shared_ptr<Shader> m_shader;
     FrameBuffer m_frameBuffer;
     unsigned int m_lightingTexture;
     unsigned int m_vao;

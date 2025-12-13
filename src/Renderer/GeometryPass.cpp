@@ -58,9 +58,9 @@ void GeometryPass::Begin(const float* view, const float* projection) {
     m_frameBuffer.Bind();
     m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     m_frameBuffer.ClearDepthStencil(1.0f, 0);
-    m_shader.use();
-    m_shader.setMat4("view", view);
-    m_shader.setMat4("projection", projection);
+    m_shader->use();
+    m_shader->setMat4("view", view);
+    m_shader->setMat4("projection", projection);
 
     m_frameBuffer.Bind();
     glEnable(GL_DEPTH_TEST);
@@ -70,26 +70,26 @@ void GeometryPass::Begin(const float* view, const float* projection) {
 }
 
 void GeometryPass::Render(Primitive* primitive, unsigned int uid, const float* model, const Vector3& color) {
-    m_shader.setMat4("model", model);
-    m_shader.setVec3("uColor", color.x, color.y, color.z);
-    m_shader.setInt("uUID", static_cast<int>(uid));
+    m_shader->setMat4("model", model);
+    m_shader->setVec3("uColor", color.x, color.y, color.z);
+    m_shader->setInt("uUID", static_cast<int>(uid));
 
     std::shared_ptr<Material> material = MaterialManager::GetInstance()->GetDefaultMaterial();
     if (material) {
-        m_shader.setVec3("u_diffuseColor", material->getDiffuseColor().x, material->getDiffuseColor().y, material->getDiffuseColor().z);
-        m_shader.setVec3("u_specularColor", material->getSpecularColor().x, material->getSpecularColor().y, material->getSpecularColor().z);
-        m_shader.setFloat("u_shininess", material->getShininess());
+        m_shader->setVec3("u_diffuseColor", material->getDiffuseColor().x, material->getDiffuseColor().y, material->getDiffuseColor().z);
+        m_shader->setVec3("u_specularColor", material->getSpecularColor().x, material->getSpecularColor().y, material->getSpecularColor().z);
+        m_shader->setFloat("u_shininess", material->getShininess());
         if (material->getDiffuseTextures().size() > 0) {
             material->getDiffuseTextures()[0]->bind(0);
-            m_shader.setInt("u_diffuseTexture", 0);
+            m_shader->setInt("u_diffuseTexture", 0);
         }
         if (material->getSpecularTextures().size() > 0) {
             material->getSpecularTextures()[0]->bind(1);
-            m_shader.setInt("u_specularTexture", 1);
+            m_shader->setInt("u_specularTexture", 1);
         }
         if (material->getNormalTextures().size() > 0) {
             material->getNormalTextures()[0]->bind(2);
-            m_shader.setInt("u_normalTexture", 2);
+            m_shader->setInt("u_normalTexture", 2);
         }
     }
 
@@ -97,19 +97,21 @@ void GeometryPass::Render(Primitive* primitive, unsigned int uid, const float* m
 }  
 
 void GeometryPass::Render(Model* model, unsigned int uid, const float* modelMatrix) {
-    m_shader.setMat4("model", modelMatrix);
-    m_shader.setVec3("uColor", 1.0f, 1.0f, 1.0f);
-    m_shader.setInt("uUID", static_cast<int>(uid));
+    m_shader->setMat4("model", modelMatrix);
+    m_shader->setVec3("uColor", 1.0f, 1.0f, 1.0f);
+    m_shader->setInt("uUID", static_cast<int>(uid));
     model->draw(m_shader);
 }
 
 void GeometryPass::Render(Renderable* renderable) {
+    if (!renderable)
+        return;
     renderable->draw(m_shader);
 }
 
 void GeometryPass::End() {
     m_frameBuffer.Unbind();
-    m_shader.unuse();
+    m_shader->unuse();
 }
 
 unsigned int GeometryPass::getCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY) {

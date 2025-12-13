@@ -87,7 +87,7 @@ void Mesh::clear() {
                        std::numeric_limits<float>::lowest());
 }
 
-void Mesh::draw(const Shader& shader) const {
+void Mesh::draw(const std::shared_ptr<Shader>& shader) const {
     Primitive::draw(shader);
 }
 

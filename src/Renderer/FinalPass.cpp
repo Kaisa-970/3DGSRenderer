@@ -39,15 +39,15 @@ void FinalPass::render(int width, int height,   const unsigned int& colorTexture
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    m_shader.use();
+    m_shader->use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, colorTexture);
-    m_shader.setInt("u_colorTexture", 0);
+    m_shader->setInt("u_colorTexture", 0);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
-    m_shader.unuse();
+    m_shader->unuse();
 }
 
 RENDERER_NAMESPACE_END
