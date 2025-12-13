@@ -122,6 +122,27 @@ if (Test-Path $RendererLib) {
     Write-Host "Copied Renderer.lib to output directory" -ForegroundColor Green
 }
 
+# 构建 GSEngine 模块
+Write-Host "`nBuilding GSEngine module..." -ForegroundColor Yellow
+cmake --build build --target GSEngine --config $BuildType -j $NPROC
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Compile GSEngine module failed!" -ForegroundColor Red
+    exit 1
+}
+
+# 复制 GSEngine 库文件
+$GSEngineLib = "build\src\Engine\GSEngine.lib"
+$GSEngineDll = "build\src\Engine\GSEngine.dll"
+if (Test-Path $GSEngineDll) {
+    Copy-Item $GSEngineDll -Destination "$OUTPUT_BIN_DIR\GSEngine.dll" -Force
+    Write-Host "Copied GSEngine.dll to output directory" -ForegroundColor Green
+}
+if (Test-Path $GSEngineLib) {
+    Copy-Item $GSEngineLib -Destination "$OUTPUT_BIN_DIR\GSEngine.lib" -Force
+    Write-Host "Copied GSEngine.lib to output directory" -ForegroundColor Green
+}
+
 # 构建主程序
 Write-Host "`nBuilding main executable..." -ForegroundColor Yellow
 cmake --build build --target 3DGSRenderer --config $BuildType -j $NPROC

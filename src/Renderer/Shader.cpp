@@ -23,10 +23,10 @@ std::string Shader::readFile(const std::string &filepath) {
     return content;
 }
 
-Shader Shader::fromFiles(const std::string &vertexPath, const std::string &fragmentPath) {
+std::shared_ptr<Shader> Shader::fromFiles(const std::string &vertexPath, const std::string &fragmentPath) {
     std::string vertexSource = readFile(vertexPath);
     std::string fragmentSource = readFile(fragmentPath);
-    return Shader(vertexSource, fragmentSource);
+    return std::make_shared<Shader>(vertexSource, fragmentSource);
 }
 
 static void checkShaderCompile(GLuint shader, const char *stageName) {

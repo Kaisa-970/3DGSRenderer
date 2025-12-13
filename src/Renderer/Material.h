@@ -61,7 +61,7 @@ public:
         return m_specularTextures;
     }
 
-    void UpdateShaderParams(const Shader &shader) const;
+    void UpdateShaderParams(const std::shared_ptr<Shader>& shader) const;
 
 private:
     std::string m_name;

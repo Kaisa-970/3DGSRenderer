@@ -15,7 +15,7 @@ public:
 private:
     //unsigned int m_framebuffer;
     unsigned int m_colorTexture;
-    Shader m_shader;
+    std::shared_ptr<Shader> m_shader;
     unsigned int m_vao;
     unsigned int m_vbo;
 };

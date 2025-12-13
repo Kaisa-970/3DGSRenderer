@@ -78,7 +78,7 @@ Renderer::GeometryPass *geometryPassPtr = nullptr;
 Renderer::LightingPass *lightingPassPtr = nullptr;
 Renderer::PostProcessPass *postProcessPassPtr = nullptr;
 Renderer::ForwardPass *forwardPassPtr = nullptr;
-Renderer::Shader *forwardEffectShaderPtr = nullptr;
+std::shared_ptr<Renderer::Shader> forwardEffectShaderPtr = nullptr;
 std::shared_ptr<Renderer::Scene> scene = nullptr;
 std::vector<std::shared_ptr<Renderer::Renderable>> forwardRenderables;
 std::shared_ptr<Renderer::Renderable> lightSphereRenderable = nullptr;
@@ -88,7 +88,12 @@ int frameCount = 0;
 float startTime = 0.0f;
 unsigned int currentSelectedUID = 0;
 std::shared_ptr<Renderer::Renderable> selectedRenderable = nullptr;
-Renderer::Camera camera;
+static const Renderer::Vector3 camPos(4.42f, 1.0f, -3.63f);
+Renderer::Camera camera(camPos,                              // 位置（模型中心前方）
+                            Renderer::Vector3(0.0f, 1.0f, 0.0f), // 世界上方向
+                            133.5f,                              // yaw: -90度 朝向 -Z 方向（看向模型）
+                            -14.0f                               // pitch: 0度 水平视角
+    );
 float viewMatrix[16];
 float projMatrix[16];
 Application::Application(AppConfig config) : m_appConfig(config)
@@ -168,15 +173,6 @@ bool Application::Init()
 
     std::shared_ptr<Renderer::Model> loadedModel = Renderer::Model::LoadModelFromFile(modelPath);
     std::shared_ptr<Renderer::Model> loadedModel2 = Renderer::Model::LoadModelFromFile(model2Path);
-    // 创建相机（根据模型自动计算位置）
-    // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
-    // 将相机放在模型前方，距离约为尺寸的1.5倍
-    Renderer::Vector3 camPos(4.42f, 1.0f, -3.63f);
-    Renderer::Camera camera(camPos,                              // 位置（模型中心前方）
-                            Renderer::Vector3(0.0f, 1.0f, 0.0f), // 世界上方向
-                            133.5f,                              // yaw: -90度 朝向 -Z 方向（看向模型）
-                            -14.0f                               // pitch: 0度 水平视角
-    );
 
     camera.setMovementSpeed(2.0f); // 增大移动速度，因为场景较大
     camera.setMouseSensitivity(0.1f);
@@ -227,6 +223,8 @@ bool Application::Init()
             inputState.firstMouse = (e.action == ACTION_RELEASE);
             inputState.lastX = e.x;
             inputState.lastY = e.y;
+            LOG_INFO("Right mouse button pressed at ({}, {})", e.x, e.y);
+            LOG_INFO("Right mouse button down: {}", inputState.rightMouseDown);
         }
     });
 
@@ -239,6 +237,8 @@ bool Application::Init()
         if (!inputState.rightMouseDown)
             return;
         camera.processMouseMovement(static_cast<float>(e.dx), static_cast<float>(e.dy));
+        LOG_INFO("Mouse moved to ({}, {})", e.x, e.y);
+        LOG_INFO("Mouse moved dx: {}, dy: {}", e.dx, e.dy);
     });
 
     eventBus.Subscribe(EventType::Scroll, 10, [&](Event &evt) {
@@ -252,11 +252,11 @@ bool Application::Init()
     // window.setCursorMode(Renderer::Window::CursorMode::Disabled);
 
     // 创建彩色立方体
-    Renderer::CubePrimitive cubePrimitive(1.0f);
+    std::shared_ptr<Renderer::CubePrimitive> cubePrimitive = std::make_shared<Renderer::CubePrimitive>(1.0f);
 
-    Renderer::SpherePrimitive spherePrimitive(1.0f, 64, 32);
+    std::shared_ptr<Renderer::SpherePrimitive> spherePrimitive = std::make_shared<Renderer::SpherePrimitive>(1.0f, 64, 32);
 
-    Renderer::QuadPrimitive quadPrimitive(10.0f);
+    std::shared_ptr<Renderer::QuadPrimitive> quadPrimitive = std::make_shared<Renderer::QuadPrimitive>(10.0f);
 
     // 测试相机矩阵
     camera.getViewMatrix(viewMatrix);
@@ -269,15 +269,10 @@ bool Application::Init()
     finalPassPtr = new Renderer::FinalPass();
     scene = std::make_shared<Renderer::Scene>();
     lightSphereRenderable = std::make_shared<Renderer::Renderable>();
-    // 渲染循环
 
     guiLayer.SetScene(scene);
-    forwardEffectShaderPtr =
-        new Renderer::Shader("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
-    Renderer::Shader &forwardEffectShader = *forwardEffectShaderPtr;
-    auto makePrimitiveRef = [](Renderer::Primitive *prim) {
-        return std::shared_ptr<Renderer::Primitive>(prim, [](Renderer::Primitive *) {});
-    };
+    forwardEffectShaderPtr = Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+
     float minX = -10.0f;
     float maxX = 10.0f;
     float minY = -10.0f;
@@ -286,7 +281,6 @@ bool Application::Init()
     float maxZ = 10.0f;
     float minRadius = 0.1f;
     float maxRadius = 1.0f;
-    auto spherePrimPtr = makePrimitiveRef(&spherePrimitive);
     for (int i = 0; i < 30; i++)
     {
         Renderer::Matrix4 sphereModel = Renderer::Matrix4::identity();
@@ -296,13 +290,13 @@ bool Application::Init()
                               Renderer::Random::randomFloat(minZ, maxZ));
         sphereModel = sphereModel.transpose();
         auto renderable = std::make_shared<Renderer::Renderable>();
-        renderable->setPrimitive(spherePrimPtr);
+        renderable->setPrimitive(spherePrimitive);
         renderable->setTransform(sphereModel);
         renderable->setColor(Renderer::Random::randomColor());
         scene->AddRenderable(renderable);
     }
     // 轻量光源球体
-    lightSphereRenderable->setPrimitive(spherePrimPtr);
+    lightSphereRenderable->setPrimitive(spherePrimitive);
     lightSphereRenderable->setColor(Renderer::Vector3(1.0f, 1.0f, 1.0f));
     scene->AddRenderable(lightSphereRenderable);
     // 特效半透明球体示例（正向渲染，不进入延迟管线）
@@ -311,19 +305,17 @@ bool Application::Init()
     fxSphereModel.translate(0.0f, 2.0f, -2.0f);
     fxSphereModel = fxSphereModel.transpose();
     auto fxSphereRenderable = std::make_shared<Renderer::Renderable>();
-    auto cubePrimPtr = makePrimitiveRef(&cubePrimitive);
-    fxSphereRenderable->setPrimitive(cubePrimPtr);
+    fxSphereRenderable->setPrimitive(cubePrimitive);
     fxSphereRenderable->setTransform(fxSphereModel);
     fxSphereRenderable->setColor(Renderer::Vector3(0.2f, 0.8f, 1.0f));
     forwardRenderables.push_back(fxSphereRenderable);
     // 地面
-    auto quadPrimPtr = makePrimitiveRef(&quadPrimitive);
     Renderer::Matrix4 quadModel = Renderer::Matrix4::identity();
     quadModel.scaleBy(10.0f, 10.0f, 10.0f);
     quadModel.rotate(DEG2RAD(-90.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
     quadModel = quadModel.transpose();
     auto quadRenderable = std::make_shared<Renderer::Renderable>();
-    quadRenderable->setPrimitive(quadPrimPtr);
+    quadRenderable->setPrimitive(quadPrimitive);
     quadRenderable->setTransform(quadModel);
     quadRenderable->setColor(Renderer::Vector3(0.5f, 0.5f, 0.5f));
     scene->AddRenderable(quadRenderable);
@@ -384,8 +376,6 @@ void Application::Run()
         if (inputState.moveDown)
             camera.processKeyboard(Renderer::CameraMovement::Down, deltaTime);
 
-        bool isDrawPoints = inputState.togglePoints;
-
         unsigned int mouseXInt = static_cast<unsigned int>(inputState.mouseX);
         unsigned int mouseYInt = WIN_HEIGHT - static_cast<unsigned int>(inputState.mouseY);
 
@@ -405,20 +395,16 @@ void Application::Run()
         camera.getViewMatrix(viewMatrix);
         float vx, vy, vz;
         camera.getPosition(vx, vy, vz);
-        Renderer::Shader &forwardEffectShader = *forwardEffectShaderPtr;
-        forwardEffectShader.use();
-        forwardEffectShader.setVec3("u_viewPos", vx, vy, vz);
-        forwardEffectShader.unuse();
-
+        forwardEffectShaderPtr->use();
+        forwardEffectShaderPtr->setVec3("u_viewPos", vx, vy, vz);
+        forwardEffectShaderPtr->unuse();
         geometryPassPtr->Begin(viewMatrix, projMatrix);
-
         for (auto &r : scene->GetRenderables())
         {
             if (!r)
                 continue;
             geometryPassPtr->Render(r.get());
         }
-
         geometryPassPtr->End();
 
         if (inputState.pickRequested)
@@ -444,7 +430,7 @@ void Application::Run()
                                    lightingPassPtr->getLightingTexture(), geometryPassPtr->getDepthTexture());
         // 正向渲染队列（半透明/特效物体）叠加到后处理颜色缓冲
         forwardPassPtr->Render(WIN_WIDTH, WIN_HEIGHT, viewMatrix, projMatrix, postProcessPassPtr->getColorTexture(),
-                               geometryPassPtr->getDepthTexture(), forwardRenderables, forwardEffectShader,
+                               geometryPassPtr->getDepthTexture(), forwardRenderables, forwardEffectShaderPtr,
                                currentTime);
 
         unsigned int displayTex = postProcessPassPtr->getColorTexture();

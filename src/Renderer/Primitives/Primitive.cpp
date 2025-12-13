@@ -107,8 +107,8 @@ void Primitive::draw() const {
     glBindVertexArray(0);
 }
 
-void Primitive::draw(const Shader& shader) const {
-    shader.use();
+void Primitive::draw(const std::shared_ptr<Shader>& shader) const {
+    shader->use();
     draw();
 }
 

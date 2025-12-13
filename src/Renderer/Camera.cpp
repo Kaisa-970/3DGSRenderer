@@ -144,10 +144,12 @@ void Camera::processKeyboard(CameraMovement direction, float deltaTime) {
 void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPitch) {
     xOffset *= mouseSensitivity_;
     yOffset *= mouseSensitivity_;
-    
+    LOG_INFO("Mouse movement: xOffset: {}, yOffset: {}", xOffset, yOffset);
+    LOG_INFO("mouseSensitivity_: {}", mouseSensitivity_);
     yaw_ += xOffset;
     pitch_ += yOffset;
     
+    LOG_INFO("Camera yaw: {}, pitch: {}", yaw_, pitch_);
     // 限制俯仰角
     if (constrainPitch) {
         pitch_ = std::max(-89.0f, std::min(89.0f, pitch_));

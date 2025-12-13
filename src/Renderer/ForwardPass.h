@@ -22,7 +22,7 @@ public:
                 unsigned int colorTexture,
                 unsigned int depthTexture,
                 const std::vector<std::shared_ptr<Renderable>> &renderables,
-                Shader &shader,
+                std::shared_ptr<Shader> shader,
                 float timeSeconds);
 
 private:

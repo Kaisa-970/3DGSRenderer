@@ -58,7 +58,7 @@ public:
     void clear();
     bool isEmpty() const { return vertices_.empty(); }
 
-    virtual void draw(const Shader& shader) const override;
+    virtual void draw(const std::shared_ptr<Shader>& shader) const override;
 private:
     std::vector<Vertex> vertices_;
     std::vector<unsigned int> indices_;
