@@ -8,9 +8,6 @@
 
 GSENGINE_NAMESPACE_BEGIN
 
-constexpr int ACTION_RELEASE = 0;
-constexpr int ACTION_PRESS = 1;
-
 static const Renderer::Vector3 DEFAULT_CAM_POS(4.42f, 1.0f, -3.63f);
 
 Application::Application(AppConfig config) : m_appConfig(config)
@@ -43,13 +40,13 @@ bool Application::Init()
         return false;
     }
 
+    InitInputHandling();
+
     if (!InitGUI())
     {
         LOG_ERROR("GUI初始化失败");
         return false;
     }
-
-    InitInputHandling();
 
     // 调用派生类的初始化
     if (!OnInit())

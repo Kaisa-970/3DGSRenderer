@@ -10,6 +10,8 @@
 
 GSENGINE_NAMESPACE_BEGIN
 
+const int ACTION_RELEASE = 0;
+const int ACTION_PRESS = 1;
 struct AppConfig
 {
     int width = 1920;

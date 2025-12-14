@@ -14,8 +14,7 @@
 #include "ModelLoader/AssimpModelLoader.h"
 #include "Assets/MaterialManager.h"
 #include <memory>
-
-GSENGINE_NAMESPACE_BEGIN
+using namespace GSEngine;
 
 constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
 #define DEG2RAD(x) (x * DEG_TO_RAD)
@@ -141,6 +140,10 @@ void AppDemo::OnUpdate(float deltaTime)
         {
             pImpl->currentSelectedUID = picked;
             pImpl->selectedRenderable = m_scene->GetRenderableByUID(picked);
+        }
+        else 
+        {
+            pImpl->currentSelectedUID = 0;
         }
     }
 }
@@ -284,7 +287,7 @@ void AppDemo::SetupScene(
             ::Renderer::Random::randomFloat(-10.0f, 10.0f),
             ::Renderer::Random::randomFloat(-10.0f, 10.0f)
         );
-        sphereModel = ::Renderer::Matrix4::transpose(sphereModel);
+        sphereModel = sphereModel.transpose();
 
         auto renderable = std::make_shared<::Renderer::Renderable>();
         renderable->setPrimitive(spherePrimitive);
@@ -304,7 +307,7 @@ void AppDemo::SetupScene(
     ::Renderer::Matrix4 fxSphereModel = ::Renderer::Matrix4::identity();
     fxSphereModel.scaleBy(1.2f, 1.2f, 1.2f);
     fxSphereModel.translate(0.0f, 2.0f, -2.0f);
-    fxSphereModel = ::Renderer::Matrix4::transpose(fxSphereModel);
+    fxSphereModel = fxSphereModel.transpose();
     auto fxSphereRenderable = std::make_shared<::Renderer::Renderable>();
     fxSphereRenderable->setPrimitive(cubePrimitive);
     fxSphereRenderable->setMaterial(defaultMaterial);
@@ -316,7 +319,7 @@ void AppDemo::SetupScene(
     ::Renderer::Matrix4 quadModel = ::Renderer::Matrix4::identity();
     quadModel.scaleBy(10.0f, 10.0f, 10.0f);
     quadModel.rotate(DEG2RAD(-90.0f), ::Renderer::Vector3(1.0f, 0.0f, 0.0f));
-    quadModel = ::Renderer::Matrix4::transpose(quadModel);
+    quadModel = quadModel.transpose();
     auto quadRenderable = std::make_shared<::Renderer::Renderable>();
     quadRenderable->setPrimitive(quadPrimitive);
     quadRenderable->setMaterial(defaultMaterial);
@@ -328,7 +331,7 @@ void AppDemo::SetupScene(
     ::Renderer::Matrix4 model1M = ::Renderer::Matrix4::identity();
     model1M.scaleBy(0.3f, 0.3f, 0.3f);
     model1M.translate(0.0f, 1.0f, 2.0f);
-    model1M = ::Renderer::Matrix4::transpose(model1M);
+    model1M = model1M.transpose();
     auto model1Renderable = std::make_shared<::Renderer::Renderable>();
     model1Renderable->setModel(loadedModel);
     model1Renderable->setTransform(model1M);
@@ -337,11 +340,10 @@ void AppDemo::SetupScene(
     // 模型2
     ::Renderer::Matrix4 model2M = ::Renderer::Matrix4::identity();
     model2M.scaleBy(0.01f, 0.01f, 0.01f);
-    model2M = ::Renderer::Matrix4::transpose(model2M);
+    model2M = model2M.transpose();
     auto model2Renderable = std::make_shared<::Renderer::Renderable>();
     model2Renderable->setModel(loadedModel2);
     model2Renderable->setTransform(model2M);
     m_scene->AddRenderable(model2Renderable);
 }
-GSENGINE_NAMESPACE_END
 
