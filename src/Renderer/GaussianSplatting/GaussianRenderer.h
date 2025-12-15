@@ -9,6 +9,8 @@
 
 RENDERER_NAMESPACE_BEGIN
 
+static constexpr int SH_ORDER = 0;
+
 class RENDERER_API GaussianRenderer
 {
 public:
@@ -20,7 +22,7 @@ public:
 
     // 高质量splat渲染
     void drawSplats(const Renderer::Matrix4 &model, const Renderer::Matrix4 &view, const Renderer::Matrix4 &projection,
-                    int width, int height, unsigned int sceneDepthTexture = 0,
+                    bool useSort, int width, int height, unsigned int sceneDepthTexture = 0,
                     const Renderer::Vector3 &selectBoxPos = Renderer::Vector3(0.0f, 0.0f, 0.0f),
                     const Renderer::Vector3 &selectBoxSize = Renderer::Vector3(1.0f, 1.0f, 1.0f),
                     bool deleteSelectPoints = false,
@@ -40,7 +42,7 @@ private:
 
 private:
     std::vector<NormalPoint> m_points;
-    std::vector<GaussianPoint<3>> m_gaussianPoints;
+    std::vector<GaussianPoint<SH_ORDER>> m_gaussianPoints;
     std::vector<uint32_t> m_sortedIndices; // 排序后的索引
 
     Renderer::Shader m_shader;

@@ -14,8 +14,6 @@
 
 RENDERER_NAMESPACE_BEGIN
 
-static constexpr int SH_ORDER = 3;
-
 float sigmoid(float x)
 {
     return 1.0f / (1.0f + std::exp(-x));
@@ -558,15 +556,16 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4 &view)
     // }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> duration = end - start;
-    LOG_INFO("计算时间: {}秒", duration.count());
+    LOG_INFO("计算时间: {:.3f} ms", duration.count() * 1000.0f);
 
+    start = std::chrono::steady_clock::now();
     std::sort(std::execution::par_unseq, depthIndices.begin(), depthIndices.end(),
               [](const auto &a, const auto &b) { return a.first < b.first; });
     // radixSortParallel(depthIndices);
 
     end = std::chrono::steady_clock::now();
     duration = end - start;
-    LOG_INFO("排序时间: {}秒", duration.count());
+    LOG_INFO("排序时间: {:.3f} ms", duration.count() * 1000.0f);
     // // 更新排序后的索引
     for (size_t i = 0; i < depthIndices.size(); i++)
     {
@@ -587,7 +586,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4 &view)
 }
 
 void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer::Matrix4 &view,
-                                  const Renderer::Matrix4 &projection, int width, int height,
+                                  const Renderer::Matrix4 &projection, bool useSort, int width, int height,
                                   unsigned int sceneDepthTexture, const Renderer::Vector3 &selectBoxPos,
                                   const Renderer::Vector3 &selectBoxSize, bool deleteSelectPoints,
                                   const Renderer::Vector3 &selectColor, float gaussianScale)
@@ -616,35 +615,43 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
         }
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-        static bool isSorted = false;
         static Renderer::Vector3 camPosition;
-        if (!isSorted)
+        if (useSort)
         {
             // 1. 深度排序
             sortGaussiansByDepth(view);
 
+            std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
+            std::chrono::duration<double> duration = end2 - start;
+            LOG_INFO("总深度排序时间: {:.3f} ms", duration.count() * 1000.0f);
+
+            // 2. 更新GPU上的排序索引
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_orderSSBO);
+            err = glGetError();
+            if (err != GL_NO_ERROR)
+            {
+                LOG_ERROR("绑定SSBO错误: {}", err);
+                return;
+            }
+
+            std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_vertexCount * sizeof(uint32_t),
+                            reinterpret_cast<const uint32_t *>(m_sortedIndices.data()));
+
+            glFlush();
+            glFinish();
+            end2 = std::chrono::steady_clock::now();
+            duration = end2 - start2;
+            LOG_INFO("更新SSBO数据时间: {:.3f} ms", duration.count() * 1000.0f);
+            err = glGetError();
+            if (err != GL_NO_ERROR)
+            {
+                LOG_ERROR("更新SSBO数据错误: {}", err);
+                return;
+            }
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             // LOG_INFO("Camera Position: ({}, {}, {})", camPosition.x, camPosition.y, camPosition.z);
-            // isSorted = true;
         }
-        // 2. 更新GPU上的排序索引
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_orderSSBO);
-        err = glGetError();
-        if (err != GL_NO_ERROR)
-        {
-            LOG_ERROR("绑定SSBO错误: {}", err);
-            return;
-        }
-
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_vertexCount * sizeof(uint32_t),
-                        reinterpret_cast<const uint32_t *>(m_sortedIndices.data()));
-
-        err = glGetError();
-        if (err != GL_NO_ERROR)
-        {
-            LOG_ERROR("更新SSBO数据错误: {}", err);
-            return;
-        }
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         // 3. 启用混合
         // glDisable(GL_CULL_FACE);
@@ -711,8 +718,16 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
         // {
         //     renderCount = 10000; // m_vertexCount;
         // }
+        glFlush();
+        glFinish();
         uint32_t renderCount = m_vertexCount; // std::min(m_vertexCount, 10000u);  // 先只渲染1万个点测试
+        std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
+        glFlush();
+        glFinish();
+        std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
+        std::chrono::duration<double> duration = end3 - start3;
+        LOG_INFO("绘制时间: {:.3f} ms", duration.count() * 1000.0f);
         // int loop = 0;
         // for (uint32_t i = 0; i < renderCount; i += 1000)
         // {
@@ -733,11 +748,11 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
-        glFlush();
-        glFinish();
+        // glFlush();
+        // glFinish();
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        std::chrono::duration<double> duration = end - start;
-        LOG_INFO("总绘制时间: {}秒", duration.count());
+        duration = end - start;
+        LOG_INFO("总耗时: {:.3f} ms", duration.count() * 1000.0f);
         m_frameBuffer->Unbind();
     }
     catch (const std::exception &e)

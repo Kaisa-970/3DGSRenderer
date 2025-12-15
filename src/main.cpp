@@ -464,8 +464,9 @@ int main(int argc, char *argv[])
                     guiLayer.GetSelectBoxPosSize(selectBoxPos, selectBoxSize);
                     Renderer::Vector3 selectColor = guiLayer.GetSelectColor();
                     bool deleteSelectPoints = guiLayer.GetDeleteSelectPoints();
-                    gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH,
-                                                WIN_HEIGHT, geometryPass.getDepthTexture(), selectBoxPos, selectBoxSize,
+                    gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix,
+                                                camera.isChanged(), WIN_WIDTH, WIN_HEIGHT,
+                                                geometryPass.getDepthTexture(), selectBoxPos, selectBoxSize,
                                                 deleteSelectPoints, selectColor, guiLayer.GetGaussianScale());
                 }
                 // gaussianRenderer.drawSplats(Renderer::Matrix4::identity(), viewMatrix, projMatrix, WIN_WIDTH,

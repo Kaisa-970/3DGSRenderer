@@ -1,24 +1,24 @@
 #version 430 core
 
-#define POS_IDX 0
-#define NOR_IDX 3
-#define SHS_IDX 6
-#define OPA_IDX 54
-#define SCA_IDX 55
-#define ROT_IDX 58
-#define SH_DIM 3
-
-#define TOTAL_SIZE 62
-
 // #define POS_IDX 0
 // #define NOR_IDX 3
 // #define SHS_IDX 6
-// #define OPA_IDX 9
-// #define SCA_IDX 10
-// #define ROT_IDX 13
+// #define OPA_IDX 54
+// #define SCA_IDX 55
+// #define ROT_IDX 58
 // #define SH_DIM 3
 
-// #define TOTAL_SIZE 17
+// #define TOTAL_SIZE 62
+
+#define POS_IDX 0
+#define NOR_IDX 3
+#define SHS_IDX 6
+#define OPA_IDX 9
+#define SCA_IDX 10
+#define ROT_IDX 13
+#define SH_DIM 3
+
+#define TOTAL_SIZE 17
 
 const float SH_C0 = 0.28209479177387814f;
 const float SH_C1 = 0.4886025119029199f;
@@ -185,9 +185,7 @@ void main()
 
     vec4 viewPos = view * vec4(center, 1.0);
     vec4 homPos =  projection * viewPos;
-    distance = -viewPos.z;
-    distance = distance / 10.0;
-    distance = clamp(distance, 0.0, 1.0);
+
     viewDepth = -viewPos.z;
     worldPos = center;
     vec3 projPos = homPos.xyz / (homPos.w + 0.0000001);

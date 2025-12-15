@@ -176,6 +176,7 @@ void Camera::processKeyboard(CameraMovement direction, float deltaTime)
         position_ -= up_ * velocity;
         break;
     }
+    isChanged_ = true;
 }
 
 // 鼠标移动
@@ -194,6 +195,7 @@ void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPi
     }
 
     updateCameraVectors();
+    isChanged_ = true;
 }
 
 // 鼠标滚轮
@@ -236,11 +238,13 @@ void Camera::getRight(float &x, float &y, float &z) const
 void Camera::setPosition(const Vector3 &position)
 {
     position_ = position;
+    isChanged_ = true;
 }
 
 void Camera::setPosition(float x, float y, float z)
 {
     position_.set(x, y, z);
+    isChanged_ = true;
 }
 
 void Camera::setFov(float fov)
