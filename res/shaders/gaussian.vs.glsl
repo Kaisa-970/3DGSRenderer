@@ -69,7 +69,7 @@ out vec3 conic;
 out vec2 coordxy;
 out vec3 worldPos;
 
-mat3 computeCov3D(vec4 rots, vec3 scales) 
+mat3 computeCov3D(vec4 rots, vec3 scales)
 {
   float x = rots.y, y = rots.z, z = rots.w, r = rots.x;
   float xx = x*x, yy = y*y, zz = z*z;
@@ -83,7 +83,7 @@ mat3 computeCov3D(vec4 rots, vec3 scales)
   );
 
   mat3 scaleMatrix = mat3(
-    scaleMod * scales.x, 0, 0, 
+    scaleMod * scales.x, 0, 0,
     0, scaleMod * scales.y, 0,
     0, 0, scaleMod * scales.z
   );
@@ -96,8 +96,8 @@ mat3 computeCov3D(vec4 rots, vec3 scales)
 
 vec3 computeColorFromSH(int idx, int deg, vec3 pos)
 {
-	// The implementation is loosely based on code for 
-	// "Differentiable Point-Based Radiance Fields for 
+	// The implementation is loosely based on code for
+	// "Differentiable Point-Based Radiance Fields for
 	// Efficient View Synthesis" by Zhang et al. (2022)
 	vec3 dir = pos - campos;
 	dir = dir / length(dir);
@@ -234,14 +234,14 @@ void main()
         cov2d[0][0] * det_inv
     );
 
-    // float trace = cov2d[0][0] + cov2d[1][1];  
+    // float trace = cov2d[0][0] + cov2d[1][1];
     // float mid = trace * 0.5;
     // float discriminant = max(0.1, mid * mid - det);
     // float lambda1 = mid + sqrt(discriminant);
     // float lambda2 = mid - sqrt(discriminant);
 
     // float radius = 3.0 * sqrt(max(lambda1, lambda2));
-    
+
     // Project quad into screen space
     vec2 quadwh_scr = vec2(3.f * sqrt(cov2d[0][0]), 3.f * sqrt(cov2d[1][1]));
 
@@ -251,14 +251,14 @@ void main()
     // Update gaussian's position w.r.t the quad in NDC
     projPos.xy = projPos.xy + quadPosition * quadwh_ndc;
 
-    // // Calculate where this quad lies in pixel coordinates 
+    // // Calculate where this quad lies in pixel coordinates
     coordxy = quadPosition * quadwh_scr;
 
     // Set position
     gl_Position = vec4(projPos.xyz, 1.0);
     //gl_Position = homPos;
 
-    // Send values to fragment shader 
+    // Send values to fragment shader
     //const float SH_C0 = 0.28209479177387814; // 0.5 * sqrt(1/PI)
     outColor = (0.5 + SH_C0 * colorVal);
     outColor = max(vec3(0.0), outColor);

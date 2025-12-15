@@ -125,8 +125,11 @@ void GaussianRenderer::loadModel(const std::string &path)
 
     for (size_t i = 0; i < m_vertexCount; i++)
     {
-        m_gaussianPoints[i].position[0] = m_gaussianPoints[i].position[0];
-        m_gaussianPoints[i].position[1] = m_gaussianPoints[i].position[1];
+        m_gaussianPoints[i].position[1] = -m_gaussianPoints[i].position[1];
+        m_gaussianPoints[i].position[2] = -m_gaussianPoints[i].position[2];
+
+        // m_gaussianPoints[i].normal[1] = -m_gaussianPoints[i].normal[1];
+        // m_gaussianPoints[i].normal[2] = -m_gaussianPoints[i].normal[2];
 
         // 更新边界框
         minX = std::min(minX, m_gaussianPoints[i].position[0]);
@@ -148,6 +151,31 @@ void GaussianRenderer::loadModel(const std::string &path)
             m_gaussianPoints[i].rotation[1] = m_gaussianPoints[i].rotation[1] / angle;
             m_gaussianPoints[i].rotation[2] = m_gaussianPoints[i].rotation[2] / angle;
             m_gaussianPoints[i].rotation[3] = m_gaussianPoints[i].rotation[3] / angle;
+
+            // 对于wxyz顺序的四元数，绕X轴旋转180度的变换：
+            // q' = q_rotateX * q_original
+            // 其中 q_rotateX = (0, 1, 0, 0) 表示绕X轴旋转180度
+
+            float w_orig = m_gaussianPoints[i].rotation[0]; // w
+            float x_orig = m_gaussianPoints[i].rotation[1]; // x
+            float y_orig = m_gaussianPoints[i].rotation[2]; // y
+            float z_orig = m_gaussianPoints[i].rotation[3]; // z
+
+            // 应用变换：q' = q_rotateX * q_original
+            // 对于绕X轴旋转180度，这相当于：
+            // w' = -x_orig
+            // x' = w_orig
+            // y' = -z_orig
+            // z' = y_orig
+            float w_new = -x_orig;
+            float x_new = w_orig;
+            float y_new = -z_orig;
+            float z_new = y_orig;
+
+            m_gaussianPoints[i].rotation[0] = w_new;
+            m_gaussianPoints[i].rotation[1] = x_new;
+            m_gaussianPoints[i].rotation[2] = y_new;
+            m_gaussianPoints[i].rotation[3] = z_new;
         }
         else
         {
@@ -476,10 +504,10 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4 &view)
     // depthIndices.reserve(m_vertexCount);
 
     Matrix4 transposedView = view.transpose();
-    float v8 = view.m[8];
-    float v9 = view.m[9];
-    float v10 = view.m[10];
-    float v11 = view.m[11];
+    float v8 = transposedView.m[8];
+    float v9 = transposedView.m[9];
+    float v10 = transposedView.m[10];
+    float v11 = transposedView.m[11];
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     int thread_num = std::thread::hardware_concurrency(); // 使用CPU核心数
@@ -679,13 +707,15 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
         // 先用小数量测试，避免GPU超时
         // static uint32_t renderCount = 0;
         // renderCount += 10000;
-        // if (renderCount > m_vertexCount) {
-        //     renderCount = m_vertexCount;
+        // if (renderCount > m_vertexCount)
+        // {
+        //     renderCount = 10000; // m_vertexCount;
         // }
         uint32_t renderCount = m_vertexCount; // std::min(m_vertexCount, 10000u);  // 先只渲染1万个点测试
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
         // int loop = 0;
-        // for (uint32_t i = 0; i < renderCount; i+=1000) {
+        // for (uint32_t i = 0; i < renderCount; i += 1000)
+        // {
         //     m_splatShader.setInt("loop", loop);
         //     m_splatShader.setInt("instanceID", i);
         //     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1000);

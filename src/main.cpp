@@ -171,11 +171,11 @@ int main(int argc, char *argv[])
         // 创建相机（根据模型自动计算位置）
         // 模型中心约在 (-4.39, -4.85, -3.90)，尺寸约 48.50
         // 将相机放在模型前方，距离约为尺寸的1.5倍
-        Renderer::Vector3 camPos(4.42f, -1.0f, -3.63f);
-        Renderer::Camera camera(camPos,                               // 位置（模型中心前方）
-                                Renderer::Vector3(0.0f, -1.0f, 0.0f), // 世界上方向
-                                133.5f,                               // yaw: -90度 朝向 -Z 方向（看向模型）
-                                -14.0f                                // pitch: 0度 水平视角
+        Renderer::Vector3 camPos(4.42f, 1.0f, -3.63f);
+        Renderer::Camera camera(camPos,                              // 位置（模型中心前方）
+                                Renderer::Vector3(0.0f, 1.0f, 0.0f), // 世界上方向
+                                133.5f,                              // yaw: -90度 朝向 -Z 方向（看向模型）
+                                -14.0f                               // pitch: 0度 水平视角
         );
 
         camera.setMovementSpeed(2.0f); // 增大移动速度，因为场景较大
@@ -350,8 +350,8 @@ int main(int argc, char *argv[])
 
         Renderer::Matrix4 model2M = Renderer::Matrix4::identity();
         model2M.scaleBy(0.01f, 0.01f, 0.01f);
-        model2M.rotate(DEG2RAD(190.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
-        model2M.translate(-3.0f, 1.5f, 0.0f);
+        model2M.rotate(DEG2RAD(10.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
+        model2M.translate(-3.0f, -1.6f, 0.0f);
         model2M = model2M.transpose();
         auto model2Renderable = std::make_shared<Renderer::Renderable>();
         model2Renderable->setModel(loadedModel2);
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
             unsigned int mouseXInt = static_cast<unsigned int>(inputState.mouseX);
             unsigned int mouseYInt = WIN_HEIGHT - static_cast<unsigned int>(inputState.mouseY);
 
-            Renderer::Vector3 lightPos(0.0f, -5.0f, 0.0f);
+            Renderer::Vector3 lightPos(0.0f, 5.0f, 0.0f);
             float curX = 5.0f * std::sin(currentTime);
             float curZ = 5.0f * std::cos(currentTime);
             lightPos.x = curX;
