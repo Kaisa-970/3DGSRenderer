@@ -4,12 +4,16 @@
 #include "Renderer/FrameBuffer.h"
 #include "Renderer/MathUtils/Matrix.h"
 #include "Renderer/Shader.h"
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 RENDERER_NAMESPACE_BEGIN
 
-static constexpr int SH_ORDER = 0;
+static constexpr int SH_ORDER = 3;
 
 class RENDERER_API GaussianRenderer
 {
@@ -38,12 +42,31 @@ private:
     void mortonSort();
     void setupBuffers();
     void setupSplatBuffers();
-    void sortGaussiansByDepth(const Renderer::Matrix4 &view);
+    void sortGaussiansByDepth(const Renderer::Matrix4 &view);          // 原始std::sort方法
+    void sortGaussiansByDepthHistogram(const Renderer::Matrix4 &view); // 直方图+计数排序（最快）
+
+    // 后台排序相关
+    void backgroundSortThread();
+    void startBackgroundSort(const Renderer::Matrix4 &view);
+    void updateGPUBufferIfReady();
 
 private:
     std::vector<NormalPoint> m_points;
     std::vector<GaussianPoint<SH_ORDER>> m_gaussianPoints;
     std::vector<uint32_t> m_sortedIndices; // 排序后的索引
+
+    // 后台排序系统
+    std::thread m_sortThread;
+    std::mutex m_sortMutex;
+    std::condition_variable m_sortCV;
+    std::atomic<bool> m_sortThreadRunning{false};
+    std::atomic<bool> m_sortRequested{false};
+    std::atomic<bool> m_sortCompleted{false};
+    std::atomic<bool> m_shutdownThread{false};
+    std::atomic<bool> m_isSorting{false}; // 是否正在排序
+
+    Renderer::Matrix4 m_pendingViewMatrix;
+    std::vector<uint32_t> m_sortedIndicesBuffer; // 双缓冲：后台线程写入这里
 
     Renderer::Shader m_shader;
     Renderer::Shader m_splatShader;
