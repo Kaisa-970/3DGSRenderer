@@ -30,8 +30,15 @@ if [[ "$GRAPHICS_API" != "opengl" && "$GRAPHICS_API" != "gles3" ]]; then
     exit 1
 fi
 
+# 检查 Ninja 是否安装
+if ! command -v ninja &> /dev/null; then
+    echo "Error: Ninja is not installed"
+    echo "Please install it with: sudo apt-get install ninja-build"
+    exit 1
+fi
+
 # 获取 CPU 核心数用于并行编译
-NPROC=8
+NPROC=$(nproc 2>/dev/null || echo 8)
 
 OUTPUT_DIR="./output"
 OUTPUT_BIN_DIR="$OUTPUT_DIR/$BUILD_TYPE/bin"
@@ -49,40 +56,83 @@ fi
 echo "================================"
 echo "  Build type: $BUILD_TYPE"
 echo "  Graphics API: $GRAPHICS_API"
+echo "  Generator: Ninja"
 echo "  Parallel threads: $NPROC"
 echo "================================"
 
 # 配置 CMake
-cmake -B build $CMAKE_OPTIONS
+echo ""
+echo "Configuring CMake..."
+cmake -B build -G Ninja $CMAKE_OPTIONS
+
+if [ $? -ne 0 ]; then
+    echo "CMake configuration failed!"
+    exit 1
+fi
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OUTPUT_BIN_DIR
 
-cmake --build build --target Renderer -j$NPROC
+# 构建 Logger 模块
+echo ""
+echo "Building Logger module..."
+cmake --build build --target Logger --config $BUILD_TYPE -j$NPROC
+
+if [ $? -ne 0 ]; then
+    echo "Compile Logger module failed!"
+    exit 1
+fi
+
+# 复制 Logger 库文件
+LOGGER_SO="build/src/Logger/libLogger.so"
+if [ -f "$LOGGER_SO" ]; then
+    cp "$LOGGER_SO" "$OUTPUT_BIN_DIR/libLogger.so"
+    echo "Copied libLogger.so to output directory"
+fi
+
+# 构建 Renderer 模块
+echo ""
+echo "Building Renderer module..."
+cmake --build build --target Renderer --config $BUILD_TYPE -j$NPROC
 
 if [ $? -ne 0 ]; then
     echo "Compile Renderer module failed!"
     exit 1
 fi
 
-cp build/src/Renderer/libRenderer.so $OUTPUT_BIN_DIR/libRenderer.so
+# 复制 Renderer 库文件
+RENDERER_SO="build/src/Renderer/libRenderer.so"
+if [ -f "$RENDERER_SO" ]; then
+    cp "$RENDERER_SO" "$OUTPUT_BIN_DIR/libRenderer.so"
+    echo "Copied libRenderer.so to output directory"
+fi
 
-cmake --build build --target 3DGSRenderer -j$NPROC
+# 构建主程序
+echo ""
+echo "Building main executable..."
+cmake --build build --target 3DGSRenderer --config $BUILD_TYPE -j$NPROC
 
 if [ $? -ne 0 ]; then
     echo "Compile main executable failed!"
     exit 1
 fi
 
-# # 编译（使用多线程）
-# cmake --build build -j$NPROC
+# 复制可执行文件
+EXE_PATH="build/bin/3DGSRenderer"
+if [ ! -f "$EXE_PATH" ]; then
+    # 尝试其他可能的路径
+    EXE_PATH="build/bin/$BUILD_TYPE/3DGSRenderer"
+fi
+if [ ! -f "$EXE_PATH" ]; then
+    EXE_PATH="build/$BUILD_TYPE/3DGSRenderer"
+fi
 
-# # 检查 build 是否成功
-# if [ $? -ne 0 ]; then
-#     echo "Compile failed!"
-#     exit 1
-# fi
-
-cp build/bin/3DGSRenderer $OUTPUT_BIN_DIR/3DGSRenderer
-
-echo "Compile success!"
-echo "Run program: $OUTPUT_BIN_DIR/3DGSRenderer"
+if [ -f "$EXE_PATH" ]; then
+    cp "$EXE_PATH" "$OUTPUT_BIN_DIR/3DGSRenderer"
+    echo ""
+    echo "Compile success!"
+    echo "Run program: $OUTPUT_BIN_DIR/3DGSRenderer"
+else
+    echo ""
+    echo "Warning: Could not find 3DGSRenderer executable"
+    echo "Build may have succeeded but executable was not found at expected location"
+fi

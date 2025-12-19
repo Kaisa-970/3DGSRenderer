@@ -83,6 +83,10 @@ std::shared_ptr<Renderer::Scene> scene = nullptr;
 std::vector<std::shared_ptr<Renderer::Renderable>> forwardRenderables;
 std::shared_ptr<Renderer::Renderable> lightSphereRenderable = nullptr;
 
+std::shared_ptr<Renderer::CubePrimitive> cubePrimitivePtr = nullptr;
+std::shared_ptr<Renderer::SpherePrimitive> spherePrimitivePtr = nullptr;
+std::shared_ptr<Renderer::QuadPrimitive> quadPrimitivePtr = nullptr;
+
 float lastTime = 0.0f;
 int frameCount = 0;
 float startTime = 0.0f;
@@ -252,11 +256,11 @@ bool Application::Init()
     // window.setCursorMode(Renderer::Window::CursorMode::Disabled);
 
     // 创建彩色立方体
-    Renderer::CubePrimitive cubePrimitive(1.0f);
+    cubePrimitivePtr = std::make_shared<Renderer::CubePrimitive>(1.0f);
 
-    Renderer::SpherePrimitive spherePrimitive(1.0f, 64, 32);
+    spherePrimitivePtr = std::make_shared<Renderer::SpherePrimitive>(1.0f, 64, 32);
 
-    Renderer::QuadPrimitive quadPrimitive(10.0f);
+    quadPrimitivePtr = std::make_shared<Renderer::QuadPrimitive>(10.0f);
 
     // 测试相机矩阵
     camera.getViewMatrix(viewMatrix);
@@ -272,12 +276,9 @@ bool Application::Init()
     // 渲染循环
 
     guiLayer.SetScene(scene);
-    forwardEffectShaderPtr =
-        new Renderer::Shader("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    forwardEffectShaderPtr = new Renderer::Shader(Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl"));
     Renderer::Shader &forwardEffectShader = *forwardEffectShaderPtr;
-    auto makePrimitiveRef = [](Renderer::Primitive *prim) {
-        return std::shared_ptr<Renderer::Primitive>(prim, [](Renderer::Primitive *) {});
-    };
+
     float minX = -10.0f;
     float maxX = 10.0f;
     float minY = -10.0f;
@@ -286,7 +287,6 @@ bool Application::Init()
     float maxZ = 10.0f;
     float minRadius = 0.1f;
     float maxRadius = 1.0f;
-    auto spherePrimPtr = makePrimitiveRef(&spherePrimitive);
     for (int i = 0; i < 30; i++)
     {
         Renderer::Matrix4 sphereModel = Renderer::Matrix4::identity();
@@ -296,13 +296,13 @@ bool Application::Init()
                               Renderer::Random::randomFloat(minZ, maxZ));
         sphereModel = sphereModel.transpose();
         auto renderable = std::make_shared<Renderer::Renderable>();
-        renderable->setPrimitive(spherePrimPtr);
+        renderable->setPrimitive(spherePrimitivePtr);
         renderable->setTransform(sphereModel);
         renderable->setColor(Renderer::Random::randomColor());
         scene->AddRenderable(renderable);
     }
     // 轻量光源球体
-    lightSphereRenderable->setPrimitive(spherePrimPtr);
+    lightSphereRenderable->setPrimitive(spherePrimitivePtr);
     lightSphereRenderable->setColor(Renderer::Vector3(1.0f, 1.0f, 1.0f));
     scene->AddRenderable(lightSphereRenderable);
     // 特效半透明球体示例（正向渲染，不进入延迟管线）
@@ -311,19 +311,17 @@ bool Application::Init()
     fxSphereModel.translate(0.0f, 2.0f, -2.0f);
     fxSphereModel = fxSphereModel.transpose();
     auto fxSphereRenderable = std::make_shared<Renderer::Renderable>();
-    auto cubePrimPtr = makePrimitiveRef(&cubePrimitive);
-    fxSphereRenderable->setPrimitive(cubePrimPtr);
+    fxSphereRenderable->setPrimitive(cubePrimitivePtr);
     fxSphereRenderable->setTransform(fxSphereModel);
     fxSphereRenderable->setColor(Renderer::Vector3(0.2f, 0.8f, 1.0f));
     forwardRenderables.push_back(fxSphereRenderable);
     // 地面
-    auto quadPrimPtr = makePrimitiveRef(&quadPrimitive);
     Renderer::Matrix4 quadModel = Renderer::Matrix4::identity();
     quadModel.scaleBy(10.0f, 10.0f, 10.0f);
     quadModel.rotate(DEG2RAD(-90.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
     quadModel = quadModel.transpose();
     auto quadRenderable = std::make_shared<Renderer::Renderable>();
-    quadRenderable->setPrimitive(quadPrimPtr);
+    quadRenderable->setPrimitive(quadPrimitivePtr);
     quadRenderable->setTransform(quadModel);
     quadRenderable->setColor(Renderer::Vector3(0.5f, 0.5f, 0.5f));
     scene->AddRenderable(quadRenderable);
@@ -345,6 +343,7 @@ bool Application::Init()
     model2Renderable->setTransform(model2M);
     scene->AddRenderable(model2Renderable);
 
+    LOG_INFO("Initialization completed");
     startTime = Window::getTime();
     return true;
 }

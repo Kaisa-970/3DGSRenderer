@@ -4,8 +4,8 @@
 #include <windows.h>
 #endif
 
-const int WIN_WIDTH = 2560;
-const int WIN_HEIGHT = 1440;
+const int WIN_WIDTH = 1600;
+const int WIN_HEIGHT = 900;
 
 int main(int argc, char *argv[])
 {
