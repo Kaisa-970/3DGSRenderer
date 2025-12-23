@@ -10,9 +10,9 @@ fi
 
 # 设置 NVIDIA GPU 环境变量（如果指定）
 if [ "$USE_NVIDIA" = true ]; then
-    # export __NV_PRIME_RENDER_OFFLOAD=1
-    # export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    # export __VK_LAYER_NV_optimus=NVIDIA_only
+    export __NV_PRIME_RENDER_OFFLOAD=1
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export __VK_LAYER_NV_optimus=NVIDIA_only
     export MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA
     echo "=== Try to use NVIDIA GPU ==="
 else

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/TypeDef.h"
 #include "Renderer/FrameBuffer.h"
 #include "Renderer/MathUtils/Matrix.h"
 #include "Renderer/Shader.h"
+#include "TypeDef.h"
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -13,7 +13,7 @@
 
 RENDERER_NAMESPACE_BEGIN
 
-static constexpr int SH_ORDER = 3;
+static constexpr int SH_ORDER = 0;
 
 class RENDERER_API GaussianRenderer
 {
@@ -21,7 +21,7 @@ public:
     GaussianRenderer();
     ~GaussianRenderer();
 
-    void loadModel(const std::string &path);
+    void loadModel(const std::string &path, bool standardFormat = false);
     void drawPoints(const Renderer::Matrix4 &model, const Renderer::Matrix4 &view, const Renderer::Matrix4 &projection);
 
     // 高质量splat渲染

@@ -49,7 +49,9 @@ constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
 #define DEG2RAD(x) (x * DEG_TO_RAD)
 
 #ifdef RENDERER_DEBUG
-std::string pointCloudPath = "E:\\Models\\models\\bicycle\\point_cloud\\iteration_7000\\point_cloud.ply";
+// std::string pointCloudPath = "E:\\Models\\models\\bicycle\\point_cloud\\iteration_7000\\point_cloud.ply";
+std::string pointCloudPath = "E:\\Models\\xggc\\point_cloud.ply";
+// std::string pointCloudPath = "./res/20251117-093205.ply";
 std::string modelPath = "./res/backpack/backpack.obj";
 std::string model2Path = "./res/SFL-CDD14_Max.fbx";
 // std::string model2Path = "./res/monkey.glb";
@@ -164,7 +166,7 @@ int main(int argc, char *argv[])
 
         Renderer::GaussianRenderer gaussianRenderer;
         // gaussianRenderer.loadModel("res/input.ply");
-        gaussianRenderer.loadModel(pointCloudPath);
+        gaussianRenderer.loadModel(pointCloudPath, true);
 
         std::shared_ptr<Renderer::Model> loadedModel = Renderer::Model::LoadModelFromFile(modelPath);
         std::shared_ptr<Renderer::Model> loadedModel2 = Renderer::Model::LoadModelFromFile(model2Path);

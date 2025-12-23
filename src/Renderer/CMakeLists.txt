@@ -31,6 +31,9 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/PlyLoader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/tinyply/tinyply.cpp
 )
 
 set(RENDERER_HEADERS
@@ -39,7 +42,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/RendererContext.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Camera.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/RenderCore.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/TypeDef.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/BaseDef.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Vector.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Matrix.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/Primitive.h
@@ -69,6 +72,10 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/PlyLoader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/tinyply/tinyply.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/TypeDef.h
 )
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/src/vendor/imgui)

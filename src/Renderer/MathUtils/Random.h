@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Core/TypeDef.h"
+#include "Core/BaseDef.h"
 #include "Vector.h"
 
 RENDERER_NAMESPACE_BEGIN
 
-class RENDERER_API Random {
+class RENDERER_API Random
+{
 public:
     static float randomFloat(float min, float max);
     static int randomInt(int min, int max);

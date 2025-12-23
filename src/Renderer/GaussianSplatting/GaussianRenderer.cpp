@@ -13,6 +13,7 @@
 #include <thread>
 #include <vector>
 
+#include "PlyLoader.h"
 RENDERER_NAMESPACE_BEGIN
 
 float sigmoid(float x)
@@ -101,40 +102,50 @@ GaussianRenderer::~GaussianRenderer()
         glDeleteTextures(1, &m_colorTexture);
 }
 
-void GaussianRenderer::loadModel(const std::string &path)
+void GaussianRenderer::loadModel(const std::string &path, bool standardFormat)
 {
-    std::ifstream ifs(path, std::ios_base::binary);
-    if (!ifs.is_open())
+    if (!standardFormat)
     {
-        std::cerr << "Failed to open model file: " << path << std::endl;
-        return;
+        PlyLoader plyLoader;
+        if (!plyLoader.LoadGaussianPlyAoS(path, m_gaussianPoints))
+        {
+            LOG_CORE_ERROR("Failed to load model: {}", path);
+            return;
+        }
+        m_vertexCount = m_gaussianPoints.size();
     }
-
-    // std::string line;
-    // while (std::getline(ifs, line)) {
-    //     std::istringstream iss(line);
-
-    std::string buffer;
-    std::getline(ifs, buffer);
-    std::getline(ifs, buffer);
-    std::getline(ifs, buffer);
-
-    std::stringstream ss(buffer);
-    std::string dummy;
-    ss >> dummy;
-    ss >> dummy;
-    int count;
-    ss >> count;
-    std::cout << "Load model: " << path << " with " << count << " points" << std::endl;
-
-    while (buffer != "end_header")
+    else
     {
+        std::ifstream ifs(path, std::ios_base::binary);
+        if (!ifs.is_open())
+        {
+            std::cerr << "Failed to open model file: " << path << std::endl;
+            return;
+        }
+
+        std::string buffer;
         std::getline(ifs, buffer);
-    }
+        std::getline(ifs, buffer);
+        std::getline(ifs, buffer);
 
-    m_vertexCount = count;
-    m_gaussianPoints.resize(m_vertexCount);
-    ifs.read(reinterpret_cast<char *>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<SH_ORDER>));
+        std::stringstream ss(buffer);
+        std::string dummy;
+        ss >> dummy;
+        ss >> dummy;
+        int count;
+        ss >> count;
+        std::cout << "Load model: " << path << " with " << count << " points" << std::endl;
+
+        while (buffer != "end_header")
+        {
+            std::getline(ifs, buffer);
+        }
+
+        m_vertexCount = count;
+        m_gaussianPoints.resize(m_vertexCount);
+        ifs.read(reinterpret_cast<char *>(m_gaussianPoints.data()), m_vertexCount * sizeof(GaussianPoint<SH_ORDER>));
+        ifs.close();
+    }
 
     // 计算模型的边界框
     float minX = 1e10f, minY = 1e10f, minZ = 1e10f;
@@ -142,41 +153,41 @@ void GaussianRenderer::loadModel(const std::string &path)
 
     for (size_t i = 0; i < m_vertexCount; i++)
     {
-        m_gaussianPoints[i].position[1] = -m_gaussianPoints[i].position[1];
-        m_gaussianPoints[i].position[2] = -m_gaussianPoints[i].position[2];
+        m_gaussianPoints[i].position.position[1] = -m_gaussianPoints[i].position.position[1];
+        m_gaussianPoints[i].position.position[2] = -m_gaussianPoints[i].position.position[2];
 
         // m_gaussianPoints[i].normal[1] = -m_gaussianPoints[i].normal[1];
         // m_gaussianPoints[i].normal[2] = -m_gaussianPoints[i].normal[2];
 
         // 更新边界框
-        minX = std::min(minX, m_gaussianPoints[i].position[0]);
-        minY = std::min(minY, m_gaussianPoints[i].position[1]);
-        minZ = std::min(minZ, m_gaussianPoints[i].position[2]);
-        maxX = std::max(maxX, m_gaussianPoints[i].position[0]);
-        maxY = std::max(maxY, m_gaussianPoints[i].position[1]);
-        maxZ = std::max(maxZ, m_gaussianPoints[i].position[2]);
+        minX = std::min(minX, m_gaussianPoints[i].position.position[0]);
+        minY = std::min(minY, m_gaussianPoints[i].position.position[1]);
+        minZ = std::min(minZ, m_gaussianPoints[i].position.position[2]);
+        maxX = std::max(maxX, m_gaussianPoints[i].position.position[0]);
+        maxY = std::max(maxY, m_gaussianPoints[i].position.position[1]);
+        maxZ = std::max(maxZ, m_gaussianPoints[i].position.position[2]);
 
         // 旋转归一化
-        float angle = std::sqrt(m_gaussianPoints[i].rotation[0] * m_gaussianPoints[i].rotation[0] +
-                                m_gaussianPoints[i].rotation[1] * m_gaussianPoints[i].rotation[1] +
-                                m_gaussianPoints[i].rotation[2] * m_gaussianPoints[i].rotation[2] +
-                                m_gaussianPoints[i].rotation[3] * m_gaussianPoints[i].rotation[3]);
+        float angle = std::sqrt(m_gaussianPoints[i].rotation.rotation[0] * m_gaussianPoints[i].rotation.rotation[0] +
+                                m_gaussianPoints[i].rotation.rotation[1] * m_gaussianPoints[i].rotation.rotation[1] +
+                                m_gaussianPoints[i].rotation.rotation[2] * m_gaussianPoints[i].rotation.rotation[2] +
+                                m_gaussianPoints[i].rotation.rotation[3] * m_gaussianPoints[i].rotation.rotation[3]);
 
         if (angle > 0.00001f)
         {
-            m_gaussianPoints[i].rotation[0] = m_gaussianPoints[i].rotation[0] / angle;
-            m_gaussianPoints[i].rotation[1] = m_gaussianPoints[i].rotation[1] / angle;
-            m_gaussianPoints[i].rotation[2] = m_gaussianPoints[i].rotation[2] / angle;
-            m_gaussianPoints[i].rotation[3] = m_gaussianPoints[i].rotation[3] / angle;
+            m_gaussianPoints[i].rotation.rotation[0] = m_gaussianPoints[i].rotation.rotation[0] / angle;
+            m_gaussianPoints[i].rotation.rotation[1] = m_gaussianPoints[i].rotation.rotation[1] / angle;
+            m_gaussianPoints[i].rotation.rotation[2] = m_gaussianPoints[i].rotation.rotation[2] / angle;
+            m_gaussianPoints[i].rotation.rotation[3] = m_gaussianPoints[i].rotation.rotation[3] / angle;
 
             // 对于wxyz顺序的四元数，绕X轴旋转180度的变换：
             // q' = q_rotateX * q_original
             // 其中 q_rotateX = (0, 1, 0, 0) 表示绕X轴旋转180度
 
-            float w_orig = m_gaussianPoints[i].rotation[0]; // w
-            float x_orig = m_gaussianPoints[i].rotation[1]; // x
-            float y_orig = m_gaussianPoints[i].rotation[2]; // y
-            float z_orig = m_gaussianPoints[i].rotation[3]; // z
+            float w_orig = m_gaussianPoints[i].rotation.rotation[0]; // w
+            float x_orig = m_gaussianPoints[i].rotation.rotation[1]; // x
+            float y_orig = m_gaussianPoints[i].rotation.rotation[2]; // y
+            float z_orig = m_gaussianPoints[i].rotation.rotation[3]; // z
 
             // 应用变换：q' = q_rotateX * q_original
             // 对于绕X轴旋转180度，这相当于：
@@ -189,26 +200,25 @@ void GaussianRenderer::loadModel(const std::string &path)
             float y_new = -z_orig;
             float z_new = y_orig;
 
-            m_gaussianPoints[i].rotation[0] = w_new;
-            m_gaussianPoints[i].rotation[1] = x_new;
-            m_gaussianPoints[i].rotation[2] = y_new;
-            m_gaussianPoints[i].rotation[3] = z_new;
+            m_gaussianPoints[i].rotation.rotation[0] = w_new;
+            m_gaussianPoints[i].rotation.rotation[1] = x_new;
+            m_gaussianPoints[i].rotation.rotation[2] = y_new;
+            m_gaussianPoints[i].rotation.rotation[3] = z_new;
         }
         else
         {
-            m_gaussianPoints[i].rotation[0] = 1.0f;
-            m_gaussianPoints[i].rotation[1] = 0.0f;
-            m_gaussianPoints[i].rotation[2] = 0.0f;
-            m_gaussianPoints[i].rotation[3] = 0.0f;
+            m_gaussianPoints[i].rotation.rotation[0] = 1.0f;
+            m_gaussianPoints[i].rotation.rotation[1] = 0.0f;
+            m_gaussianPoints[i].rotation.rotation[2] = 0.0f;
+            m_gaussianPoints[i].rotation.rotation[3] = 0.0f;
         }
 
-        m_gaussianPoints[i].scale[0] = std::exp(m_gaussianPoints[i].scale[0]);
-        m_gaussianPoints[i].scale[1] = std::exp(m_gaussianPoints[i].scale[1]);
-        m_gaussianPoints[i].scale[2] = std::exp(m_gaussianPoints[i].scale[2]);
+        m_gaussianPoints[i].scale.scale[0] = std::exp(m_gaussianPoints[i].scale.scale[0]);
+        m_gaussianPoints[i].scale.scale[1] = std::exp(m_gaussianPoints[i].scale.scale[1]);
+        m_gaussianPoints[i].scale.scale[2] = std::exp(m_gaussianPoints[i].scale.scale[2]);
 
-        m_gaussianPoints[i].opacity = sigmoid(m_gaussianPoints[i].opacity);
+        m_gaussianPoints[i].opacity.opacity = sigmoid(m_gaussianPoints[i].opacity.opacity);
     }
-    ifs.close();
 
     // 执行Morton排序以提高空间局部性
     mortonSort();
@@ -293,12 +303,12 @@ void GaussianRenderer::mortonSort()
 
     for (const auto &point : m_gaussianPoints)
     {
-        minX = std::min(minX, point.position[0]);
-        minY = std::min(minY, point.position[1]);
-        minZ = std::min(minZ, point.position[2]);
-        maxX = std::max(maxX, point.position[0]);
-        maxY = std::max(maxY, point.position[1]);
-        maxZ = std::max(maxZ, point.position[2]);
+        minX = std::min(minX, point.position.position[0]);
+        minY = std::min(minY, point.position.position[1]);
+        minZ = std::min(minZ, point.position.position[2]);
+        maxX = std::max(maxX, point.position.position[0]);
+        maxY = std::max(maxY, point.position.position[1]);
+        maxZ = std::max(maxZ, point.position.position[2]);
     }
 
     // 计算范围
@@ -328,9 +338,9 @@ void GaussianRenderer::mortonSort()
     for (uint32_t i = 0; i < m_vertexCount; ++i)
     {
         // 归一化坐标到[0,1]范围
-        float nx = (m_gaussianPoints[i].position[0] - minX) / rangeX;
-        float ny = (m_gaussianPoints[i].position[1] - minY) / rangeY;
-        float nz = (m_gaussianPoints[i].position[2] - minZ) / rangeZ;
+        float nx = (m_gaussianPoints[i].position.position[0] - minX) / rangeX;
+        float ny = (m_gaussianPoints[i].position.position[1] - minY) / rangeY;
+        float nz = (m_gaussianPoints[i].position.position[2] - minZ) / rangeZ;
 
         uint64_t mortonCode = encodeMorton3D21(nx, ny, nz);
         mortonIndices.push_back({mortonCode, i});
@@ -554,7 +564,7 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
 
         for (uint32_t i = 0; i < m_vertexCount; ++i)
         {
-            const float *pos = m_gaussianPoints[i].position;
+            const float *pos = m_gaussianPoints[i].position.position;
             sceneBounds.minX = std::min(sceneBounds.minX, pos[0]);
             sceneBounds.maxX = std::max(sceneBounds.maxX, pos[0]);
             sceneBounds.minY = std::min(sceneBounds.minY, pos[1]);
@@ -619,7 +629,7 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
 
             for (uint32_t i = startIdx; i < endIdx; ++i)
             {
-                const float *pos = m_gaussianPoints[i].position;
+                const float *pos = m_gaussianPoints[i].position.position;
                 float d = pos[0] * dx + pos[1] * dy + pos[2] * dz - minDist;
                 uint32_t sortKey = (range > 1e-6f) ? std::min(bucketCount - 1, uint32_t(d * scale)) : 0u;
                 distances[i] = sortKey;
@@ -747,7 +757,7 @@ void GaussianRenderer::backgroundSortThread()
 
                 for (uint32_t i = 0; i < m_vertexCount; ++i)
                 {
-                    const float *pos = m_gaussianPoints[i].position;
+                    const float *pos = m_gaussianPoints[i].position.position;
                     sceneBounds.minX = std::min(sceneBounds.minX, pos[0]);
                     sceneBounds.maxX = std::max(sceneBounds.maxX, pos[0]);
                     sceneBounds.minY = std::min(sceneBounds.minY, pos[1]);
@@ -800,7 +810,7 @@ void GaussianRenderer::backgroundSortThread()
 
                     for (uint32_t i = startIdx; i < endIdx; ++i)
                     {
-                        const float *pos = m_gaussianPoints[i].position;
+                        const float *pos = m_gaussianPoints[i].position.position;
                         float d = pos[0] * dx + pos[1] * dy + pos[2] * dz - minDist;
                         uint32_t sortKey = (range > 1e-6f) ? std::min(bucketCount - 1, uint32_t(d * scale)) : 0u;
                         distances[i] = sortKey;
@@ -956,7 +966,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4 &view)
 
             for (uint32_t i = start; i < end; i++)
             {
-                const float *pos = m_gaussianPoints[i].position;
+                const float *pos = m_gaussianPoints[i].position.position;
                 float viewZ = v8 * pos[0] + v9 * pos[1] + v10 * pos[2] + v11;
                 depthIndices[i].first = viewZ;
                 depthIndices[i].second = i;
