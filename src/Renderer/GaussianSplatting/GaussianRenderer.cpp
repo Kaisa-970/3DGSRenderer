@@ -151,11 +151,15 @@ void GaussianRenderer::loadModel(const std::string &path, bool standardFormat)
     float minX = 1e10f, minY = 1e10f, minZ = 1e10f;
     float maxX = -1e10f, maxY = -1e10f, maxZ = -1e10f;
 
+    m_gaussianPositions.resize(m_vertexCount * 3);
     for (size_t i = 0; i < m_vertexCount; i++)
     {
         m_gaussianPoints[i].position.position[1] = -m_gaussianPoints[i].position.position[1];
         m_gaussianPoints[i].position.position[2] = -m_gaussianPoints[i].position.position[2];
 
+        m_gaussianPositions[i * 3 + 0] = m_gaussianPoints[i].position.position[0];
+        m_gaussianPositions[i * 3 + 1] = m_gaussianPoints[i].position.position[1];
+        m_gaussianPositions[i * 3 + 2] = m_gaussianPoints[i].position.position[2];
         // m_gaussianPoints[i].normal[1] = -m_gaussianPoints[i].normal[1];
         // m_gaussianPoints[i].normal[2] = -m_gaussianPoints[i].normal[2];
 
@@ -338,9 +342,9 @@ void GaussianRenderer::mortonSort()
     for (uint32_t i = 0; i < m_vertexCount; ++i)
     {
         // 归一化坐标到[0,1]范围
-        float nx = (m_gaussianPoints[i].position.position[0] - minX) / rangeX;
-        float ny = (m_gaussianPoints[i].position.position[1] - minY) / rangeY;
-        float nz = (m_gaussianPoints[i].position.position[2] - minZ) / rangeZ;
+        float nx = (m_gaussianPositions[i * 3 + 0] - minX) / rangeX;
+        float ny = (m_gaussianPositions[i * 3 + 1] - minY) / rangeY;
+        float nz = (m_gaussianPositions[i * 3 + 2] - minZ) / rangeZ;
 
         uint64_t mortonCode = encodeMorton3D21(nx, ny, nz);
         mortonIndices.push_back({mortonCode, i});
@@ -365,6 +369,12 @@ void GaussianRenderer::mortonSort()
         m_sortedIndices[i] = i; // 重排后索引与数据顺序一致
     }
     m_gaussianPoints.swap(sortedPoints);
+    for (uint32_t i = 0; i < m_vertexCount; ++i)
+    {
+        m_gaussianPositions[i * 3 + 0] = m_gaussianPoints[i].position.position[0];
+        m_gaussianPositions[i * 3 + 1] = m_gaussianPoints[i].position.position[1];
+        m_gaussianPositions[i * 3 + 2] = m_gaussianPoints[i].position.position[2];
+    }
 
     LOG_INFO("Morton排序完成，共{}个点", m_vertexCount);
 }
@@ -564,7 +574,7 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
 
         for (uint32_t i = 0; i < m_vertexCount; ++i)
         {
-            const float *pos = m_gaussianPoints[i].position.position;
+            const float *pos = m_gaussianPositions.data() + i * 3;
             sceneBounds.minX = std::min(sceneBounds.minX, pos[0]);
             sceneBounds.maxX = std::max(sceneBounds.maxX, pos[0]);
             sceneBounds.minY = std::min(sceneBounds.minY, pos[1]);
@@ -629,7 +639,7 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
 
             for (uint32_t i = startIdx; i < endIdx; ++i)
             {
-                const float *pos = m_gaussianPoints[i].position.position;
+                const float *pos = m_gaussianPositions.data() + i * 3;
                 float d = pos[0] * dx + pos[1] * dy + pos[2] * dz - minDist;
                 uint32_t sortKey = (range > 1e-6f) ? std::min(bucketCount - 1, uint32_t(d * scale)) : 0u;
                 distances[i] = sortKey;
@@ -757,7 +767,7 @@ void GaussianRenderer::backgroundSortThread()
 
                 for (uint32_t i = 0; i < m_vertexCount; ++i)
                 {
-                    const float *pos = m_gaussianPoints[i].position.position;
+                    const float *pos = m_gaussianPositions.data() + i * 3;
                     sceneBounds.minX = std::min(sceneBounds.minX, pos[0]);
                     sceneBounds.maxX = std::max(sceneBounds.maxX, pos[0]);
                     sceneBounds.minY = std::min(sceneBounds.minY, pos[1]);
@@ -810,7 +820,7 @@ void GaussianRenderer::backgroundSortThread()
 
                     for (uint32_t i = startIdx; i < endIdx; ++i)
                     {
-                        const float *pos = m_gaussianPoints[i].position.position;
+                        const float *pos = m_gaussianPositions.data() + i * 3;
                         float d = pos[0] * dx + pos[1] * dy + pos[2] * dz - minDist;
                         uint32_t sortKey = (range > 1e-6f) ? std::min(bucketCount - 1, uint32_t(d * scale)) : 0u;
                         distances[i] = sortKey;
@@ -966,7 +976,7 @@ void GaussianRenderer::sortGaussiansByDepth(const Renderer::Matrix4 &view)
 
             for (uint32_t i = start; i < end; i++)
             {
-                const float *pos = m_gaussianPoints[i].position.position;
+                const float *pos = m_gaussianPositions.data() + i * 3;
                 float viewZ = v8 * pos[0] + v9 * pos[1] + v10 * pos[2] + v11;
                 depthIndices[i].first = viewZ;
                 depthIndices[i].second = i;

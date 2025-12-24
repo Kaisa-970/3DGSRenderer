@@ -53,6 +53,7 @@ private:
 private:
     std::vector<NormalPoint> m_points;
     std::vector<GaussianPoint<SH_ORDER>> m_gaussianPoints;
+    std::vector<float> m_gaussianPositions;
     std::vector<uint32_t> m_sortedIndices; // 排序后的索引
 
     // 后台排序系统
