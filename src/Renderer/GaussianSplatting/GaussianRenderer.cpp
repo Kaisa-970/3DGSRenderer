@@ -1221,11 +1221,11 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
         //     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, count);
         // }
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
-        // glFlush();
-        // glFinish();
+        glFlush();
+        glFinish();
         std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = end3 - start3;
-        // LOG_INFO("绘制时间: {:.3f} ms", duration.count() * 1000.0f);
+        LOG_INFO("绘制时间: {:.3f} ms", duration.count() * 1000.0f);
         // int loop = 0;
         // for (uint32_t i = 0; i < renderCount; i += 1000)
         // {

@@ -29,8 +29,11 @@ ThreadPool::ThreadPool(size_t numThreads)
 
                 task();
 
-                m_activeCount--;
-                m_condition.notify_all();
+                {
+                    std::unique_lock<std::mutex> lock(m_queueMutex);
+                    m_activeCount--;
+                    m_condition.notify_all();
+                }
             }
         });
     }
