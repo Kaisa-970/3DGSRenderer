@@ -3,12 +3,10 @@
 #include "Renderer/FrameBuffer.h"
 #include "Renderer/MathUtils/Matrix.h"
 #include "Renderer/Shader.h"
+#include "Renderer/ThreadPool/ThreadPool.h"
 #include "TypeDef.h"
-#include <atomic>
-#include <condition_variable>
-#include <mutex>
+#include <memory>
 #include <string>
-#include <thread>
 #include <vector>
 
 RENDERER_NAMESPACE_BEGIN
@@ -55,6 +53,12 @@ private:
     std::vector<GaussianPoint<SH_ORDER>> m_gaussianPoints;
     std::vector<float> m_gaussianPositions;
     std::vector<uint32_t> m_sortedIndices; // 排序后的索引
+
+    // 线程池（用于并行排序）
+    std::unique_ptr<ThreadPool> m_threadPool;
+    std::atomic<int> m_taskCounter{0};
+    std::mutex m_taskMutex;
+    std::condition_variable m_taskCV;
 
     // 后台排序系统
     std::thread m_sortThread;

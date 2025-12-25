@@ -47,6 +47,11 @@ GaussianRenderer::GaussianRenderer()
     : m_shader(Renderer::Shader::fromFiles("res/shaders/point.vs.glsl", "res/shaders/point.fs.glsl")),
       m_splatShader(Renderer::Shader::fromFiles("res/shaders/gaussian.vs.glsl", "res/shaders/gaussian.fs.glsl"))
 {
+    // 初始化线程池
+    int numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0)
+        numThreads = 8;
+    m_threadPool = std::make_unique<ThreadPool>(numThreads);
 
     m_frameBuffer = new FrameBuffer();
     glGenTextures(1, &m_colorTexture);
@@ -62,7 +67,7 @@ GaussianRenderer::GaussianRenderer()
     m_sortThreadRunning = true;
     m_sortThread = std::thread(&GaussianRenderer::backgroundSortThread, this);
 
-    LOG_INFO("GaussianRenderer创建成功");
+    LOG_INFO("GaussianRenderer创建成功，线程池已初始化({} 线程)", numThreads);
 }
 
 GaussianRenderer::~GaussianRenderer()
@@ -550,13 +555,13 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
 
     std::chrono::steady_clock::time_point totalStart = std::chrono::steady_clock::now();
 
-    // 1. 提取相机位置和方向
-    Matrix4 invView = view.inverse();
-    float px = invView.m[12];
-    float py = invView.m[13];
-    float pz = invView.m[14];
+    // // 1. 提取相机位置和方向
+    // Matrix4 invView = view.inverse();
+    // float px = invView.m[12];
+    // float py = invView.m[13];
+    // float pz = invView.m[14];
 
-    LOG_INFO("相机位置: ({}, {}, {})", px, py, pz);
+    // LOG_INFO("相机位置: ({}, {}, {})", px, py, pz);
 
     // 相机前向方向（view矩阵的第3列取反）
     Matrix4 transposedView = view.transpose();
@@ -564,7 +569,7 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
     float dy = transposedView.m[9];
     float dz = transposedView.m[10];
 
-    LOG_INFO("相机前向方向: ({}, {}, {})", dx, dy, dz);
+    // LOG_INFO("相机前向方向: ({}, {}, {})", dx, dy, dz);
 
     // 2. 初始化场景边界（只计算一次）
     if (!sceneBounds.initialized)
@@ -583,7 +588,7 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
             sceneBounds.maxZ = std::max(sceneBounds.maxZ, pos[2]);
         }
         sceneBounds.initialized = true;
-        LOG_INFO("场景边界初始化完成");
+        // LOG_INFO("场景边界初始化完成");
     }
 
     // 3. 计算边界框8个角点到相机方向的距离范围
@@ -603,8 +608,8 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
     // 4. 计算排序需要的位数（使用更少的位数以提高性能）
     const uint32_t compareBits = std::max(12u, std::min(16u, uint32_t(std::round(std::log2(m_vertexCount / 4)))));
     const uint32_t bucketCount = (1u << compareBits);
-    LOG_INFO("排序需要的位数: {}", compareBits);
-    LOG_INFO("桶数量: {}", bucketCount);
+    // LOG_INFO("排序需要的位数: {}", compareBits);
+    // LOG_INFO("桶数量: {}", bucketCount);
 
     // 5. 初始化缓冲区
     if (distances.size() != m_vertexCount)
@@ -624,16 +629,14 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
         thread_num = 8;
 
     const float scale = (range > 1e-6f) ? (float(bucketCount - 1) / range) : 0.0f;
-    LOG_INFO("比例: {}", scale);
-
-    std::vector<std::thread> threads;
-    threads.reserve(thread_num);
+    // LOG_INFO("比例: {}", scale);
 
     uint32_t chunkSize = (m_vertexCount + thread_num - 1) / thread_num;
 
+    // 使用线程池并行计算距离
     for (int t = 0; t < thread_num; ++t)
     {
-        threads.emplace_back([&, t, chunkSize, scale]() {
+        m_threadPool->enqueue([this, t, chunkSize, scale, dx, dy, dz, minDist, bucketCount, range]() {
             uint32_t startIdx = t * chunkSize;
             uint32_t endIdx = std::min(startIdx + chunkSize, m_vertexCount);
 
@@ -647,11 +650,16 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
         });
     }
 
-    for (auto &thread : threads)
-    {
-        thread.join();
-    }
+    // 等待所有任务完成
+    m_threadPool->waitAll();
 
+    // for (int i = 0; i < m_vertexCount; i++)
+    // {
+    //     const float *pos = m_gaussianPositions.data() + i * 3;
+    //     float d = pos[0] * dx + pos[1] * dy + pos[2] * dz - minDist;
+    //     uint32_t sortKey = (range > 1e-6f) ? std::min(bucketCount - 1, uint32_t(d * scale)) : 0u;
+    //     distances[i] = sortKey;
+    // }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> duration = end - start;
     LOG_INFO("距离计算时间: {:.3f} ms", duration.count() * 1000.0);
@@ -662,10 +670,10 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
     // 并行计数 - 使用局部计数器避免竞争
     std::vector<std::vector<uint32_t>> localCounts(thread_num, std::vector<uint32_t>(bucketCount, 0));
 
-    threads.clear();
+    // 使用线程池并行计数
     for (int t = 0; t < thread_num; ++t)
     {
-        threads.emplace_back([&, t, chunkSize]() {
+        m_threadPool->enqueue([this, t, chunkSize, &localCounts]() {
             uint32_t startIdx = t * chunkSize;
             uint32_t endIdx = std::min(startIdx + chunkSize, m_vertexCount);
 
@@ -676,21 +684,31 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
         });
     }
 
-    for (auto &thread : threads)
-    {
-        thread.join();
-    }
+    // 等待所有任务完成
+    m_threadPool->waitAll();
 
-    // 合并计数
+    // 并行合并计数（按桶分配给不同线程）
+    uint32_t bucketsPerThread = (bucketCount + thread_num - 1) / thread_num;
     for (int t = 0; t < thread_num; ++t)
     {
-        for (uint32_t i = 0; i < bucketCount; ++i)
-        {
-            countBuffer[i] += localCounts[t][i];
-        }
-    }
+        m_threadPool->enqueue([&, t, bucketsPerThread]() {
+            uint32_t bucketStart = t * bucketsPerThread;
+            uint32_t bucketEnd = std::min(bucketStart + bucketsPerThread, bucketCount);
 
-    // 转换为前缀和
+            for (uint32_t i = bucketStart; i < bucketEnd; ++i)
+            {
+                uint32_t sum = 0;
+                for (int j = 0; j < thread_num; ++j)
+                {
+                    sum += localCounts[j][i];
+                }
+                countBuffer[i] = sum;
+            }
+        });
+    }
+    m_threadPool->waitAll();
+
+    // 转换为前缀和（串行，但bucketCount相对较小，影响不大）
     for (uint32_t i = 1; i < bucketCount; ++i)
     {
         countBuffer[i] += countBuffer[i - 1];
@@ -700,13 +718,28 @@ void GaussianRenderer::sortGaussiansByDepthHistogram(const Renderer::Matrix4 &vi
     if (m_sortedIndices.size() != m_vertexCount)
         m_sortedIndices.resize(m_vertexCount);
 
-    // 从后往前构建输出数组（稳定排序）
-    for (int32_t i = m_vertexCount - 1; i >= 0; --i)
+    // 并行构建输出数组（使用原子计数器避免竞争）
+    std::vector<std::atomic<uint32_t>> atomicCountBuffer(bucketCount);
+    for (uint32_t i = 0; i < bucketCount; ++i)
     {
-        uint32_t distance = distances[i];
-        uint32_t destIndex = --countBuffer[distance];
-        m_sortedIndices[destIndex] = i;
+        atomicCountBuffer[i].store((i == 0) ? 0 : countBuffer[i - 1], std::memory_order_relaxed);
     }
+
+    for (int t = 0; t < thread_num; ++t)
+    {
+        m_threadPool->enqueue([this, t, chunkSize, &atomicCountBuffer]() {
+            uint32_t startIdx = t * chunkSize;
+            uint32_t endIdx = std::min(startIdx + chunkSize, m_vertexCount);
+
+            for (uint32_t i = startIdx; i < endIdx; ++i)
+            {
+                uint32_t distance = distances[i];
+                uint32_t destIndex = atomicCountBuffer[distance].fetch_add(1, std::memory_order_relaxed);
+                m_sortedIndices[destIndex] = i;
+            }
+        });
+    }
+    m_threadPool->waitAll();
 
     end = std::chrono::steady_clock::now();
     duration = end - start;
@@ -1076,12 +1109,13 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
             else
             {
                 // 前台阻塞式排序（用于对比）
-                LOG_INFO("=== 使用前台排序 ===");
+                // LOG_INFO("=== 使用前台排序 ===");
                 sortGaussiansByDepthHistogram(view);
+                // sortGaussiansByDepth(view);
 
                 std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
                 std::chrono::duration<double> duration = end2 - start;
-                LOG_INFO("前台排序总时间: {:.3f} ms", duration.count() * 1000.0f);
+                // LOG_INFO("前台排序总时间: {:.3f} ms", duration.count() * 1000.0f);
 
                 // 更新GPU上的排序索引
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_orderSSBO);
@@ -1096,8 +1130,8 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
                 glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_vertexCount * sizeof(uint32_t),
                                 reinterpret_cast<const uint32_t *>(m_sortedIndices.data()));
 
-                glFlush();
-                glFinish();
+                // glFlush();
+                // glFinish();
                 end2 = std::chrono::steady_clock::now();
                 duration = end2 - start2;
                 LOG_INFO("更新SSBO数据时间: {:.3f} ms", duration.count() * 1000.0f);
@@ -1176,16 +1210,22 @@ void GaussianRenderer::drawSplats(const Renderer::Matrix4 &model, const Renderer
         // {
         //     renderCount = 10000; // m_vertexCount;
         // }
-        glFlush();
-        glFinish();
+        // glFlush();
+        // glFinish();
         uint32_t renderCount = m_vertexCount; // std::min(m_vertexCount, 10000u);  // 先只渲染1万个点测试
         std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
+        // int batchSize = 100000;
+        // for (int i = 0; i < renderCount; i += batchSize)
+        // {
+        //     int count = batchSize < (renderCount - i) ? batchSize : (renderCount - i);
+        //     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, count);
+        // }
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderCount);
-        glFlush();
-        glFinish();
+        // glFlush();
+        // glFinish();
         std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = end3 - start3;
-        LOG_INFO("绘制时间: {:.3f} ms", duration.count() * 1000.0f);
+        // LOG_INFO("绘制时间: {:.3f} ms", duration.count() * 1000.0f);
         // int loop = 0;
         // for (uint32_t i = 0; i < renderCount; i += 1000)
         // {

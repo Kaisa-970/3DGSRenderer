@@ -34,6 +34,7 @@ set(RENDERER_SOURCES
 
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/PlyLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/tinyply/tinyply.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ThreadPool/ThreadPool.cpp
 )
 
 set(RENDERER_HEADERS
@@ -76,6 +77,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/PlyLoader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/tinyply/tinyply.h
     ${CMAKE_CURRENT_SOURCE_DIR}/GaussianSplatting/TypeDef.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ThreadPool/ThreadPool.h
 )
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/src/vendor/imgui)
