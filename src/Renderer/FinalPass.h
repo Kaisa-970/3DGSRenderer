@@ -5,16 +5,17 @@
 
 RENDERER_NAMESPACE_BEGIN
 
+struct RenderContext;
+
 class RENDERER_API FinalPass {
 public:
     FinalPass();
     ~FinalPass();
 
-    void render(int width, int height, const unsigned int& colorTexture);
+    /// 统一执行接口：从 ctx 读取 displayTex，输出到屏幕
+    void Execute(RenderContext& ctx);
 
 private:
-    //unsigned int m_framebuffer;
-    unsigned int m_colorTexture;
     std::shared_ptr<Shader> m_shader;
     unsigned int m_vao;
     unsigned int m_vbo;

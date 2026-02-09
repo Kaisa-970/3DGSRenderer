@@ -1,4 +1,5 @@
 #include "RenderPipeline.h"
+#include "RenderContext.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -26,83 +27,44 @@ void RenderPipeline::Execute(Camera& camera,
                               ViewMode viewMode,
                               float currentTime)
 {
-    // ---- 准备矩阵 ----
-    float viewMatrix[16];
-    float projMatrix[16];
-    camera.getViewMatrix(viewMatrix);
-    camera.getPerspectiveMatrix(projMatrix, 45.0f,
+    // ---- 1. 填充 RenderContext ----
+    RenderContext ctx;
+    ctx.camera            = &camera;
+    ctx.width             = m_width;
+    ctx.height            = m_height;
+    ctx.currentTime       = currentTime;
+    ctx.selectedUID       = selectedUID;
+    ctx.light             = &light;
+    ctx.sceneRenderables  = &sceneRenderables;
+    ctx.forwardRenderables = &m_forwardRenderables;
+    ctx.forwardShader     = m_forwardShader;
+
+    // 预计算矩阵
+    camera.getViewMatrix(ctx.viewMatrix);
+    camera.getPerspectiveMatrix(ctx.projMatrix, 45.0f,
                                 static_cast<float>(m_width) / static_cast<float>(m_height),
                                 0.01f, 1000.0f);
 
-    // ---- 设置前向渲染 shader uniform ----
-    if (m_forwardShader)
-    {
-        float vx, vy, vz;
-        camera.getPosition(vx, vy, vz);
-        m_forwardShader->use();
-        m_forwardShader->setVec3("u_viewPos", vx, vy, vz);
-        m_forwardShader->unuse();
-    }
+    // ---- 2. 依次执行各 Pass（每个 Pass 从 ctx 读取输入，写入输出）----
+    m_geometryPass->Execute(ctx);     // → ctx.gPositionTex, gNormalTex, ...
+    m_lightingPass->Execute(ctx);     // → ctx.lightingTex
+    m_postProcessPass->Execute(ctx);  // → ctx.postProcessColorTex
+    m_forwardPass->Execute(ctx);      // 渲染到 ctx.postProcessColorTex 上
 
-    // ---- 1. Geometry Pass: 将场景物体渲染到 G-Buffer ----
-    m_geometryPass->Begin(viewMatrix, projMatrix);
-    for (const auto& renderable : sceneRenderables)
-    {
-        if (renderable)
-            m_geometryPass->Render(renderable.get());
-    }
-    m_geometryPass->End();
-
-    // ---- 2. Lighting Pass: 使用 G-Buffer 计算光照 ----
-    m_lightingPass->Begin(camera, light);
-    m_lightingPass->Render(
-        m_geometryPass->getPositionTexture(),
-        m_geometryPass->getNormalTexture(),
-        m_geometryPass->getDiffuseTexture(),
-        m_geometryPass->getSpecularTexture(),
-        m_geometryPass->getShininessTexture()
-    );
-    m_lightingPass->End();
-
-    // ---- 3. Post-Process Pass: 后处理（描边高亮等） ----
-    m_postProcessPass->render(
-        m_width, m_height, camera, selectedUID,
-        m_geometryPass->getUIDTexture(),
-        m_geometryPass->getPositionTexture(),
-        m_geometryPass->getNormalTexture(),
-        m_lightingPass->getLightingTexture(),
-        m_geometryPass->getDepthTexture()
-    );
-
-    // ---- 4. Forward Pass: 半透明/特效物体 ----
-    if (m_forwardShader && !m_forwardRenderables.empty())
-    {
-        m_forwardPass->Render(
-            m_width, m_height,
-            viewMatrix, projMatrix,
-            m_postProcessPass->getColorTexture(),
-            m_geometryPass->getDepthTexture(),
-            m_forwardRenderables,
-            m_forwardShader,
-            currentTime
-        );
-    }
-
-    // ---- 5. Final Pass: 根据 ViewMode 选择输出纹理并渲染到屏幕 ----
-    unsigned int displayTex = m_postProcessPass->getColorTexture();
+    // ---- 3. 根据 ViewMode 选择显示纹理 ----
     switch (viewMode)
     {
-    case ViewMode::Final:     displayTex = m_postProcessPass->getColorTexture();    break;
-    case ViewMode::Lighting:  displayTex = m_lightingPass->getLightingTexture();     break;
-    case ViewMode::Position:  displayTex = m_geometryPass->getPositionTexture();    break;
-    case ViewMode::Normal:    displayTex = m_geometryPass->getNormalTexture();      break;
-    case ViewMode::Diffuse:   displayTex = m_geometryPass->getDiffuseTexture();    break;
-    case ViewMode::Specular:  displayTex = m_geometryPass->getSpecularTexture();   break;
-    case ViewMode::Shininess: displayTex = m_geometryPass->getShininessTexture();  break;
-    case ViewMode::Depth:     displayTex = m_geometryPass->getDepthTexture();      break;
+    case ViewMode::Final:     ctx.displayTex = ctx.postProcessColorTex; break;
+    case ViewMode::Lighting:  ctx.displayTex = ctx.lightingTex;         break;
+    case ViewMode::Position:  ctx.displayTex = ctx.gPositionTex;        break;
+    case ViewMode::Normal:    ctx.displayTex = ctx.gNormalTex;          break;
+    case ViewMode::Diffuse:   ctx.displayTex = ctx.gDiffuseTex;         break;
+    case ViewMode::Specular:  ctx.displayTex = ctx.gSpecularTex;        break;
+    case ViewMode::Shininess: ctx.displayTex = ctx.gShininessTex;       break;
+    case ViewMode::Depth:     ctx.displayTex = ctx.gDepthTex;           break;
     }
 
-    m_finalPass->render(m_width, m_height, displayTex);
+    m_finalPass->Execute(ctx);        // 输出到屏幕
 }
 
 void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable>& renderable)

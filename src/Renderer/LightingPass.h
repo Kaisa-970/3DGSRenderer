@@ -2,22 +2,19 @@
 
 #include "Core/RenderCore.h"
 #include "Shader.h"
-#include "Camera.h"
-#include "Light.h"
 #include "FrameBuffer.h"
 
 RENDERER_NAMESPACE_BEGIN
+
+struct RenderContext;
 
 class RENDERER_API LightingPass {
 public:
     LightingPass(const int& width, const int& height);
     ~LightingPass();
 
-    void Begin(const Camera& camera, const Light& light);
-    void Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture);
-    void End();
-
-    unsigned int getLightingTexture() const { return m_lightingTexture; }
+    /// 统一执行接口：从 ctx 读取 G-Buffer + 光源数据，将光照纹理 ID 写回 ctx
+    void Execute(RenderContext& ctx);
 
 private:
     std::shared_ptr<Shader> m_shader;

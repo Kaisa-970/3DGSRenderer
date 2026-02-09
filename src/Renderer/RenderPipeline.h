@@ -28,7 +28,7 @@ enum class ViewMode
 };
 
 /// 渲染管线：统一编排所有 RenderPass 的执行顺序
-/// 将"怎么渲染"从应用层中解耦出来
+/// 通过 RenderContext 在 Pass 之间传递数据，形成清晰的数据流
 class RENDERER_API RenderPipeline
 {
 public:
@@ -36,12 +36,6 @@ public:
     ~RenderPipeline();
 
     /// 执行完整的延迟渲染管线
-    /// @param camera           当前相机
-    /// @param sceneRenderables 场景中所有延迟渲染的物体
-    /// @param light            场景光源
-    /// @param selectedUID      当前选中物体的 UID（用于描边高亮）
-    /// @param viewMode         G-Buffer 可视化模式
-    /// @param currentTime      当前时间（用于前向渲染特效动画）
     void Execute(Camera& camera,
                  const std::vector<std::shared_ptr<Renderable>>& sceneRenderables,
                  const Light& light,

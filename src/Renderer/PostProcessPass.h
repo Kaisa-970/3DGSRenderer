@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Camera.h"
 #include "Core/RenderCore.h"
 #include "FrameBuffer.h"
 #include "Shader.h"
 
-
 RENDERER_NAMESPACE_BEGIN
+
+struct RenderContext;
 
 class RENDERER_API PostProcessPass
 {
@@ -14,14 +14,8 @@ public:
     PostProcessPass(const int &width, const int &height);
     ~PostProcessPass();
 
-    void render(int width, int height, Camera &camera, const unsigned int currentSelectedUID,
-                const unsigned int &uidTexture, const unsigned int &positionTexture, const unsigned int &normalTexture,
-                const unsigned int &lightingTexture, const unsigned int &depthTexture);
-
-    unsigned int getColorTexture() const
-    {
-        return m_colorTexture;
-    }
+    /// 统一执行接口：从 ctx 读取 G-Buffer + 光照纹理，将后处理颜色纹理写回 ctx
+    void Execute(RenderContext& ctx);
 
 private:
     std::shared_ptr<Shader> m_shader;

@@ -1,7 +1,7 @@
 #include "PostProcessPass.h"
+#include "RenderContext.h"
 #include "RenderHelper/RenderHelper.h"
 #include <glad/glad.h>
-
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -28,18 +28,12 @@ PostProcessPass::PostProcessPass(const int &width, const int &height)
 PostProcessPass::~PostProcessPass()
 {
     m_frameBuffer.Detach(FrameBuffer::Attachment::Color0);
-    if (m_colorTexture != 0)
-        glDeleteTextures(1, &m_colorTexture);
-    if (m_vao != 0)
-        glDeleteVertexArrays(1, &m_vao);
-    if (m_vbo != 0)
-        glDeleteBuffers(1, &m_vbo);
+    if (m_colorTexture != 0) glDeleteTextures(1, &m_colorTexture);
+    if (m_vao != 0) glDeleteVertexArrays(1, &m_vao);
+    if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
 }
 
-void PostProcessPass::render(int width, int height, Camera &camera, const unsigned int currentSelectedUID,
-                             const unsigned int &uidTexture, const unsigned int &positionTexture,
-                             const unsigned int &normalTexture, const unsigned int &lightingTexture,
-                             const unsigned int &depthTexture)
+void PostProcessPass::Execute(RenderContext& ctx)
 {
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -47,30 +41,41 @@ void PostProcessPass::render(int width, int height, Camera &camera, const unsign
     glDisable(GL_DEPTH_TEST);
 
     m_shader->use();
+
+    // ---- 从 ctx 读取 G-Buffer + 光照纹理 ----
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, positionTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gPositionTex);
     m_shader->setInt("u_positionTexture", 0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gNormalTex);
     m_shader->setInt("u_normalTexture", 1);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, lightingTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.lightingTex);
     m_shader->setInt("u_lightingTexture", 2);
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gDepthTex);
     m_shader->setInt("u_depthTexture", 3);
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, uidTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gUIDTex);
     m_shader->setInt("u_uidTexture", 4);
 
-    m_shader->setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-
-    m_shader->setUint("u_currentSelectedUID", currentSelectedUID);
+    // ---- 从 ctx 读取相机位置和选中 UID ----
+    if (ctx.camera)
+    {
+        m_shader->setVec3("viewPos", ctx.camera->getPosition().x,
+                                      ctx.camera->getPosition().y,
+                                      ctx.camera->getPosition().z);
+    }
+    m_shader->setUint("u_currentSelectedUID", ctx.selectedUID);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
     m_shader->unuse();
     m_frameBuffer.Unbind();
+
+    // ---- 将后处理颜色纹理写入上下文 ----
+    ctx.postProcessColorTex = m_colorTexture;
 }
+
 RENDERER_NAMESPACE_END

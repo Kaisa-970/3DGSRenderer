@@ -4,28 +4,26 @@
 #include "FrameBuffer.h"
 #include "Shader.h"
 #include "Renderable.h"
+
 RENDERER_NAMESPACE_BEGIN
+
+struct RenderContext;
 
 class RENDERER_API GeometryPass {
 public:
     GeometryPass(const int& width, const int& height);
     ~GeometryPass();
 
-    void Begin(const float* view, const float* projection);
-    void Render(Primitive* primitive, unsigned int uid, const float* model, const Vector3& color = Vector3(1.0f, 1.0f, 1.0f));
-    void Render(Model* model, unsigned int uid, const float* modelMatrix);
-    void Render(Renderable* renderable);
-    void End();
+    /// 统一执行接口：从 ctx 读取场景数据，将 G-Buffer 纹理 ID 写回 ctx
+    void Execute(RenderContext& ctx);
+
+    /// 物体拾取（读取 UID 纹理）
     unsigned int getCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY);
-    //void render(Model* model, const float* model, const float* view, const float* projection, const Vector3& color = Vector3(1.0f, 1.0f, 1.0f));
-    unsigned int getPositionTexture() const { return m_positionTexture; }
-    unsigned int getNormalTexture() const { return m_normalTexture; }
-    unsigned int getDiffuseTexture() const { return m_diffuseTexture; }
-    unsigned int getSpecularTexture() const { return m_specularTexture; }
-    unsigned int getShininessTexture() const { return m_shininessTexture; }
-    unsigned int getUIDTexture() const { return m_uidTexture; }
-    unsigned int getDepthTexture() const { return m_depthTexture; }
+
 private:
+    /// 渲染单个 Renderable（设置 uniform + 绘制几何体）
+    void RenderRenderable(Renderable* renderable);
+
     FrameBuffer m_frameBuffer;
     std::shared_ptr<Shader> m_shader;
     unsigned int m_positionTexture;

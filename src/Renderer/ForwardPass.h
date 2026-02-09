@@ -2,12 +2,10 @@
 
 #include "Core/RenderCore.h"
 #include "FrameBuffer.h"
-#include "Shader.h"
-#include "Renderable.h"
-#include <vector>
-#include <memory>
 
 RENDERER_NAMESPACE_BEGIN
+
+struct RenderContext;
 
 class RENDERER_API ForwardPass
 {
@@ -15,19 +13,11 @@ public:
     ForwardPass();
     ~ForwardPass() = default;
 
-    void Render(int width,
-                int height,
-                const float *view,
-                const float *projection,
-                unsigned int colorTexture,
-                unsigned int depthTexture,
-                const std::vector<std::shared_ptr<Renderable>> &renderables,
-                std::shared_ptr<Shader> shader,
-                float timeSeconds);
+    /// 统一执行接口：从 ctx 读取前向渲染物体和纹理，渲染到 postProcessColorTex 上
+    void Execute(RenderContext& ctx);
 
 private:
     FrameBuffer m_frameBuffer;
 };
 
 RENDERER_NAMESPACE_END
-

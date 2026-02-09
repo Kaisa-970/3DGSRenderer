@@ -1,4 +1,5 @@
 #include "LightingPass.h"
+#include "RenderContext.h"
 #include <glad/glad.h>
 #include "RenderHelper/RenderHelper.h"
 
@@ -38,54 +39,62 @@ LightingPass::~LightingPass() {
     if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
 }
 
-void LightingPass::Begin(const Camera& camera, const Light& light) {
+void LightingPass::Execute(RenderContext& ctx) {
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
     m_shader->use();
 
-    // 从 Light 结构体读取属性（取代原来的硬编码）
-    m_shader->setVec3("lightPos", light.position.x, light.position.y, light.position.z);
-    m_shader->setVec3("lightColor", light.color.x * light.intensity,
-                                     light.color.y * light.intensity,
-                                     light.color.z * light.intensity);
-    m_shader->setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+    // ---- 从 ctx 读取光源属性 ----
+    if (ctx.light)
+    {
+        m_shader->setVec3("lightPos", ctx.light->position.x, ctx.light->position.y, ctx.light->position.z);
+        m_shader->setVec3("lightColor", ctx.light->color.x * ctx.light->intensity,
+                                         ctx.light->color.y * ctx.light->intensity,
+                                         ctx.light->color.z * ctx.light->intensity);
+        m_shader->setFloat("ambientStrength", ctx.light->ambientStrength);
+        m_shader->setFloat("diffuseStrength", ctx.light->diffuseStrength);
+        m_shader->setFloat("specularStrength", ctx.light->specularStrength);
+    }
 
-    // 光照强度分量（从 Light 结构体读取，取代原来的硬编码）
-    m_shader->setFloat("ambientStrength", light.ambientStrength);
-    m_shader->setFloat("diffuseStrength", light.diffuseStrength);
-    m_shader->setFloat("specularStrength", light.specularStrength);
+    // ---- 从 ctx 读取相机位置 ----
+    if (ctx.camera)
+    {
+        m_shader->setVec3("viewPos", ctx.camera->getPosition().x,
+                                      ctx.camera->getPosition().y,
+                                      ctx.camera->getPosition().z);
+    }
 
-    glDisable(GL_DEPTH_TEST);
-}
-
-void LightingPass::Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture) {
+    // ---- 从 ctx 读取 G-Buffer 纹理 ----
     m_shader->setInt("shininess", 32);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, positionTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gPositionTex);
     m_shader->setInt("u_positionTexture", 0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gNormalTex);
     m_shader->setInt("u_normalTexture", 1);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, diffuseTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gDiffuseTex);
     m_shader->setInt("u_diffuseTexture", 2);
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, specularTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gSpecularTex);
     m_shader->setInt("u_specularTexture", 3);
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, shininessTexture);
+    glBindTexture(GL_TEXTURE_2D, ctx.gShininessTex);
     m_shader->setInt("u_shininessTexture", 4);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
-}
 
-void LightingPass::End() {
-    m_frameBuffer.Unbind();
     m_shader->unuse();
+    m_frameBuffer.Unbind();
+
+    // ---- 将光照纹理写入上下文 ----
+    ctx.lightingTex = m_lightingTexture;
 }
 
 RENDERER_NAMESPACE_END
