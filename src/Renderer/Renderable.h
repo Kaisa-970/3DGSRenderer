@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Core/RenderCore.h"
-#include "Shader.h"
 #include "MathUtils/Matrix.h"
+#include "MathUtils/Vector.h"
 #include "Material.h"
 #include "Primitives/Primitive.h"
 #include "Model.h"
@@ -16,20 +16,21 @@ enum class RenderableType
     Model
 };
 
+/// Renderable: 纯数据容器
+/// 描述"场景中有什么"——几何体/模型 + 材质 + 变换 + 颜色
+/// 不包含任何渲染逻辑（"怎么画"由 RenderPass 负责）
 class RENDERER_API Renderable {
 public:
     Renderable();
     Renderable(unsigned int uid, const Matrix4& transformMatrix, const std::shared_ptr<Material>& material, const std::shared_ptr<Primitive>& primitive);
     Renderable(unsigned int uid, const Matrix4& transformMatrix, const std::shared_ptr<Model>& model);
-    virtual ~Renderable();
+    ~Renderable();
     Renderable(const Renderable& other) = delete;
     Renderable& operator=(const Renderable& other) = delete;
     Renderable(Renderable&& other) noexcept;
     Renderable& operator=(Renderable&& other) noexcept;
 
-    virtual void draw(const std::shared_ptr<Shader>& shader) const;
-
-    // 访问/修改
+    // ---- 访问器 ----
     unsigned int getUid() const { return m_uid; }
     void setUid(unsigned int newUid) { m_uid = newUid; }
 
@@ -50,7 +51,7 @@ public:
     const Vector3& getColor() const { return m_color; }
     void setColor(const Vector3& c) { m_color = c; }
 
-protected:
+private:
     unsigned int m_uid;
     RenderableType m_type;
     Matrix4 m_transformMatrix;

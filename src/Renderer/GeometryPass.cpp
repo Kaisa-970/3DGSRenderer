@@ -87,7 +87,22 @@ void GeometryPass::Render(Renderable *renderable)
 {
     if (!renderable)
         return;
-    renderable->draw(m_shader);
+
+    // 由 GeometryPass 负责设置 per-object uniform（而非 Renderable 自己）
+    m_shader->setMat4("model", renderable->getTransform().m);
+    m_shader->setInt("uUID", static_cast<int>(renderable->getUid()));
+    m_shader->setVec3("uColor", renderable->getColor().x, renderable->getColor().y, renderable->getColor().z);
+
+    if (renderable->getType() == RenderableType::Primitive && renderable->getPrimitive())
+    {
+        if (renderable->getMaterial())
+            renderable->getMaterial()->UpdateShaderParams(m_shader);
+        renderable->getPrimitive()->draw(); // shader 已在 Begin() 中激活，直接绘制几何体
+    }
+    else if (renderable->getType() == RenderableType::Model && renderable->getModel())
+    {
+        renderable->getModel()->draw(m_shader); // Model 内部处理 sub-mesh 材质绑定
+    }
 }
 
 void GeometryPass::End()

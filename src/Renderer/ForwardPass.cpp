@@ -31,7 +31,22 @@ void ForwardPass::Render(int width, int height, const float *view, const float *
     {
         if (!r)
             continue;
-        r->draw(shader);
+
+        // 由 ForwardPass 负责设置 per-object uniform
+        shader->setMat4("model", r->getTransform().m);
+        shader->setInt("uUID", static_cast<int>(r->getUid()));
+        shader->setVec3("uColor", r->getColor().x, r->getColor().y, r->getColor().z);
+
+        if (r->getType() == RenderableType::Primitive && r->getPrimitive())
+        {
+            if (r->getMaterial())
+                r->getMaterial()->UpdateShaderParams(shader);
+            r->getPrimitive()->draw();
+        }
+        else if (r->getType() == RenderableType::Model && r->getModel())
+        {
+            r->getModel()->draw(shader);
+        }
     }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
