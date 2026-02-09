@@ -2,9 +2,11 @@
 #include "Logger/Log.h"
 #include <algorithm>
 #include <filesystem>
-#include "MaterialManager.h"
-#include "TextureManager.h"
-RENDERER_NAMESPACE_BEGIN
+#include "Assets/MaterialManager.h"
+#include "Assets/TextureManager.h"
+
+using namespace Renderer;
+GSENGINE_NAMESPACE_BEGIN
 
 AssimpModelLoader::AssimpModelLoader()
     : totalVertices_(0)
@@ -325,4 +327,4 @@ Matrix4 AssimpModelLoader::assimpToMatrix4(const aiMatrix4x4& m) {
     );
 }
 
-RENDERER_NAMESPACE_END
+GSENGINE_NAMESPACE_END

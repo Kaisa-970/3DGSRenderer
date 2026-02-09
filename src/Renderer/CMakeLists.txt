@@ -9,7 +9,6 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
@@ -17,11 +16,8 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Material.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/MaterialManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/TextureManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Scene.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
@@ -42,7 +38,6 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/SpherePrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Primitives/QuadPrimitive.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Mesh.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/AssimpModelLoader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FrameBuffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.h
@@ -50,11 +45,8 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.h
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Material.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/MaterialManager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/TextureManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Scene.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
@@ -79,7 +71,7 @@ else()
     target_link_libraries(${MODULE_NAME} PRIVATE OpenGL::GL)
 endif()
 
-target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger assimp::assimp)
+target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger)
 
 if(USE_GLES3)
     target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/vendor/glad-gles3/include)
@@ -88,7 +80,6 @@ else()
 endif()
 
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src/vendor/assimp/include)
 target_compile_definitions(${MODULE_NAME} PRIVATE RENDERER_EXPORTS)
 
 if(UNIX)

@@ -2,7 +2,7 @@
 
 #include "Core.h"
 #include "MathUtils/Vector.h"
-#include "Renderer/Scene.h"
+#include "Scene/Scene.h"
 #include <memory>
 #include <vector>
 
@@ -24,7 +24,7 @@ public:
     bool WantCaptureMouse() const;
     bool WantCaptureKeyboard() const;
 
-    void SetScene(const std::shared_ptr<Renderer::Scene> &scene);
+    void SetScene(const std::shared_ptr<Scene> &scene);
     void SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid);
     void SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels);
 
@@ -32,7 +32,7 @@ private:
     void SyncEditableFromTransform(const Renderer::Renderable &renderable);
     void ApplyEditableToRenderable(Renderer::Renderable &renderable);
 
-    std::weak_ptr<Renderer::Scene> scene_;
+    std::weak_ptr<Scene> scene_;
     std::weak_ptr<Renderer::Renderable> selected_;
     unsigned int selectedUid_{0};
     Renderer::Vector3 editPosition_{0.0f, 0.0f, 0.0f};

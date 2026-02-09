@@ -1,9 +1,17 @@
 #pragma once
 
 #include "Core.h"
+#include "Event/EventBus.h"
+#include "Gui/GuiLayer.h"
+#include "Renderer/Camera.h"
+#include "Scene/Scene.h"
+#include "Window/Window.h"
+#include <memory>
 
 GSENGINE_NAMESPACE_BEGIN
 
+const int ACTION_RELEASE = 0;
+const int ACTION_PRESS = 1;
 struct AppConfig
 {
     int width = 1920;
@@ -12,33 +20,72 @@ struct AppConfig
 };
 
 class Window;
+class Scene;
+class GuiLayer;
+class EventBus;
+class Camera;
+
+struct InputState
+{
+    bool moveForward{false};
+    bool moveBackward{false};
+    bool moveLeft{false};
+    bool moveRight{false};
+    bool moveUp{false};
+    bool moveDown{false};
+    bool leftMouseDown{false};
+    bool rightMouseDown{false};
+    bool pickRequested{false};
+    bool togglePoints{false};
+    bool exitRequested{false};
+    bool firstMouse{true};
+    double lastX{0.0};
+    double lastY{0.0};
+    double mouseX{0.0};
+    double mouseY{0.0};
+};
 
 class GSENGINE_API Application
 {
 public:
     Application(AppConfig config);
-    ~Application();
+    virtual ~Application();
 
+    // 基础生命周期方法
     bool Init();
     void Run();
     void Shutdown();
 
-    // private:
-    //     void Init();
-    //     void Update();
-    //     void Render();
-    //     void Cleanup();
+    // 虚方法供派生类实现
+    virtual bool OnInit() { return true; }                    // 应用特定的初始化
+    virtual void OnUpdate(float deltaTime) {}                // 每帧更新逻辑
+    virtual void OnRender(float deltaTime) {}                // 渲染逻辑
+    virtual void OnHandleInput() {}                          // 输入处理
+    virtual void OnGUI() {}                                  // GUI渲染
+
+protected:
+    std::shared_ptr<Window> m_window;
+    std::shared_ptr<Scene> m_scene;
+    std::shared_ptr<GuiLayer> m_guiLayer;
+    std::shared_ptr<EventBus> m_eventBus;
+    std::shared_ptr<Renderer::Camera> m_camera;
+
+    InputState m_inputState;
+    AppConfig m_appConfig;
+
+    // 基础输入事件处理（可以被派生类扩展）
+    virtual void HandleKeyEvent(int key, int scancode, int action, int mods);
+    virtual void HandleMouseButtonEvent(int button, int action, int mods, double xpos, double ypos);
+    virtual void HandleMouseMoveEvent(double xpos, double ypos, double dx, double dy);
+    virtual void HandleScrollEvent(double xoffset, double yoffset);
 
 private:
-    AppConfig m_appConfig;
-    Window *m_window = nullptr;
-    // bool m_isRunning;
-    // bool m_isPaused;
-    // bool m_isMinimized;
-    // bool m_isMaximized;
-    // bool m_isFullscreen;
-    // bool m_isBorderless;
-    // bool m_isResizable;
+    // 私有辅助方法
+    bool InitWindow();
+    bool InitGUI();
+    void InitInputHandling();
+    void UpdateCamera(float deltaTime);
+    void ProcessEvents();
 };
 
 GSENGINE_NAMESPACE_END

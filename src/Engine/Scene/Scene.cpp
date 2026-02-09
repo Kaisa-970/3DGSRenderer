@@ -1,7 +1,7 @@
 #include "Scene.h"
 #include <algorithm>
 
-RENDERER_NAMESPACE_BEGIN
+GSENGINE_NAMESPACE_BEGIN
 
 Scene::Scene()
     : nextUid_(1)
@@ -13,7 +13,7 @@ Scene::~Scene()
     ClearRenderables();
 }
 
-unsigned int Scene::AddRenderable(const std::shared_ptr<Renderable>& renderable)
+unsigned int Scene::AddRenderable(const std::shared_ptr<Renderer::Renderable>& renderable)
 {
     if (!renderable) return 0;
     if (renderable->getUid() == 0) {
@@ -24,7 +24,7 @@ unsigned int Scene::AddRenderable(const std::shared_ptr<Renderable>& renderable)
     return renderable->getUid();
 }
 
-void Scene::RemoveRenderable(const std::shared_ptr<Renderable>& renderable)
+void Scene::RemoveRenderable(const std::shared_ptr<Renderer::Renderable>& renderable)
 {
     if (!renderable) return;
     uidMap_.erase(renderable->getUid());
@@ -37,11 +37,11 @@ void Scene::ClearRenderables()
     uidMap_.clear();
 }
 
-std::shared_ptr<Renderable> Scene::GetRenderableByUID(unsigned int uid) const
+std::shared_ptr<Renderer::Renderable> Scene::GetRenderableByUID(unsigned int uid) const
 {
     auto it = uidMap_.find(uid);
     if (it == uidMap_.end()) return nullptr;
     return it->second.lock();
 }
 
-RENDERER_NAMESPACE_END
+GSENGINE_NAMESPACE_END
