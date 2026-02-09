@@ -1,4 +1,6 @@
 #include "Application.h"
+#include "Assets/TextureManager.h"
+#include "Assets/MaterialManager.h"
 #include "Event/EventBus.h"
 #include "Gui/GuiLayer.h"
 #include "Logger/Log.h"
@@ -35,6 +37,10 @@ bool Application::Init()
         LOG_ERROR("窗口初始化失败");
         return false;
     }
+
+    // 创建资源管理器（窗口/GL上下文就绪后）
+    m_textureManager = std::make_shared<TextureManager>();
+    m_materialManager = std::make_shared<MaterialManager>(*m_textureManager);
 
     InitInputHandling();
 

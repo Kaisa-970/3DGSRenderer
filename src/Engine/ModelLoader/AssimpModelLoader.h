@@ -11,9 +11,12 @@
 
 GSENGINE_NAMESPACE_BEGIN
 
+class TextureManager;
+class MaterialManager;
+
 class GSENGINE_API AssimpModelLoader {
 public:
-    AssimpModelLoader();
+    AssimpModelLoader(TextureManager& textureManager, MaterialManager& materialManager);
     ~AssimpModelLoader();
 
     // 加载模型文件（支持多种格式）
@@ -55,6 +58,10 @@ private:
 
     // // 应用变换到顶点列表
     // void applyTransformToVertices(std::vector<Vertex>& vertices, const Matrix4& transform);
+
+    // 依赖注入的资源管理器
+    TextureManager& textureManager_;
+    MaterialManager& materialManager_;
 
     // 加载统计
     size_t totalVertices_;

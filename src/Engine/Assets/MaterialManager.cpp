@@ -4,14 +4,14 @@
 
 GSENGINE_NAMESPACE_BEGIN
 const std::string DEFAULT_MATERIAL_NAME = "3DGSRendererDefaultMaterial";
-//MaterialManager* MaterialManager::s_instance = new MaterialManager();
 
-MaterialManager::MaterialManager()
+MaterialManager::MaterialManager(TextureManager& textureManager)
+    : m_textureManager(textureManager)
 {
     std::shared_ptr<Renderer::Material> defaultMaterial = std::make_shared<Renderer::Material>(DEFAULT_MATERIAL_NAME);
-    defaultMaterial->addDiffuseTexture(TextureManager::GetInstance()->GetDefaultWhiteTexture());
-    defaultMaterial->addSpecularTexture(TextureManager::GetInstance()->GetDefaultWhiteTexture());
-    defaultMaterial->addNormalTexture(TextureManager::GetInstance()->GetDefaultBlackTexture());
+    defaultMaterial->addDiffuseTexture(m_textureManager.GetDefaultWhiteTexture());
+    defaultMaterial->addSpecularTexture(m_textureManager.GetDefaultWhiteTexture());
+    defaultMaterial->addNormalTexture(m_textureManager.GetDefaultBlackTexture());
     defaultMaterial->setDiffuseColor(Renderer::Vector3::ONE);
     defaultMaterial->setSpecularColor(Renderer::Vector3::ONE);
     defaultMaterial->setShininess(32.0f);

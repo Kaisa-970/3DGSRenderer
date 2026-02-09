@@ -6,6 +6,8 @@
 #include "Renderer/Camera.h"
 #include "Scene/Scene.h"
 #include "Window/Window.h"
+#include "Assets/TextureManager.h"
+#include "Assets/MaterialManager.h"
 #include <memory>
 
 GSENGINE_NAMESPACE_BEGIN
@@ -69,6 +71,8 @@ protected:
     std::shared_ptr<GuiLayer> m_guiLayer;
     std::shared_ptr<EventBus> m_eventBus;
     std::shared_ptr<Renderer::Camera> m_camera;
+    std::shared_ptr<TextureManager> m_textureManager;
+    std::shared_ptr<MaterialManager> m_materialManager;
 
     InputState m_inputState;
     AppConfig m_appConfig;

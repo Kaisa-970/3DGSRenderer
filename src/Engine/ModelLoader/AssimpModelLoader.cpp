@@ -8,8 +8,10 @@
 using namespace Renderer;
 GSENGINE_NAMESPACE_BEGIN
 
-AssimpModelLoader::AssimpModelLoader()
-    : totalVertices_(0)
+AssimpModelLoader::AssimpModelLoader(TextureManager& textureManager, MaterialManager& materialManager)
+    : textureManager_(textureManager)
+    , materialManager_(materialManager)
+    , totalVertices_(0)
     , totalFaces_(0)
     , totalMeshes_(0)
 {
@@ -102,7 +104,7 @@ std::vector<SubMesh> AssimpModelLoader::processScene(const aiScene* scene, const
     }
 
     for (auto& material : materials) {
-        MaterialManager::GetInstance()->AddMaterial(material->getName(), material, true);
+        materialManager_.AddMaterial(material->getName(), material, true);
     }
     
     std::vector<SubMesh> subMeshes;
@@ -249,7 +251,7 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
             aiString diffuseTexture;
             if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, i, &diffuseTexture)) 
             {
-                std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + diffuseTexture.C_Str());
+                std::shared_ptr<Texture2D> texture = textureManager_.LoadTexture2D(directory + "/" + diffuseTexture.C_Str());
                 if (texture) {
                     outMaterial->addDiffuseTexture(texture);
                 }
@@ -259,7 +261,7 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
     }
     else
     {
-        outMaterial->addDiffuseTexture(TextureManager::GetInstance()->GetDefaultWhiteTexture());
+        outMaterial->addDiffuseTexture(textureManager_.GetDefaultWhiteTexture());
         LOG_CORE_INFO("No diffuse texture found for material: {}, using default white texture", outMaterial->getName());
     }
     if (material->GetTextureCount(aiTextureType_NORMALS) > 0) 
@@ -267,7 +269,7 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
         for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_NORMALS); ++i) {
             aiString normalTexture;
             if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, i, &normalTexture)) {
-                std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + normalTexture.C_Str());
+                std::shared_ptr<Texture2D> texture = textureManager_.LoadTexture2D(directory + "/" + normalTexture.C_Str());
                 if (texture) {
                     outMaterial->addNormalTexture(texture);
                 }
@@ -277,7 +279,7 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
     }
     else
     {
-        outMaterial->addNormalTexture(TextureManager::GetInstance()->GetDefaultBlackTexture());
+        outMaterial->addNormalTexture(textureManager_.GetDefaultBlackTexture());
         LOG_CORE_INFO("No normal texture found for material: {}, using default black texture", outMaterial->getName());
     }
 
@@ -286,7 +288,7 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
     for (unsigned int i = 0; i < material->GetTextureCount(aiTextureType_SPECULAR); ++i) {
         aiString specularTexture;
         if (AI_SUCCESS == material->GetTexture(aiTextureType_SPECULAR, i, &specularTexture)) {
-            std::shared_ptr<Texture2D> texture = TextureManager::GetInstance()->LoadTexture2D(directory + "/" + specularTexture.C_Str());
+            std::shared_ptr<Texture2D> texture = textureManager_.LoadTexture2D(directory + "/" + specularTexture.C_Str());
             if (texture) {
                 outMaterial->addSpecularTexture(texture);
             }
@@ -296,7 +298,7 @@ void AssimpModelLoader::processMaterial(aiMaterial* material, const aiScene* sce
     }
     else
     {
-        outMaterial->addSpecularTexture(TextureManager::GetInstance()->GetDefaultWhiteTexture());
+        outMaterial->addSpecularTexture(textureManager_.GetDefaultWhiteTexture());
         LOG_CORE_INFO("No specular texture found for material: {}, using default white texture", outMaterial->getName());
     }
     LOG_CORE_INFO("Processed material: {}", outMaterial->getName());

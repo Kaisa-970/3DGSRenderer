@@ -10,13 +10,11 @@ GSENGINE_NAMESPACE_BEGIN
 
 class GSENGINE_API TextureManager {
 public:
+    TextureManager();
+    ~TextureManager();
+
     TextureManager(const TextureManager&) = delete;
     TextureManager& operator=(const TextureManager&) = delete;
-
-    static TextureManager* GetInstance() { 
-        static TextureManager* instance = new TextureManager();
-        return instance; 
-    }
 
     std::shared_ptr<Renderer::Texture2D> GetTexture2D(const std::string& name);
     std::shared_ptr<Renderer::Texture2D> GetDefaultWhiteTexture();
@@ -26,9 +24,6 @@ public:
 
     bool HasTexture2D(const std::string& name) const;
     std::shared_ptr<Renderer::Texture2D> LoadTexture2D(const std::string& path);
-private:
-    TextureManager();
-    ~TextureManager();
 
 private:
     std::map<std::string, std::shared_ptr<Renderer::Texture2D>> m_texture2Ds;

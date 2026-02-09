@@ -1,6 +1,7 @@
 #include "GuiLayer.h"
 #include "Assets/MaterialManager.h"
 #include "Renderer/MathUtils/Random.h"
+#include "Renderer/Material.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Window/Window.h"
 #include <imgui.h>
@@ -68,7 +69,10 @@ void GuiLayer::RenderGUI()
             sphereRenderable->setTransform(Renderer::Matrix4::identity());
             Renderer::Vector3 color = Renderer::Random::randomColor();
             sphereRenderable->setColor(color);
-            sphereRenderable->setMaterial(MaterialManager::GetInstance()->GetDefaultMaterial());
+            if (auto matMgr = materialManager_.lock())
+            {
+                sphereRenderable->setMaterial(matMgr->GetDefaultMaterial());
+            }
             scene->AddRenderable(sphereRenderable);
         }
 
@@ -206,6 +210,13 @@ void GuiLayer::SetGBufferViewModes(int *modePtr, const std::vector<const char *>
 {
     gbufferViewMode_ = modePtr;
     gbufferViewLabels_ = labels;
+}
+
+void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
+{
+    if (!materialManager)
+        return;
+    materialManager_ = std::weak_ptr<MaterialManager>(materialManager);
 }
 
 void GuiLayer::SyncEditableFromTransform(const Renderer::Renderable &renderable)

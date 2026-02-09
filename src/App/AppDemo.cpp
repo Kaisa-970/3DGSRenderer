@@ -57,9 +57,10 @@ bool AppDemo::OnInit()
     // 设置GUI - 使用 RenderPipeline 提供的标签列表
     m_guiLayer->SetGBufferViewModes(&pImpl->gbufferViewMode, Renderer::RenderPipeline::GetViewModeLabels());
     m_guiLayer->SetScene(m_scene);
+    m_guiLayer->SetMaterialManager(m_materialManager);
 
-    // 加载模型
-    AssimpModelLoader modelLoader;
+    // 加载模型（注入资源管理器）
+    AssimpModelLoader modelLoader(*m_textureManager, *m_materialManager);
     std::shared_ptr<Renderer::Model> loadedModel = modelLoader.loadModel(modelPath);
     std::shared_ptr<Renderer::Model> loadedModel2 = modelLoader.loadModel(model2Path);
 
@@ -80,7 +81,7 @@ bool AppDemo::OnInit()
     auto cubePrimitive = std::make_shared<Renderer::CubePrimitive>(1.0f);
     auto spherePrimitive = std::make_shared<Renderer::SpherePrimitive>(1.0f, 64, 32);
     auto quadPrimitive = std::make_shared<Renderer::QuadPrimitive>(10.0f);
-    auto defaultMaterial = MaterialManager::GetInstance()->GetDefaultMaterial();
+    auto defaultMaterial = m_materialManager->GetDefaultMaterial();
 
     // 创建场景内容
     SetupScene(cubePrimitive, spherePrimitive, quadPrimitive, defaultMaterial, loadedModel, loadedModel2);
