@@ -3,6 +3,7 @@
 #include "Core/RenderCore.h"
 #include "Shader.h"
 #include "Camera.h"
+#include "Light.h"
 #include "FrameBuffer.h"
 
 RENDERER_NAMESPACE_BEGIN
@@ -12,7 +13,7 @@ public:
     LightingPass(const int& width, const int& height);
     ~LightingPass();
 
-    void Begin(const Camera& camera, const Renderer::Vector3& lightPos);
+    void Begin(const Camera& camera, const Light& light);
     void Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture);
     void End();
 

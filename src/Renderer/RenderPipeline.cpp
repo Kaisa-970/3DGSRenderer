@@ -21,7 +21,7 @@ RenderPipeline::~RenderPipeline() = default;
 
 void RenderPipeline::Execute(Camera& camera,
                               const std::vector<std::shared_ptr<Renderable>>& sceneRenderables,
-                              const Vector3& lightPosition,
+                              const Light& light,
                               unsigned int selectedUID,
                               ViewMode viewMode,
                               float currentTime)
@@ -54,7 +54,7 @@ void RenderPipeline::Execute(Camera& camera,
     m_geometryPass->End();
 
     // ---- 2. Lighting Pass: 使用 G-Buffer 计算光照 ----
-    m_lightingPass->Begin(camera, lightPosition);
+    m_lightingPass->Begin(camera, light);
     m_lightingPass->Render(
         m_geometryPass->getPositionTexture(),
         m_geometryPass->getNormalTexture(),

@@ -38,24 +38,29 @@ LightingPass::~LightingPass() {
     if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
 }
 
-void LightingPass::Begin(const Camera& camera, const Renderer::Vector3& lightPos) {
+void LightingPass::Begin(const Camera& camera, const Light& light) {
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     m_shader->use();
-    m_shader->setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);       // 光源位置
-    m_shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);     // 白光
-    m_shader->setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);     // 相机位置
+
+    // 从 Light 结构体读取属性（取代原来的硬编码）
+    m_shader->setVec3("lightPos", light.position.x, light.position.y, light.position.z);
+    m_shader->setVec3("lightColor", light.color.x * light.intensity,
+                                     light.color.y * light.intensity,
+                                     light.color.z * light.intensity);
+    m_shader->setVec3("viewPos", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+
+    // 光照强度分量（从 Light 结构体读取，取代原来的硬编码）
+    m_shader->setFloat("ambientStrength", light.ambientStrength);
+    m_shader->setFloat("diffuseStrength", light.diffuseStrength);
+    m_shader->setFloat("specularStrength", light.specularStrength);
 
     glDisable(GL_DEPTH_TEST);
 }
 
 void LightingPass::Render(const unsigned int& positionTexture, const unsigned int& normalTexture, const unsigned int& diffuseTexture, const unsigned int& specularTexture, const unsigned int& shininessTexture) {
-    // 设置光照强度（可选，有默认值）
-    m_shader->setFloat("ambientStrength", 0.1f);    // 环境光强度
-    m_shader->setFloat("diffuseStrength", 0.9f);    // 漫反射强度
-    m_shader->setFloat("specularStrength", 0.5f);   // 镜面反射强度
-    m_shader->setInt("shininess", 32);    
+    m_shader->setInt("shininess", 32);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, positionTexture);

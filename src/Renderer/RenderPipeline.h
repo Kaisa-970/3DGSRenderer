@@ -2,6 +2,7 @@
 
 #include "Core/RenderCore.h"
 #include "Camera.h"
+#include "Light.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
 #include "PostProcessPass.h"
@@ -35,15 +36,15 @@ public:
     ~RenderPipeline();
 
     /// 执行完整的延迟渲染管线
-    /// @param camera          当前相机
+    /// @param camera           当前相机
     /// @param sceneRenderables 场景中所有延迟渲染的物体
-    /// @param lightPosition   光源位置（临时方案，将来由光源系统管理）
-    /// @param selectedUID     当前选中物体的 UID（用于描边高亮）
-    /// @param viewMode        G-Buffer 可视化模式
-    /// @param currentTime     当前时间（用于前向渲染特效动画）
+    /// @param light            场景光源
+    /// @param selectedUID      当前选中物体的 UID（用于描边高亮）
+    /// @param viewMode         G-Buffer 可视化模式
+    /// @param currentTime      当前时间（用于前向渲染特效动画）
     void Execute(Camera& camera,
                  const std::vector<std::shared_ptr<Renderable>>& sceneRenderables,
-                 const Vector3& lightPosition,
+                 const Light& light,
                  unsigned int selectedUID,
                  ViewMode viewMode,
                  float currentTime);

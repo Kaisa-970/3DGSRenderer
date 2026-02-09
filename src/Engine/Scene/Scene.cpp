@@ -37,6 +37,23 @@ void Scene::ClearRenderables()
     uidMap_.clear();
 }
 
+void Scene::AddLight(const std::shared_ptr<Renderer::Light>& light)
+{
+    if (!light) return;
+    lights_.push_back(light);
+}
+
+void Scene::RemoveLight(const std::shared_ptr<Renderer::Light>& light)
+{
+    if (!light) return;
+    lights_.erase(std::remove(lights_.begin(), lights_.end(), light), lights_.end());
+}
+
+void Scene::ClearLights()
+{
+    lights_.clear();
+}
+
 std::shared_ptr<Renderer::Renderable> Scene::GetRenderableByUID(unsigned int uid) const
 {
     auto it = uidMap_.find(uid);

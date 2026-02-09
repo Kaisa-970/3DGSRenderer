@@ -1,15 +1,17 @@
 #include "AppDemo.h"
+#include "Assets/MaterialManager.h"
 #include "Logger/Log.h"
-#include "Renderer/RenderPipeline.h"
+#include "ModelLoader/AssimpModelLoader.h"
+#include "Renderer/Light.h"
 #include "Renderer/MathUtils/Random.h"
 #include "Renderer/Primitives/CubePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
+#include "Renderer/RenderPipeline.h"
 #include "Renderer/Renderable.h"
 #include "Renderer/Shader.h"
-#include "ModelLoader/AssimpModelLoader.h"
-#include "Assets/MaterialManager.h"
 #include <memory>
+
 using namespace GSEngine;
 
 constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
@@ -24,10 +26,13 @@ std::string model2Path = "./res/houtou.fbx";
 class AppDemo::Impl
 {
 public:
-    // 渲染管线（取代原来的 5 个独立 Pass）
+    // 渲染管线
     std::unique_ptr<Renderer::RenderPipeline> renderPipeline;
 
-    // 光源球体（场景物体，由 AppDemo 管理）
+    // 场景光源（作为 Scene 的一部分管理）
+    std::shared_ptr<Renderer::Light> mainLight;
+
+    // 光源的可视化球体
     std::shared_ptr<Renderer::Renderable> lightSphereRenderable;
 
     // GUI状态
@@ -37,9 +42,6 @@ public:
     unsigned int currentSelectedUID = 0;
     std::shared_ptr<Renderer::Renderable> selectedRenderable = nullptr;
     float currentTime = 0.0f;
-
-    // 光源位置
-    Renderer::Vector3 lightPos{0.0f, 5.0f, 0.0f};
 };
 
 AppDemo::AppDemo(AppConfig config) : Application(config), pImpl(std::make_unique<Impl>())
@@ -61,11 +63,17 @@ bool AppDemo::OnInit()
     std::shared_ptr<Renderer::Model> loadedModel = modelLoader.loadModel(modelPath);
     std::shared_ptr<Renderer::Model> loadedModel2 = modelLoader.loadModel(model2Path);
 
-    // 初始化渲染管线（一行代替原来的 5 行 Pass 创建）
+    // 创建场景光源
+    pImpl->mainLight =
+        std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f, 0.0f)));
+    m_scene->AddLight(pImpl->mainLight);
+
+    // 初始化渲染管线
     pImpl->renderPipeline = std::make_unique<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height);
 
     // 设置前向渲染 Shader
-    auto forwardEffectShader = Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    auto forwardEffectShader =
+        Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
     pImpl->renderPipeline->SetForwardShader(forwardEffectShader);
 
     // 创建几何体
@@ -85,15 +93,15 @@ void AppDemo::OnUpdate(float deltaTime)
 {
     pImpl->currentTime += deltaTime;
 
-    // 更新光源位置
+    // 更新光源位置（直接修改 Light 对象）
     float curX = 5.0f * std::sin(pImpl->currentTime);
     float curZ = 5.0f * std::cos(pImpl->currentTime);
-    pImpl->lightPos = Renderer::Vector3(curX, 5.0f, curZ);
+    pImpl->mainLight->position = Renderer::Vector3(curX, 5.0f, curZ);
 
-    // 更新光源球体变换
+    // 同步光源可视化球体的变换
     Renderer::Matrix4 lightModel = Renderer::Matrix4::identity();
     lightModel.scaleBy(0.1f, 0.1f, 0.1f);
-    lightModel.translate(pImpl->lightPos.x, pImpl->lightPos.y, pImpl->lightPos.z);
+    lightModel.translate(pImpl->mainLight->position.x, pImpl->mainLight->position.y, pImpl->mainLight->position.z);
     lightModel = lightModel.transpose();
     pImpl->lightSphereRenderable->setTransform(lightModel);
 
@@ -121,14 +129,8 @@ void AppDemo::OnUpdate(float deltaTime)
 void AppDemo::OnRender(float deltaTime)
 {
     // 整个渲染管线的执行现在只需一行调用
-    pImpl->renderPipeline->Execute(
-        *m_camera,
-        m_scene->GetRenderables(),
-        pImpl->lightPos,
-        pImpl->currentSelectedUID,
-        static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode),
-        pImpl->currentTime
-    );
+    pImpl->renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), *pImpl->mainLight, pImpl->currentSelectedUID,
+                                   static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode), pImpl->currentTime);
 }
 
 void AppDemo::OnGUI()
@@ -153,14 +155,12 @@ void AppDemo::HandleKeyEvent(int key, int scancode, int action, int mods)
     }
 }
 
-void AppDemo::SetupScene(
-    std::shared_ptr<::Renderer::CubePrimitive> cubePrimitive,
-    std::shared_ptr<::Renderer::SpherePrimitive> spherePrimitive,
-    std::shared_ptr<::Renderer::QuadPrimitive> quadPrimitive,
-    std::shared_ptr<::Renderer::Material> defaultMaterial,
-    std::shared_ptr<::Renderer::Model> loadedModel,
-    std::shared_ptr<::Renderer::Model> loadedModel2
-)
+void AppDemo::SetupScene(std::shared_ptr<::Renderer::CubePrimitive> cubePrimitive,
+                         std::shared_ptr<::Renderer::SpherePrimitive> spherePrimitive,
+                         std::shared_ptr<::Renderer::QuadPrimitive> quadPrimitive,
+                         std::shared_ptr<::Renderer::Material> defaultMaterial,
+                         std::shared_ptr<::Renderer::Model> loadedModel,
+                         std::shared_ptr<::Renderer::Model> loadedModel2)
 {
     // 创建随机球体
     for (int i = 0; i < 30; i++)
@@ -168,11 +168,9 @@ void AppDemo::SetupScene(
         ::Renderer::Matrix4 sphereModel = ::Renderer::Matrix4::identity();
         float radius = ::Renderer::Random::randomFloat(0.1f, 1.0f);
         sphereModel.scaleBy(radius, radius, radius);
-        sphereModel.translate(
-            ::Renderer::Random::randomFloat(-10.0f, 10.0f),
-            ::Renderer::Random::randomFloat(-10.0f, 10.0f),
-            ::Renderer::Random::randomFloat(-10.0f, 10.0f)
-        );
+        sphereModel.translate(::Renderer::Random::randomFloat(-10.0f, 10.0f),
+                              ::Renderer::Random::randomFloat(-10.0f, 10.0f),
+                              ::Renderer::Random::randomFloat(-10.0f, 10.0f));
         sphereModel = sphereModel.transpose();
 
         auto renderable = std::make_shared<::Renderer::Renderable>();
@@ -183,10 +181,10 @@ void AppDemo::SetupScene(
         m_scene->AddRenderable(renderable);
     }
 
-    // 光源球体
+    // 光源可视化球体（颜色与 Light 一致）
     pImpl->lightSphereRenderable = std::make_shared<::Renderer::Renderable>();
     pImpl->lightSphereRenderable->setPrimitive(spherePrimitive);
-    pImpl->lightSphereRenderable->setColor(::Renderer::Vector3(1.0f, 1.0f, 1.0f));
+    pImpl->lightSphereRenderable->setColor(pImpl->mainLight->color);
     m_scene->AddRenderable(pImpl->lightSphereRenderable);
 
     // 特效立方体（前向渲染 —— 通过 RenderPipeline 管理）

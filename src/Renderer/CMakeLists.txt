@@ -54,6 +54,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Light.h
 )
 
 if(USE_GLES3)
