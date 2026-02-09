@@ -14,7 +14,7 @@ if(MSVC)
     # 移除 /utf-8 以避免与Assimp的 /source-charset:utf-8 冲突
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od")
 else()
-    add_compile_options(-Wall -Wextra)
+    add_compile_options(-Wall -Wextra -Wno-deprecated-copy -Wno-ignored-qualifiers -Wno-implicit-fallthrough)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 endif()
 
@@ -37,6 +37,7 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(src/vendor/spdlog)
 
+set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
 add_subdirectory(src/vendor/glfw)
 
 include_directories(${CMAKE_BINARY_DIR}/src/vendor/assimp/contrib/draco)

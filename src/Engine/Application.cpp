@@ -83,6 +83,10 @@ std::shared_ptr<Renderer::Scene> scene = nullptr;
 std::vector<std::shared_ptr<Renderer::Renderable>> forwardRenderables;
 std::shared_ptr<Renderer::Renderable> lightSphereRenderable = nullptr;
 
+std::shared_ptr<Renderer::CubePrimitive> cubePrimitivePtr = nullptr;
+std::shared_ptr<Renderer::SpherePrimitive> spherePrimitivePtr = nullptr;
+std::shared_ptr<Renderer::QuadPrimitive> quadPrimitivePtr = nullptr;
+
 float lastTime = 0.0f;
 int frameCount = 0;
 float startTime = 0.0f;
@@ -90,10 +94,10 @@ unsigned int currentSelectedUID = 0;
 std::shared_ptr<Renderer::Renderable> selectedRenderable = nullptr;
 static const Renderer::Vector3 camPos(4.42f, 1.0f, -3.63f);
 Renderer::Camera camera(camPos,                              // 位置（模型中心前方）
-                            Renderer::Vector3(0.0f, 1.0f, 0.0f), // 世界上方向
-                            133.5f,                              // yaw: -90度 朝向 -Z 方向（看向模型）
-                            -14.0f                               // pitch: 0度 水平视角
-    );
+                        Renderer::Vector3(0.0f, 1.0f, 0.0f), // 世界上方向
+                        133.5f,                              // yaw: -90度 朝向 -Z 方向（看向模型）
+                        -14.0f                               // pitch: 0度 水平视角
+);
 float viewMatrix[16];
 float projMatrix[16];
 Application::Application(AppConfig config) : m_appConfig(config)
@@ -252,11 +256,11 @@ bool Application::Init()
     // window.setCursorMode(Renderer::Window::CursorMode::Disabled);
 
     // 创建彩色立方体
-    std::shared_ptr<Renderer::CubePrimitive> cubePrimitive = std::make_shared<Renderer::CubePrimitive>(1.0f);
+    cubePrimitivePtr = std::make_shared<Renderer::CubePrimitive>(1.0f);
 
-    std::shared_ptr<Renderer::SpherePrimitive> spherePrimitive = std::make_shared<Renderer::SpherePrimitive>(1.0f, 64, 32);
+    spherePrimitivePtr = std::make_shared<Renderer::SpherePrimitive>(1.0f, 64, 32);
 
-    std::shared_ptr<Renderer::QuadPrimitive> quadPrimitive = std::make_shared<Renderer::QuadPrimitive>(10.0f);
+    quadPrimitivePtr = std::make_shared<Renderer::QuadPrimitive>(10.0f);
 
     // 测试相机矩阵
     camera.getViewMatrix(viewMatrix);
@@ -271,7 +275,8 @@ bool Application::Init()
     lightSphereRenderable = std::make_shared<Renderer::Renderable>();
 
     guiLayer.SetScene(scene);
-    forwardEffectShaderPtr = Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    forwardEffectShaderPtr =
+        Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
 
     float minX = -10.0f;
     float maxX = 10.0f;
@@ -290,13 +295,13 @@ bool Application::Init()
                               Renderer::Random::randomFloat(minZ, maxZ));
         sphereModel = sphereModel.transpose();
         auto renderable = std::make_shared<Renderer::Renderable>();
-        renderable->setPrimitive(spherePrimitive);
+        renderable->setPrimitive(spherePrimitivePtr);
         renderable->setTransform(sphereModel);
         renderable->setColor(Renderer::Random::randomColor());
         scene->AddRenderable(renderable);
     }
     // 轻量光源球体
-    lightSphereRenderable->setPrimitive(spherePrimitive);
+    lightSphereRenderable->setPrimitive(spherePrimitivePtr);
     lightSphereRenderable->setColor(Renderer::Vector3(1.0f, 1.0f, 1.0f));
     scene->AddRenderable(lightSphereRenderable);
     // 特效半透明球体示例（正向渲染，不进入延迟管线）
@@ -305,7 +310,7 @@ bool Application::Init()
     fxSphereModel.translate(0.0f, 2.0f, -2.0f);
     fxSphereModel = fxSphereModel.transpose();
     auto fxSphereRenderable = std::make_shared<Renderer::Renderable>();
-    fxSphereRenderable->setPrimitive(cubePrimitive);
+    fxSphereRenderable->setPrimitive(cubePrimitivePtr);
     fxSphereRenderable->setTransform(fxSphereModel);
     fxSphereRenderable->setColor(Renderer::Vector3(0.2f, 0.8f, 1.0f));
     forwardRenderables.push_back(fxSphereRenderable);
@@ -315,7 +320,7 @@ bool Application::Init()
     quadModel.rotate(DEG2RAD(-90.0f), Renderer::Vector3(1.0f, 0.0f, 0.0f));
     quadModel = quadModel.transpose();
     auto quadRenderable = std::make_shared<Renderer::Renderable>();
-    quadRenderable->setPrimitive(quadPrimitive);
+    quadRenderable->setPrimitive(quadPrimitivePtr);
     quadRenderable->setTransform(quadModel);
     quadRenderable->setColor(Renderer::Vector3(0.5f, 0.5f, 0.5f));
     scene->AddRenderable(quadRenderable);
@@ -337,6 +342,7 @@ bool Application::Init()
     model2Renderable->setTransform(model2M);
     scene->AddRenderable(model2Renderable);
 
+    LOG_INFO("Initialization completed");
     startTime = Window::getTime();
     return true;
 }
