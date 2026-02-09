@@ -1,11 +1,7 @@
 #include "AppDemo.h"
 #include "Logger/Log.h"
-#include "Renderer/FinalPass.h"
-#include "Renderer/ForwardPass.h"
-#include "Renderer/GeometryPass.h"
-#include "Renderer/LightingPass.h"
+#include "Renderer/RenderPipeline.h"
 #include "Renderer/MathUtils/Random.h"
-#include "Renderer/PostProcessPass.h"
 #include "Renderer/Primitives/CubePrimitive.h"
 #include "Renderer/Primitives/QuadPrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
@@ -24,47 +20,26 @@ std::string modelPath = "./res/backpack/backpack.obj";
 std::string model2Path = "./res/houtou.fbx";
 #endif
 
-enum class ViewMode
-{
-    Final = 0,
-    Lighting,
-    Position,
-    Normal,
-    Diffuse,
-    Specular,
-    Shininess,
-    Depth,
-};
-
 // AppDemo的私有成员变量
 class AppDemo::Impl
 {
 public:
-    // 渲染管线
-    std::unique_ptr<Renderer::GeometryPass> geometryPass;
-    std::unique_ptr<Renderer::LightingPass> lightingPass;
-    std::unique_ptr<Renderer::PostProcessPass> postProcessPass;
-    std::unique_ptr<Renderer::ForwardPass> forwardPass;
-    std::unique_ptr<Renderer::FinalPass> finalPass;
+    // 渲染管线（取代原来的 5 个独立 Pass）
+    std::unique_ptr<Renderer::RenderPipeline> renderPipeline;
 
-    // 渲染资源
-    std::shared_ptr<Renderer::Shader> forwardEffectShader;
-    std::vector<std::shared_ptr<Renderer::Renderable>> forwardRenderables;
+    // 光源球体（场景物体，由 AppDemo 管理）
     std::shared_ptr<Renderer::Renderable> lightSphereRenderable;
 
     // GUI状态
-    int gbufferViewMode = static_cast<int>(ViewMode::Final);
-    std::vector<const char*> gbufferViewLabels = {
-        "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Shininess", "Depth"};
+    int gbufferViewMode = static_cast<int>(Renderer::ViewMode::Final);
 
     // 应用状态
     unsigned int currentSelectedUID = 0;
     std::shared_ptr<Renderer::Renderable> selectedRenderable = nullptr;
     float currentTime = 0.0f;
 
-    // 矩阵
-    float viewMatrix[16];
-    float projMatrix[16];
+    // 光源位置
+    Renderer::Vector3 lightPos{0.0f, 5.0f, 0.0f};
 };
 
 AppDemo::AppDemo(AppConfig config) : Application(config), pImpl(std::make_unique<Impl>())
@@ -77,8 +52,8 @@ bool AppDemo::OnInit()
 {
     LOG_INFO("AppDemo 初始化中...");
 
-    // 设置GUI
-    m_guiLayer->SetGBufferViewModes(&pImpl->gbufferViewMode, pImpl->gbufferViewLabels);
+    // 设置GUI - 使用 RenderPipeline 提供的标签列表
+    m_guiLayer->SetGBufferViewModes(&pImpl->gbufferViewMode, Renderer::RenderPipeline::GetViewModeLabels());
     m_guiLayer->SetScene(m_scene);
 
     // 加载模型
@@ -86,15 +61,12 @@ bool AppDemo::OnInit()
     std::shared_ptr<Renderer::Model> loadedModel = modelLoader.loadModel(modelPath);
     std::shared_ptr<Renderer::Model> loadedModel2 = modelLoader.loadModel(model2Path);
 
-    // 初始化渲染管线
-    pImpl->geometryPass = std::make_unique<Renderer::GeometryPass>(m_appConfig.width, m_appConfig.height);
-    pImpl->lightingPass = std::make_unique<Renderer::LightingPass>(m_appConfig.width, m_appConfig.height);
-    pImpl->postProcessPass = std::make_unique<Renderer::PostProcessPass>(m_appConfig.width, m_appConfig.height);
-    pImpl->forwardPass = std::make_unique<Renderer::ForwardPass>();
-    pImpl->finalPass = std::make_unique<Renderer::FinalPass>();
+    // 初始化渲染管线（一行代替原来的 5 行 Pass 创建）
+    pImpl->renderPipeline = std::make_unique<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height);
 
-    // 初始化渲染资源
-    pImpl->forwardEffectShader = Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    // 设置前向渲染 Shader
+    auto forwardEffectShader = Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    pImpl->renderPipeline->SetForwardShader(forwardEffectShader);
 
     // 创建几何体
     auto cubePrimitive = std::make_shared<Renderer::CubePrimitive>(1.0f);
@@ -114,26 +86,24 @@ void AppDemo::OnUpdate(float deltaTime)
     pImpl->currentTime += deltaTime;
 
     // 更新光源位置
-    Renderer::Vector3 lightPos(0.0f, 5.0f, 0.0f);
     float curX = 5.0f * std::sin(pImpl->currentTime);
     float curZ = 5.0f * std::cos(pImpl->currentTime);
-    lightPos.x = curX;
-    lightPos.z = curZ;
+    pImpl->lightPos = Renderer::Vector3(curX, 5.0f, curZ);
 
     // 更新光源球体变换
     Renderer::Matrix4 lightModel = Renderer::Matrix4::identity();
     lightModel.scaleBy(0.1f, 0.1f, 0.1f);
-    lightModel.translate(lightPos.x, lightPos.y, lightPos.z);
+    lightModel.translate(pImpl->lightPos.x, pImpl->lightPos.y, pImpl->lightPos.z);
     lightModel = lightModel.transpose();
     pImpl->lightSphereRenderable->setTransform(lightModel);
 
-    // 处理拾取
+    // 处理拾取（通过 RenderPipeline 的接口）
     if (m_inputState.pickRequested)
     {
         unsigned int mouseXInt = static_cast<unsigned int>(m_inputState.mouseX);
         unsigned int mouseYInt = m_appConfig.height - static_cast<unsigned int>(m_inputState.mouseY);
 
-        unsigned int picked = pImpl->geometryPass->getCurrentSelectedUID(mouseXInt, mouseYInt);
+        unsigned int picked = pImpl->renderPipeline->PickObject(mouseXInt, mouseYInt);
         m_inputState.pickRequested = false;
 
         if (picked != 0)
@@ -141,7 +111,7 @@ void AppDemo::OnUpdate(float deltaTime)
             pImpl->currentSelectedUID = picked;
             pImpl->selectedRenderable = m_scene->GetRenderableByUID(picked);
         }
-        else 
+        else
         {
             pImpl->currentSelectedUID = 0;
         }
@@ -150,99 +120,15 @@ void AppDemo::OnUpdate(float deltaTime)
 
 void AppDemo::OnRender(float deltaTime)
 {
-    // 更新视图和投影矩阵
-    m_camera->getViewMatrix(pImpl->viewMatrix);
-    m_camera->getPerspectiveMatrix(pImpl->projMatrix, 45.0f,
-                                   static_cast<float>(m_appConfig.width) / static_cast<float>(m_appConfig.height),
-                                   0.01f, 1000.0f);
-
-    // 设置forward shader的uniform
-    float vx, vy, vz;
-    m_camera->getPosition(vx, vy, vz);
-    pImpl->forwardEffectShader->use();
-    pImpl->forwardEffectShader->setVec3("u_viewPos", vx, vy, vz);
-    pImpl->forwardEffectShader->unuse();
-
-    // 几何通道
-    pImpl->geometryPass->Begin(pImpl->viewMatrix, pImpl->projMatrix);
-    for (auto &renderable : m_scene->GetRenderables())
-    {
-        if (renderable)
-            pImpl->geometryPass->Render(renderable.get());
-    }
-    pImpl->geometryPass->End();
-
-    // 计算光源位置
-    ::Renderer::Vector3 lightPos(0.0f, 5.0f, 0.0f);
-    float curX = 5.0f * std::sin(pImpl->currentTime);
-    float curZ = 5.0f * std::cos(pImpl->currentTime);
-    lightPos.x = curX;
-    lightPos.z = curZ;
-
-    // 光照通道
-    pImpl->lightingPass->Begin(*m_camera, lightPos);
-    pImpl->lightingPass->Render(
-        pImpl->geometryPass->getPositionTexture(),
-        pImpl->geometryPass->getNormalTexture(),
-        pImpl->geometryPass->getDiffuseTexture(),
-        pImpl->geometryPass->getSpecularTexture(),
-        pImpl->geometryPass->getShininessTexture()
-    );
-    pImpl->lightingPass->End();
-
-    // 后处理通道
-    pImpl->postProcessPass->render(
-        m_appConfig.width, m_appConfig.height, *m_camera, pImpl->currentSelectedUID,
-        pImpl->geometryPass->getUIDTexture(),
-        pImpl->geometryPass->getPositionTexture(),
-        pImpl->geometryPass->getNormalTexture(),
-        pImpl->lightingPass->getLightingTexture(),
-        pImpl->geometryPass->getDepthTexture()
-    );
-
-    // 正向渲染（特效物体）
-    pImpl->forwardPass->Render(
-        m_appConfig.width, m_appConfig.height,
-        pImpl->viewMatrix, pImpl->projMatrix,
-        pImpl->postProcessPass->getColorTexture(),
-        pImpl->geometryPass->getDepthTexture(),
-        pImpl->forwardRenderables,
-        pImpl->forwardEffectShader,
+    // 整个渲染管线的执行现在只需一行调用
+    pImpl->renderPipeline->Execute(
+        *m_camera,
+        m_scene->GetRenderables(),
+        pImpl->lightPos,
+        pImpl->currentSelectedUID,
+        static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode),
         pImpl->currentTime
     );
-
-    // 选择显示的纹理
-    unsigned int displayTex = pImpl->postProcessPass->getColorTexture();
-    switch (static_cast<ViewMode>(pImpl->gbufferViewMode))
-    {
-    case ViewMode::Final:
-        displayTex = pImpl->postProcessPass->getColorTexture();
-        break;
-    case ViewMode::Lighting:
-        displayTex = pImpl->lightingPass->getLightingTexture();
-        break;
-    case ViewMode::Position:
-        displayTex = pImpl->geometryPass->getPositionTexture();
-        break;
-    case ViewMode::Normal:
-        displayTex = pImpl->geometryPass->getNormalTexture();
-        break;
-    case ViewMode::Diffuse:
-        displayTex = pImpl->geometryPass->getDiffuseTexture();
-        break;
-    case ViewMode::Specular:
-        displayTex = pImpl->geometryPass->getSpecularTexture();
-        break;
-    case ViewMode::Shininess:
-        displayTex = pImpl->geometryPass->getShininessTexture();
-        break;
-    case ViewMode::Depth:
-        displayTex = pImpl->geometryPass->getDepthTexture();
-        break;
-    }
-
-    // 最终通道
-    pImpl->finalPass->render(m_appConfig.width, m_appConfig.height, displayTex);
 }
 
 void AppDemo::OnGUI()
@@ -303,7 +189,7 @@ void AppDemo::SetupScene(
     pImpl->lightSphereRenderable->setColor(::Renderer::Vector3(1.0f, 1.0f, 1.0f));
     m_scene->AddRenderable(pImpl->lightSphereRenderable);
 
-    // 特效立方体（正向渲染）
+    // 特效立方体（前向渲染 —— 通过 RenderPipeline 管理）
     ::Renderer::Matrix4 fxSphereModel = ::Renderer::Matrix4::identity();
     fxSphereModel.scaleBy(1.2f, 1.2f, 1.2f);
     fxSphereModel.translate(0.0f, 2.0f, -2.0f);
@@ -313,7 +199,7 @@ void AppDemo::SetupScene(
     fxSphereRenderable->setMaterial(defaultMaterial);
     fxSphereRenderable->setTransform(fxSphereModel);
     fxSphereRenderable->setColor(::Renderer::Vector3(0.2f, 0.8f, 1.0f));
-    pImpl->forwardRenderables.push_back(fxSphereRenderable);
+    pImpl->renderPipeline->AddForwardRenderable(fxSphereRenderable);
 
     // 地面
     ::Renderer::Matrix4 quadModel = ::Renderer::Matrix4::identity();
@@ -346,4 +232,3 @@ void AppDemo::SetupScene(
     model2Renderable->setTransform(model2M);
     m_scene->AddRenderable(model2Renderable);
 }
-

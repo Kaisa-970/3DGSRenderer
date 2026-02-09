@@ -23,6 +23,7 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.cpp
 )
 
 set(RENDERER_HEADERS
@@ -52,6 +53,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.h
 )
 
 if(USE_GLES3)
