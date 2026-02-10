@@ -56,6 +56,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderContext.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Light.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/IRenderPass.h
 )
 
 if(USE_GLES3)

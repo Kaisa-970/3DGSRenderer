@@ -1,5 +1,10 @@
 #include "RenderPipeline.h"
 #include "RenderContext.h"
+#include "GeometryPass.h"
+#include "LightingPass.h"
+#include "PostProcessPass.h"
+#include "ForwardPass.h"
+#include "FinalPass.h"
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -11,11 +16,16 @@ static const std::vector<const char*> s_viewModeLabels = {
 RenderPipeline::RenderPipeline(int width, int height)
     : m_width(width), m_height(height)
 {
-    m_geometryPass    = std::make_unique<GeometryPass>(width, height);
-    m_lightingPass    = std::make_unique<LightingPass>(width, height);
-    m_postProcessPass = std::make_unique<PostProcessPass>(width, height);
-    m_forwardPass     = std::make_unique<ForwardPass>();
-    m_finalPass       = std::make_unique<FinalPass>();
+    // 按执行顺序构建 Pass 列表
+    auto geometry    = std::make_unique<GeometryPass>(width, height);
+    m_geometryPass   = geometry.get();  // 保留裸指针用于 PickObject
+
+    m_passes.push_back(std::move(geometry));
+    m_passes.push_back(std::make_unique<LightingPass>(width, height));
+    m_passes.push_back(std::make_unique<PostProcessPass>(width, height));
+    m_passes.push_back(std::make_unique<ForwardPass>());
+    // 注意：FinalPass 不放入列表，因为它在 ViewMode 选择之后单独执行
+    m_passes.push_back(std::make_unique<FinalPass>());
 }
 
 RenderPipeline::~RenderPipeline() = default;
@@ -45,11 +55,11 @@ void RenderPipeline::Execute(Camera& camera,
                                 static_cast<float>(m_width) / static_cast<float>(m_height),
                                 0.01f, 1000.0f);
 
-    // ---- 2. 依次执行各 Pass（每个 Pass 从 ctx 读取输入，写入输出）----
-    m_geometryPass->Execute(ctx);     // → ctx.gPositionTex, gNormalTex, ...
-    m_lightingPass->Execute(ctx);     // → ctx.lightingTex
-    m_postProcessPass->Execute(ctx);  // → ctx.postProcessColorTex
-    m_forwardPass->Execute(ctx);      // 渲染到 ctx.postProcessColorTex 上
+    // ---- 2. 依次执行前 4 个 Pass（Geometry → Lighting → PostProcess → Forward）----
+    for (size_t i = 0; i + 1 < m_passes.size(); ++i)
+    {
+        m_passes[i]->Execute(ctx);
+    }
 
     // ---- 3. 根据 ViewMode 选择显示纹理 ----
     switch (viewMode)
@@ -64,7 +74,8 @@ void RenderPipeline::Execute(Camera& camera,
     case ViewMode::Depth:     ctx.displayTex = ctx.gDepthTex;           break;
     }
 
-    m_finalPass->Execute(ctx);        // 输出到屏幕
+    // ---- 4. 最后一个 Pass（FinalPass）输出到屏幕 ----
+    m_passes.back()->Execute(ctx);
 }
 
 void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable>& renderable)

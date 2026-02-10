@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/RenderCore.h"
+#include "IRenderPass.h"
 #include "FrameBuffer.h"
 #include "Shader.h"
 #include "Renderable.h"
@@ -9,15 +10,16 @@ RENDERER_NAMESPACE_BEGIN
 
 struct RenderContext;
 
-class RENDERER_API GeometryPass {
+class RENDERER_API GeometryPass : public IRenderPass {
 public:
     GeometryPass(const int& width, const int& height);
-    ~GeometryPass();
+    ~GeometryPass() override;
 
     /// 统一执行接口：从 ctx 读取场景数据，将 G-Buffer 纹理 ID 写回 ctx
-    void Execute(RenderContext& ctx);
+    void Execute(RenderContext& ctx) override;
+    const char* GetName() const override { return "GeometryPass"; }
 
-    /// 物体拾取（读取 UID 纹理）
+    /// 物体拾取（读取 UID 纹理）— GeometryPass 特有功能
     unsigned int getCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY);
 
 private:

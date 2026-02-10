@@ -1,18 +1,16 @@
 #pragma once
 
 #include "Core/RenderCore.h"
+#include "IRenderPass.h"
 #include "Camera.h"
 #include "Light.h"
-#include "GeometryPass.h"
-#include "LightingPass.h"
-#include "PostProcessPass.h"
-#include "ForwardPass.h"
-#include "FinalPass.h"
 #include "Renderable.h"
 #include <memory>
 #include <vector>
 
 RENDERER_NAMESPACE_BEGIN
+
+class GeometryPass;  // 前向声明（用于 PickObject 特有功能）
 
 /// G-Buffer 可视化模式
 enum class ViewMode
@@ -35,6 +33,10 @@ public:
     RenderPipeline(int width, int height);
     ~RenderPipeline();
 
+    // 禁止拷贝（vector<unique_ptr> 不可拷贝，MSVC dllexport 要求显式声明）
+    RenderPipeline(const RenderPipeline&) = delete;
+    RenderPipeline& operator=(const RenderPipeline&) = delete;
+
     /// 执行完整的延迟渲染管线
     void Execute(Camera& camera,
                  const std::vector<std::shared_ptr<Renderable>>& sceneRenderables,
@@ -56,12 +58,11 @@ public:
     static const std::vector<const char*>& GetViewModeLabels();
 
 private:
-    // 各渲染阶段
-    std::unique_ptr<GeometryPass> m_geometryPass;
-    std::unique_ptr<LightingPass> m_lightingPass;
-    std::unique_ptr<PostProcessPass> m_postProcessPass;
-    std::unique_ptr<ForwardPass> m_forwardPass;
-    std::unique_ptr<FinalPass> m_finalPass;
+    // Pass 列表（按执行顺序排列）
+    std::vector<std::unique_ptr<IRenderPass>> m_passes;
+
+    // GeometryPass 的裸指针引用（用于 PickObject 等特有功能，生命周期由 m_passes 管理）
+    GeometryPass* m_geometryPass = nullptr;
 
     // 前向渲染资源
     std::shared_ptr<Shader> m_forwardShader;
