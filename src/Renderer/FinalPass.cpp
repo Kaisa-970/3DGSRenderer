@@ -11,8 +11,8 @@ static const float vertices[] = {
     -1.0f, 1.0f, 0.0f, 1.0f
 };
 
-FinalPass::FinalPass()
-    : m_shader(Renderer::Shader::fromFiles("res/shaders/final.vs.glsl", "res/shaders/final.fs.glsl")) {
+FinalPass::FinalPass(const std::shared_ptr<Shader>& shader)
+    : m_shader(shader) {
 
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);

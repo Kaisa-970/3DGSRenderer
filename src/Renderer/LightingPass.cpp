@@ -12,8 +12,8 @@ static const float vertices[] = {
     -1.0f, 1.0f, 0.0f, 1.0f
 };
 
-LightingPass::LightingPass(const int& width, const int& height)
-    : m_shader(Renderer::Shader::fromFiles("res/shaders/lambert.vs.glsl", "res/shaders/lambert.fs.glsl")) {
+LightingPass::LightingPass(const int& width, const int& height, const std::shared_ptr<Shader>& shader)
+    : m_shader(shader) {
 
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);

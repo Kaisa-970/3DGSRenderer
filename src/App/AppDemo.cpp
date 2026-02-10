@@ -9,7 +9,7 @@
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/RenderPipeline.h"
 #include "Renderer/Renderable.h"
-#include "Renderer/Shader.h"
+#include "Renderer/ShaderManager.h"
 #include <memory>
 
 using namespace GSEngine;
@@ -69,12 +69,12 @@ bool AppDemo::OnInit()
         std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f, 0.0f)));
     m_scene->AddLight(pImpl->mainLight);
 
-    // 初始化渲染管线
-    pImpl->renderPipeline = std::make_unique<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height);
+    // 初始化渲染管线（传入 ShaderManager，内部统一加载 Shader）
+    pImpl->renderPipeline = std::make_unique<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager);
 
-    // 设置前向渲染 Shader
-    auto forwardEffectShader =
-        Renderer::Shader::fromFiles("res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    // 通过 ShaderManager 加载前向渲染 Shader
+    auto forwardEffectShader = m_shaderManager->LoadShader(
+        "forward_effect", "res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
     pImpl->renderPipeline->SetForwardShader(forwardEffectShader);
 
     // 创建几何体

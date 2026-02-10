@@ -1,5 +1,6 @@
 #include "RenderPipeline.h"
 #include "RenderContext.h"
+#include "ShaderManager.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
 #include "PostProcessPass.h"
@@ -13,19 +14,24 @@ static const std::vector<const char*> s_viewModeLabels = {
     "Diffuse", "Specular", "Shininess", "Depth"
 };
 
-RenderPipeline::RenderPipeline(int width, int height)
+RenderPipeline::RenderPipeline(int width, int height, ShaderManager& shaderManager)
     : m_width(width), m_height(height)
 {
-    // 按执行顺序构建 Pass 列表
-    auto geometry    = std::make_unique<GeometryPass>(width, height);
+    // 通过 ShaderManager 统一加载所有内置 Shader
+    auto basepassShader    = shaderManager.LoadShader("basepass",    "res/shaders/basepass.vs.glsl",    "res/shaders/basepass.fs.glsl");
+    auto lambertShader     = shaderManager.LoadShader("lambert",     "res/shaders/lambert.vs.glsl",     "res/shaders/lambert.fs.glsl");
+    auto postprocessShader = shaderManager.LoadShader("postprocess", "res/shaders/final.vs.glsl",       "res/shaders/postprocess.fs.glsl");
+    auto finalShader       = shaderManager.LoadShader("final",       "res/shaders/final.vs.glsl",       "res/shaders/final.fs.glsl");
+
+    // 按执行顺序构建 Pass 列表，注入各自的 Shader
+    auto geometry    = std::make_unique<GeometryPass>(width, height, basepassShader);
     m_geometryPass   = geometry.get();  // 保留裸指针用于 PickObject
 
     m_passes.push_back(std::move(geometry));
-    m_passes.push_back(std::make_unique<LightingPass>(width, height));
-    m_passes.push_back(std::make_unique<PostProcessPass>(width, height));
+    m_passes.push_back(std::make_unique<LightingPass>(width, height, lambertShader));
+    m_passes.push_back(std::make_unique<PostProcessPass>(width, height, postprocessShader));
     m_passes.push_back(std::make_unique<ForwardPass>());
-    // 注意：FinalPass 不放入列表，因为它在 ViewMode 选择之后单独执行
-    m_passes.push_back(std::make_unique<FinalPass>());
+    m_passes.push_back(std::make_unique<FinalPass>(finalShader));
 }
 
 RenderPipeline::~RenderPipeline() = default;

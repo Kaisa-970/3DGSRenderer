@@ -10,7 +10,8 @@
 
 RENDERER_NAMESPACE_BEGIN
 
-class GeometryPass;  // 前向声明（用于 PickObject 特有功能）
+class GeometryPass;   // 前向声明（用于 PickObject 特有功能）
+class ShaderManager;  // 前向声明
 
 /// G-Buffer 可视化模式
 enum class ViewMode
@@ -30,7 +31,7 @@ enum class ViewMode
 class RENDERER_API RenderPipeline
 {
 public:
-    RenderPipeline(int width, int height);
+    RenderPipeline(int width, int height, ShaderManager& shaderManager);
     ~RenderPipeline();
 
     // 禁止拷贝（vector<unique_ptr> 不可拷贝，MSVC dllexport 要求显式声明）

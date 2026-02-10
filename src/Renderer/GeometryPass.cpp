@@ -5,8 +5,8 @@
 
 RENDERER_NAMESPACE_BEGIN
 
-GeometryPass::GeometryPass(const int &width, const int &height)
-    : m_shader(Renderer::Shader::fromFiles("res/shaders/basepass.vs.glsl", "res/shaders/basepass.fs.glsl"))
+GeometryPass::GeometryPass(const int &width, const int &height, const std::shared_ptr<Shader>& shader)
+    : m_shader(shader)
 {
     m_positionTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
     m_normalTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);

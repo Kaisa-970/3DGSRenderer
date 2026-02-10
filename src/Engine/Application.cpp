@@ -41,6 +41,7 @@ bool Application::Init()
     // 创建资源管理器（窗口/GL上下文就绪后）
     m_textureManager = std::make_shared<TextureManager>();
     m_materialManager = std::make_shared<MaterialManager>(*m_textureManager);
+    m_shaderManager = std::make_shared<Renderer::ShaderManager>();
 
     InitInputHandling();
 

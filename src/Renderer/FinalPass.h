@@ -10,7 +10,7 @@ struct RenderContext;
 
 class RENDERER_API FinalPass : public IRenderPass {
 public:
-    FinalPass();
+    explicit FinalPass(const std::shared_ptr<Shader>& shader);
     ~FinalPass() override;
 
     /// 统一执行接口：从 ctx 读取 displayTex，输出到屏幕

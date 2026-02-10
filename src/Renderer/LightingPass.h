@@ -11,7 +11,7 @@ struct RenderContext;
 
 class RENDERER_API LightingPass : public IRenderPass {
 public:
-    LightingPass(const int& width, const int& height);
+    LightingPass(const int& width, const int& height, const std::shared_ptr<Shader>& shader);
     ~LightingPass() override;
 
     /// 统一执行接口：从 ctx 读取 G-Buffer + 光源数据，将光照纹理 ID 写回 ctx

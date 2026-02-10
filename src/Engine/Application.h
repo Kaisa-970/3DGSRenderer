@@ -8,6 +8,7 @@
 #include "Window/Window.h"
 #include "Assets/TextureManager.h"
 #include "Assets/MaterialManager.h"
+#include "Renderer/ShaderManager.h"
 #include <memory>
 
 GSENGINE_NAMESPACE_BEGIN
@@ -73,6 +74,7 @@ protected:
     std::shared_ptr<Renderer::Camera> m_camera;
     std::shared_ptr<TextureManager> m_textureManager;
     std::shared_ptr<MaterialManager> m_materialManager;
+    std::shared_ptr<Renderer::ShaderManager> m_shaderManager;
 
     InputState m_inputState;
     AppConfig m_appConfig;

@@ -12,7 +12,7 @@ struct RenderContext;
 
 class RENDERER_API GeometryPass : public IRenderPass {
 public:
-    GeometryPass(const int& width, const int& height);
+    GeometryPass(const int& width, const int& height, const std::shared_ptr<Shader>& shader);
     ~GeometryPass() override;
 
     /// 统一执行接口：从 ctx 读取场景数据，将 G-Buffer 纹理 ID 写回 ctx

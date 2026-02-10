@@ -12,7 +12,7 @@ struct RenderContext;
 class RENDERER_API PostProcessPass : public IRenderPass
 {
 public:
-    PostProcessPass(const int &width, const int &height);
+    PostProcessPass(const int &width, const int &height, const std::shared_ptr<Shader>& shader);
     ~PostProcessPass() override;
 
     /// 统一执行接口：从 ctx 读取 G-Buffer + 光照纹理，将后处理颜色纹理写回 ctx
