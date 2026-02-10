@@ -6,6 +6,7 @@
 #include "PostProcessPass.h"
 #include "ForwardPass.h"
 #include "FinalPass.h"
+#include <stdexcept>
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -22,6 +23,11 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager& shaderManag
     auto lambertShader     = shaderManager.LoadShader("lambert",     "res/shaders/lambert.vs.glsl",     "res/shaders/lambert.fs.glsl");
     auto postprocessShader = shaderManager.LoadShader("postprocess", "res/shaders/final.vs.glsl",       "res/shaders/postprocess.fs.glsl");
     auto finalShader       = shaderManager.LoadShader("final",       "res/shaders/final.vs.glsl",       "res/shaders/final.fs.glsl");
+
+    if (!basepassShader || !lambertShader || !postprocessShader || !finalShader)
+    {
+        throw std::runtime_error("RenderPipeline initialization failed: required shader load failed");
+    }
 
     // 按执行顺序构建 Pass 列表，注入各自的 Shader
     auto geometry    = std::make_unique<GeometryPass>(width, height, basepassShader);

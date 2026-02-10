@@ -1,5 +1,6 @@
 #include "ShaderManager.h"
 #include "Logger/Log.h"
+#include <exception>
 
 RENDERER_NAMESPACE_BEGIN
 
@@ -24,16 +25,26 @@ std::shared_ptr<Shader> ShaderManager::LoadShader(const std::string& name,
 
     // 编译并缓存
     LOG_CORE_INFO("Loading shader '{}': vs={}, fs={}", name, vertexPath, fragmentPath);
-    auto shader = Shader::fromFiles(vertexPath, fragmentPath);
-    if (shader)
+    try
     {
-        m_shaders[name] = shader;
+        auto shader = Shader::fromFiles(vertexPath, fragmentPath);
+        if (shader)
+        {
+            m_shaders[name] = shader;
+            return shader;
+        }
+        LOG_CORE_ERROR("Failed to load shader '{}': Shader::fromFiles returned null", name);
+        return nullptr;
     }
-    else
+    catch (const std::exception& e)
     {
-        LOG_CORE_ERROR("Failed to load shader '{}'", name);
+        LOG_CORE_ERROR("Failed to load shader '{}': {}", name, e.what());
     }
-    return shader;
+    catch (...)
+    {
+        LOG_CORE_ERROR("Failed to load shader '{}': unknown exception", name);
+    }
+    return nullptr;
 }
 
 std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& name) const

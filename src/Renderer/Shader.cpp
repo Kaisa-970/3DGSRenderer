@@ -94,7 +94,9 @@ Shader::~Shader() {
 
 Shader::Shader(Shader &&other) noexcept {
     programId_ = other.programId_;
+    uniformLocationCache_ = std::move(other.uniformLocationCache_);
     other.programId_ = 0;
+    other.uniformLocationCache_.clear();
 }
 
 Shader &Shader::operator=(Shader &&other) noexcept {
@@ -103,7 +105,9 @@ Shader &Shader::operator=(Shader &&other) noexcept {
             glDeleteProgram(programId_);
         }
         programId_ = other.programId_;
+        uniformLocationCache_ = std::move(other.uniformLocationCache_);
         other.programId_ = 0;
+        other.uniformLocationCache_.clear();
     }
     return *this;
 }
@@ -116,65 +120,68 @@ void Shader::unuse() const {
     glUseProgram(0);
 }
 
-void Shader::setMat4(const char* name, const float* value) const {
-    use();
+int Shader::getUniformLocation(const char* name) const {
+    auto it = uniformLocationCache_.find(name);
+    if (it != uniformLocationCache_.end()) {
+        return it->second;
+    }
+
     int location = glGetUniformLocation(programId_, name);
+    uniformLocationCache_[name] = location;
+    return location;
+}
+
+void Shader::setMat4(const char* name, const float* value) const {
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniformMatrix4fv(location, 1, GL_FALSE, value);
     }
 }
 
 void Shader::setVec2(const char* name, float x, float y) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform2f(location, x, y);
     }
 }
 
 void Shader::setVec3(const char* name, float x, float y, float z) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform3f(location, x, y, z);
     }
 }
 
 void Shader::setVec4(const char* name, float x, float y, float z, float w) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform4f(location, x, y, z, w);
     }
 }
 
 void Shader::setFloat(const char* name, float value) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform1f(location, value);
     }
 }
 
 void Shader::setInt(const char* name, int value) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform1i(location, value);
     }
 }
 
 void Shader::setInt2(const char* name, int x, int y) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform2i(location, x, y);
     }
 }
 
 void Shader::setUint(const char* name, unsigned int value) const {
-    use();
-    int location = glGetUniformLocation(programId_, name);
+    int location = getUniformLocation(name);
     if (location != -1) {
         glUniform1ui(location, value);
     }

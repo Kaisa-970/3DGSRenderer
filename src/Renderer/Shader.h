@@ -3,6 +3,7 @@
 #include "Core/RenderCore.h"
 #include <string>
 #include <memory>
+#include <unordered_map>
 RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API Shader
@@ -38,9 +39,11 @@ public:
 
 private:
     unsigned int programId_ = 0;
+    mutable std::unordered_map<std::string, int> uniformLocationCache_;
 
     static unsigned int compileStage(int type, const std::string &source);
     static std::string readFile(const std::string &filepath);
+    int getUniformLocation(const char* name) const;
 };
 
 RENDERER_NAMESPACE_END
