@@ -30,7 +30,12 @@ public:
     void SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid);
     void SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels);
     void SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager);
-    void SetSceneViewTexture(unsigned int textureId);
+    void SetSceneViewTexture(unsigned int textureId, int texWidth, int texHeight);
+    void GetSceneViewportSize(int &width, int &height) const;
+
+    /// 将窗口坐标转换为场景视口（帧缓冲）坐标
+    /// @return true 如果坐标在场景图像范围内
+    bool WindowToSceneViewport(double windowX, double windowY, int &outX, int &outY) const;
 
 private:
     void RenderScenePanel();
@@ -51,8 +56,19 @@ private:
     int *gbufferViewMode_{nullptr};
     std::vector<const char *> gbufferViewLabels_;
     unsigned int sceneViewTexture_{0};
+    int sceneViewTexWidth_{1};
+    int sceneViewTexHeight_{1};
+    int sceneViewportWidth_{1};
+    int sceneViewportHeight_{1};
     bool sceneHovered_{false};
     bool sceneFocused_{false};
+    bool dockLayoutInitialized_{false};
+
+    // 场景图像在屏幕上的位置和尺寸（用于鼠标坐标映射）
+    float sceneImageScreenX_{0.0f};
+    float sceneImageScreenY_{0.0f};
+    float sceneImageWidth_{0.0f};
+    float sceneImageHeight_{0.0f};
 };
 
 GSENGINE_NAMESPACE_END

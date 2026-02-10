@@ -42,6 +42,22 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
 
 RenderPipeline::~RenderPipeline() = default;
 
+void RenderPipeline::Resize(int width, int height)
+{
+    if (width <= 0 || height <= 0)
+        return;
+    if (m_width == width && m_height == height)
+        return;
+
+    m_width = width;
+    m_height = height;
+    for (auto &pass : m_passes)
+    {
+        if (pass)
+            pass->Resize(width, height);
+    }
+}
+
 void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<Renderable>> &sceneRenderables,
                              const Light &light, int selectedUID, ViewMode viewMode, float currentTime,
                              bool presentToScreen)

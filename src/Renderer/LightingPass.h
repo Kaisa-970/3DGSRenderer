@@ -16,6 +16,7 @@ public:
 
     /// 统一执行接口：从 ctx 读取 G-Buffer + 光源数据，将光照纹理 ID 写回 ctx
     void Execute(RenderContext& ctx) override;
+    void Resize(int width, int height) override;
     const char* GetName() const override { return "LightingPass"; }
 
 private:

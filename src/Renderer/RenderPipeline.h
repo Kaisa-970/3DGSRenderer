@@ -42,6 +42,8 @@ public:
     /// 执行完整的延迟渲染管线
     void Execute(Camera &camera, const std::vector<std::shared_ptr<Renderable>> &sceneRenderables, const Light &light,
                  int selectedUID, ViewMode viewMode, float currentTime, bool presentToScreen = true);
+    /// 动态调整渲染尺寸（用于编辑器 Scene 面板变化）
+    void Resize(int width, int height);
 
     /// 添加前向渲染物体（半透明/特效物体），使用默认 forward shader（若已设置）
     void AddForwardRenderable(const std::shared_ptr<Renderable> &renderable);
@@ -62,6 +64,8 @@ public:
     static const std::vector<const char *> &GetViewModeLabels();
     /// 获取上一帧根据 ViewMode 选择的显示纹理（供编辑器 Scene View 使用）
     unsigned int GetLastDisplayTexture() const { return m_lastDisplayTex; }
+    int GetRenderWidth() const { return m_width; }
+    int GetRenderHeight() const { return m_height; }
 
 private:
     // Pass 列表（按执行顺序排列）

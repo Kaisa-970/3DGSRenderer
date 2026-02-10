@@ -122,12 +122,15 @@ void AppDemo::OnUpdate(float deltaTime)
     // 处理拾取（通过 RenderPipeline 的接口）
     if (m_inputState.pickRequested)
     {
-        unsigned int mouseXInt = static_cast<unsigned int>(m_inputState.mouseX);
-        unsigned int mouseYInt = m_appConfig.height - static_cast<unsigned int>(m_inputState.mouseY);
-
-        int picked = pImpl->renderPipeline->PickObject(mouseXInt, mouseYInt);
         m_inputState.pickRequested = false;
 
+        int sceneX = 0, sceneY = 0;
+        bool inScene = m_guiLayer->WindowToSceneViewport(m_inputState.mouseX, m_inputState.mouseY, sceneX, sceneY);
+
+        if (inScene)
+        {
+            int picked =
+                pImpl->renderPipeline->PickObject(static_cast<unsigned int>(sceneX), static_cast<unsigned int>(sceneY));
         if (picked != -1)
         {
             pImpl->currentSelectedUID = picked;
@@ -137,12 +140,19 @@ void AppDemo::OnUpdate(float deltaTime)
         {
             pImpl->currentSelectedUID = -1;
             pImpl->selectedRenderable = nullptr;
+            }
         }
     }
 }
 
 void AppDemo::OnRender(float deltaTime)
 {
+    // 将渲染管线尺寸同步到 Scene 面板的实际大小，避免宽高比失配导致画面变扁
+    int viewportW = m_appConfig.width;
+    int viewportH = m_appConfig.height;
+    m_guiLayer->GetSceneViewportSize(viewportW, viewportH);
+    pImpl->renderPipeline->Resize(viewportW, viewportH);
+
     // 在编辑器模式下渲染到纹理，交由 Scene 面板显示
     pImpl->renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), *pImpl->mainLight, pImpl->currentSelectedUID,
                                    static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode), pImpl->currentTime, false);
@@ -150,8 +160,12 @@ void AppDemo::OnRender(float deltaTime)
 
 void AppDemo::OnGUI()
 {
-    m_guiLayer->SetSceneViewTexture(pImpl->renderPipeline->GetLastDisplayTexture());
+    m_guiLayer->SetSceneViewTexture(pImpl->renderPipeline->GetLastDisplayTexture(),
+                                    pImpl->renderPipeline->GetRenderWidth(), pImpl->renderPipeline->GetRenderHeight());
+    if (pImpl->selectedRenderable)
+    {
         m_guiLayer->SetSelectedRenderable(pImpl->selectedRenderable, pImpl->currentSelectedUID);
+    }
     m_guiLayer->RenderGUI();
 }
 

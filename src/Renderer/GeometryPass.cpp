@@ -101,6 +101,23 @@ void GeometryPass::Execute(RenderContext &ctx)
     ctx.gDepthTex = m_depthTexture;
 }
 
+void GeometryPass::Resize(int width, int height)
+{
+    auto resizeTex = [width, height](unsigned int tex, int internalFormat, int format, int type) {
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, nullptr);
+    };
+
+    resizeTex(m_positionTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
+    resizeTex(m_normalTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
+    resizeTex(m_diffuseTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
+    resizeTex(m_specularTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
+    resizeTex(m_shininessTexture, GL_R32F, GL_RED, GL_FLOAT);
+    resizeTex(m_uidTexture, GL_R32I, GL_RED_INTEGER, GL_INT);
+    resizeTex(m_depthTexture, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void GeometryPass::RenderRenderable(Renderable *renderable)
 {
     m_shader->setMat4("model", renderable->getTransform().m);

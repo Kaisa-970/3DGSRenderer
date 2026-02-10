@@ -5,6 +5,7 @@
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Window/Window.h"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <cmath>
@@ -58,29 +59,58 @@ void GuiLayer::EndFrame()
 
 void GuiLayer::RenderGUI()
 {
-    ImGuiIO &io = ImGui::GetIO();
-    const ImVec2 display = io.DisplaySize;
-    const float rightPanelWidth = 420.0f;
-    const float hierarchyHeightRatio = 0.45f;
+    // 使用标准 DockSpace 全屏承载编辑器布局（可拖拽、可停靠）
+    const ImGuiViewport *viewport = ImGui::GetMainViewport();
+    ImGuiWindowFlags dockHostFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                                     ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus |
+                                     ImGuiWindowFlags_NoDocking;
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("EditorDockHost", nullptr, dockHostFlags);
+    ImGui::PopStyleVar(3);
 
-    // 左侧 Scene 视图
-    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-    ImGui::SetNextWindowSize(ImVec2(1920, 1080));
-    ImGui::Begin("Scene", nullptr);
+    ImGuiID dockspaceId = ImGui::GetID("EditorDockSpace");
+
+    // 首次启动时构建默认编辑器布局
+    if (!dockLayoutInitialized_ && ImGui::DockBuilderGetNode(dockspaceId) == nullptr)
+    {
+        dockLayoutInitialized_ = true;
+
+        ImGui::DockBuilderRemoveNode(dockspaceId);
+        ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->Size);
+
+        // 左侧 20% 放 Hierarchy
+        ImGuiID dockMain = dockspaceId;
+        ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Left, 0.18f, nullptr, &dockMain);
+        // 右侧 22% 放 Inspector
+        ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Right, 0.22f, nullptr, &dockMain);
+
+        ImGui::DockBuilderDockWindow("Scene", dockMain);
+        ImGui::DockBuilderDockWindow("Hierarchy", dockLeft);
+        ImGui::DockBuilderDockWindow("Inspector", dockRight);
+
+        ImGui::DockBuilderFinish(dockspaceId);
+    }
+
+    ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f));
+    ImGui::End();
+
+    // 具体面板交由 DockSpace 管理位置与大小
+    ImGui::Begin("Scene");
     RenderScenePanel();
     ImGui::End();
 
-    // 右上 Hierarchy
-    ImGui::SetNextWindowPos(ImVec2(display.x - rightPanelWidth, 0.0f));
-    ImGui::SetNextWindowSize(ImVec2(rightPanelWidth, display.y * hierarchyHeightRatio));
-    ImGui::Begin("Hierarchy", nullptr);
+    ImGui::Begin("Hierarchy");
     RenderHierarchyPanel();
     ImGui::End();
 
-    // 右下 Inspector
-    ImGui::SetNextWindowPos(ImVec2(display.x - rightPanelWidth, display.y * hierarchyHeightRatio));
-    ImGui::SetNextWindowSize(ImVec2(rightPanelWidth, display.y * (1.0f - hierarchyHeightRatio)));
-    ImGui::Begin("Inspector", nullptr);
+    ImGui::Begin("Inspector");
     RenderInspectorPanel();
     ImGui::End();
 }
@@ -144,9 +174,17 @@ void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materi
     materialManager_ = std::weak_ptr<MaterialManager>(materialManager);
 }
 
-void GuiLayer::SetSceneViewTexture(unsigned int textureId)
+void GuiLayer::SetSceneViewTexture(unsigned int textureId, int texWidth, int texHeight)
 {
     sceneViewTexture_ = textureId;
+    sceneViewTexWidth_ = texWidth > 0 ? texWidth : 1;
+    sceneViewTexHeight_ = texHeight > 0 ? texHeight : 1;
+}
+
+void GuiLayer::GetSceneViewportSize(int &width, int &height) const
+{
+    width = sceneViewportWidth_;
+    height = sceneViewportHeight_;
 }
 
 void GuiLayer::RenderScenePanel()
@@ -155,6 +193,8 @@ void GuiLayer::RenderScenePanel()
     sceneFocused_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
     ImVec2 avail = ImGui::GetContentRegionAvail();
+    sceneViewportWidth_ = (avail.x > 1.0f) ? static_cast<int>(avail.x) : 1;
+    sceneViewportHeight_ = (avail.y > 1.0f) ? static_cast<int>(avail.y) : 1;
     if (sceneViewTexture_ == 0)
     {
         ImGui::TextDisabled("No scene texture.");
@@ -162,6 +202,14 @@ void GuiLayer::RenderScenePanel()
     }
     if (avail.x < 1.0f || avail.y < 1.0f)
         return;
+
+    // 渲染管线已同步到面板尺寸，纹理直接铺满整个面板
+    // 记录场景图像在屏幕上的位置（用于鼠标坐标映射）
+    ImVec2 screenPos = ImGui::GetCursorScreenPos();
+    sceneImageScreenX_ = screenPos.x;
+    sceneImageScreenY_ = screenPos.y;
+    sceneImageWidth_ = avail.x;
+    sceneImageHeight_ = avail.y;
 
     // OpenGL 纹理坐标原点在左下，ImGui 默认左上，因此 V 方向翻转
     ImGui::Image((ImTextureID)(intptr_t)sceneViewTexture_, avail, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
@@ -375,6 +423,28 @@ void GuiLayer::ApplyEditableToRenderable(Renderer::Renderable &renderable)
     model.translate(editPosition_.x, editPosition_.y, editPosition_.z);
     renderable.setTransform(model.transpose());
     hasEditState_ = true;
+}
+
+bool GuiLayer::WindowToSceneViewport(double windowX, double windowY, int &outX, int &outY) const
+{
+    if (sceneImageWidth_ <= 0.0f || sceneImageHeight_ <= 0.0f)
+        return false;
+
+    // 计算鼠标相对于场景图像左上角的偏移
+    float relX = static_cast<float>(windowX) - sceneImageScreenX_;
+    float relY = static_cast<float>(windowY) - sceneImageScreenY_;
+
+    // 检查是否在场景图像范围内
+    if (relX < 0.0f || relY < 0.0f || relX >= sceneImageWidth_ || relY >= sceneImageHeight_)
+        return false;
+
+    // 映射到帧缓冲坐标
+    outX = static_cast<int>(relX / sceneImageWidth_ * static_cast<float>(sceneViewTexWidth_));
+    // 图像使用 V 翻转显示 (uv0.y=1, uv1.y=0)，所以屏幕 Y 向下对应帧缓冲 Y 向下
+    // 但 OpenGL 帧缓冲 Y=0 在底部，所以需要翻转
+    outY = static_cast<int>((1.0f - relY / sceneImageHeight_) * static_cast<float>(sceneViewTexHeight_));
+
+    return true;
 }
 
 GSENGINE_NAMESPACE_END

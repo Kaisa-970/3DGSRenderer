@@ -80,4 +80,11 @@ void PostProcessPass::Execute(RenderContext &ctx)
     ctx.postProcessColorTex = m_colorTexture;
 }
 
+void PostProcessPass::Resize(int width, int height)
+{
+    glBindTexture(GL_TEXTURE_2D, m_colorTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 RENDERER_NAMESPACE_END

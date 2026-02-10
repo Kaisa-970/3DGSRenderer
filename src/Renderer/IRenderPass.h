@@ -16,6 +16,9 @@ public:
     /// 执行该 Pass：从 ctx 读取输入数据，将输出写回 ctx
     virtual void Execute(RenderContext& ctx) = 0;
 
+    /// 当渲染目标尺寸变化时重建内部资源（默认无需处理）
+    virtual void Resize(int width, int height) { (void)width; (void)height; }
+
     /// 返回 Pass 名称（用于调试/日志）
     virtual const char* GetName() const = 0;
 };

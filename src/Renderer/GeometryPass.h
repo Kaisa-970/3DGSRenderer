@@ -18,6 +18,7 @@ public:
 
     /// 统一执行接口：从 ctx 读取场景数据，将 G-Buffer 纹理 ID 写回 ctx
     void Execute(RenderContext &ctx) override;
+    void Resize(int width, int height) override;
     const char *GetName() const override
     {
         return "GeometryPass";

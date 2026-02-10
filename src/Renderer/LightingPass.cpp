@@ -97,4 +97,11 @@ void LightingPass::Execute(RenderContext &ctx)
     ctx.lightingTex = m_lightingTexture;
 }
 
+void LightingPass::Resize(int width, int height)
+{
+    glBindTexture(GL_TEXTURE_2D, m_lightingTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 RENDERER_NAMESPACE_END
