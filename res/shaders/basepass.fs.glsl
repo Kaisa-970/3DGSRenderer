@@ -9,8 +9,8 @@ layout(location = 1) out vec3 gNormal;
 layout(location = 2) out vec3 gDiffuse;
 layout(location = 3) out vec3 gSpecular;
 layout(location = 4) out float gShininess;
-layout(location = 5) out uint gUID;
-layout(location = 6) out float gDepth;
+layout(location = 5) out int gUID;
+//layout(location = 6) out float gDepth;
 
 uniform sampler2D u_diffuseTexture;
 uniform sampler2D u_specularTexture;

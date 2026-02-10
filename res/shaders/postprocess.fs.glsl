@@ -17,8 +17,8 @@ uniform float u_edgeWidth = 1.0;          // 描边宽度
 uniform float u_depthSensitivity = 0.2;   // 深度敏感度
 uniform float u_normalSensitivity = 0.2;  // 法线敏感度
 
-uniform usampler2D u_uidTexture;
-uniform uint u_currentSelectedUID;
+uniform isampler2D u_uidTexture;
+uniform int u_currentSelectedUID;
 
 float linearizeDepth(float depth, float near, float far) {
     float z = depth * 2.0 - 1.0; // 转换到 NDC [-1, 1]
@@ -109,8 +109,8 @@ void main()
 
     // 获取原始颜色
     vec4 originalColor = texture(u_lightingTexture, texCoord);
-    uint uid = texture(u_uidTexture, texCoord).r;
-    if (uid == u_currentSelectedUID) {
+    int uid = texture(u_uidTexture, texCoord).r;
+    if (uid > 0 && uid == u_currentSelectedUID) {
         FragColor = mix(originalColor, vec4(u_edgeColor, 1.0), edgeFactor);
         return;
     }
