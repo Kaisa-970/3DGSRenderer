@@ -61,6 +61,7 @@ public:
 
     // 虚方法供派生类实现
     virtual bool OnInit() { return true; }                    // 应用特定的初始化
+    virtual void OnShutdown() {}                              // 应用特定的清理（在基础资源释放前调用）
     virtual void OnUpdate(float deltaTime) {}                // 每帧更新逻辑
     virtual void OnRender(float deltaTime) {}                // 渲染逻辑
     virtual void OnHandleInput() {}                          // 输入处理

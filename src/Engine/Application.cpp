@@ -291,10 +291,26 @@ void Application::UpdateCamera(float deltaTime)
 
 void Application::Shutdown()
 {
+    // 先关闭 GUI 后端，避免后续资源释放时仍访问 ImGui 相关状态
     if (m_guiLayer)
         m_guiLayer->Shutdown();
-    if (m_window)
-        m_window->terminateGLFW();
+
+    // 先让派生类释放自身持有的渲染资源（例如 RenderPipeline）
+    OnShutdown();
+
+    // 再释放基础资源管理器和场景对象，确保 GL 资源析构发生在上下文仍然有效时
+    m_shaderManager.reset();
+    m_materialManager.reset();
+    m_textureManager.reset();
+    m_scene.reset();
+    m_camera.reset();
+    m_eventBus.reset();
+    m_guiLayer.reset();
+
+    // 最后销毁窗口并终止 GLFW
+    m_window.reset();
+    Window::terminateGLFW();
+
     LOG_INFO("3DGS Engine 正常退出");
 }
 

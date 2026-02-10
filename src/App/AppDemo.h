@@ -16,6 +16,7 @@ public:
 
     // 实现基类的虚函数
     virtual bool OnInit() override;
+    virtual void OnShutdown() override;
     virtual void OnUpdate(float deltaTime) override;
     virtual void OnRender(float deltaTime) override;
     virtual void OnGUI() override;

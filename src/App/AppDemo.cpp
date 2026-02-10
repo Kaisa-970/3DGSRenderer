@@ -90,6 +90,18 @@ bool AppDemo::OnInit()
     return true;
 }
 
+void AppDemo::OnShutdown()
+{
+    if (!pImpl)
+        return;
+
+    // 在 GLFW 终止前释放依赖 GL 上下文的渲染资源
+    pImpl->renderPipeline.reset();
+    pImpl->lightSphereRenderable.reset();
+    pImpl->selectedRenderable.reset();
+    pImpl->mainLight.reset();
+}
+
 void AppDemo::OnUpdate(float deltaTime)
 {
     pImpl->currentTime += deltaTime;
