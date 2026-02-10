@@ -10,21 +10,25 @@ RENDERER_NAMESPACE_BEGIN
 
 struct RenderContext;
 
-class RENDERER_API GeometryPass : public IRenderPass {
+class RENDERER_API GeometryPass : public IRenderPass
+{
 public:
-    GeometryPass(const int& width, const int& height, const std::shared_ptr<Shader>& shader);
+    GeometryPass(const int &width, const int &height, const std::shared_ptr<Shader> &shader);
     ~GeometryPass() override;
 
     /// 统一执行接口：从 ctx 读取场景数据，将 G-Buffer 纹理 ID 写回 ctx
-    void Execute(RenderContext& ctx) override;
-    const char* GetName() const override { return "GeometryPass"; }
+    void Execute(RenderContext &ctx) override;
+    const char *GetName() const override
+    {
+        return "GeometryPass";
+    }
 
     /// 物体拾取（读取 UID 纹理）— GeometryPass 特有功能
-    unsigned int getCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY);
+    int GetCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY);
 
 private:
     /// 渲染单个 Renderable（设置 uniform + 绘制几何体）
-    void RenderRenderable(Renderable* renderable);
+    void RenderRenderable(Renderable *renderable);
 
     FrameBuffer m_frameBuffer;
     std::shared_ptr<Shader> m_shader;

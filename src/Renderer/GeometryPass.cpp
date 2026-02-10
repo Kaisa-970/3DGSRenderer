@@ -5,7 +5,7 @@
 
 RENDERER_NAMESPACE_BEGIN
 
-GeometryPass::GeometryPass(const int &width, const int &height, const std::shared_ptr<Shader>& shader)
+GeometryPass::GeometryPass(const int &width, const int &height, const std::shared_ptr<Shader> &shader)
     : m_shader(shader)
 {
     m_positionTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
@@ -13,7 +13,7 @@ GeometryPass::GeometryPass(const int &width, const int &height, const std::share
     m_diffuseTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
     m_specularTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
     m_shininessTexture = RenderHelper::CreateTexture2D(width, height, GL_R32F, GL_RED, GL_FLOAT);
-    m_uidTexture = RenderHelper::CreateTexture2D(width, height, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT);
+    m_uidTexture = RenderHelper::CreateTexture2D(width, height, GL_R32I, GL_RED_INTEGER, GL_INT, GL_NEAREST);
     m_depthTexture = RenderHelper::CreateTexture2D(width, height, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_positionTexture);
@@ -42,21 +42,30 @@ GeometryPass::~GeometryPass()
     m_frameBuffer.Detach(FrameBuffer::Attachment::Color4);
     m_frameBuffer.Detach(FrameBuffer::Attachment::Color5);
     m_frameBuffer.Detach(FrameBuffer::Attachment::Depth);
-    if (m_positionTexture != 0) glDeleteTextures(1, &m_positionTexture);
-    if (m_normalTexture != 0) glDeleteTextures(1, &m_normalTexture);
-    if (m_diffuseTexture != 0) glDeleteTextures(1, &m_diffuseTexture);
-    if (m_specularTexture != 0) glDeleteTextures(1, &m_specularTexture);
-    if (m_shininessTexture != 0) glDeleteTextures(1, &m_shininessTexture);
-    if (m_uidTexture != 0) glDeleteTextures(1, &m_uidTexture);
-    if (m_depthTexture != 0) glDeleteTextures(1, &m_depthTexture);
+    if (m_positionTexture != 0)
+        glDeleteTextures(1, &m_positionTexture);
+    if (m_normalTexture != 0)
+        glDeleteTextures(1, &m_normalTexture);
+    if (m_diffuseTexture != 0)
+        glDeleteTextures(1, &m_diffuseTexture);
+    if (m_specularTexture != 0)
+        glDeleteTextures(1, &m_specularTexture);
+    if (m_shininessTexture != 0)
+        glDeleteTextures(1, &m_shininessTexture);
+    if (m_uidTexture != 0)
+        glDeleteTextures(1, &m_uidTexture);
+    if (m_depthTexture != 0)
+        glDeleteTextures(1, &m_depthTexture);
 }
 
-void GeometryPass::Execute(RenderContext& ctx)
+void GeometryPass::Execute(RenderContext &ctx)
 {
     // ---- 绑定 FBO，清屏 ----
     m_frameBuffer.Bind();
     m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     m_frameBuffer.ClearDepthStencil(1.0f, 0);
+    GLint clearValue[] = {-1};
+    glClearBufferiv(GL_COLOR, 5, clearValue);
 
     // ---- 设置全局 uniform ----
     m_shader->use();
@@ -71,7 +80,7 @@ void GeometryPass::Execute(RenderContext& ctx)
     // ---- 遍历场景物体 ----
     if (ctx.sceneRenderables)
     {
-        for (const auto& renderable : *ctx.sceneRenderables)
+        for (const auto &renderable : *ctx.sceneRenderables)
         {
             if (renderable)
                 RenderRenderable(renderable.get());
@@ -83,13 +92,13 @@ void GeometryPass::Execute(RenderContext& ctx)
     m_frameBuffer.Unbind();
 
     // ---- 将 G-Buffer 纹理写入上下文 ----
-    ctx.gPositionTex  = m_positionTexture;
-    ctx.gNormalTex    = m_normalTexture;
-    ctx.gDiffuseTex   = m_diffuseTexture;
-    ctx.gSpecularTex  = m_specularTexture;
+    ctx.gPositionTex = m_positionTexture;
+    ctx.gNormalTex = m_normalTexture;
+    ctx.gDiffuseTex = m_diffuseTexture;
+    ctx.gSpecularTex = m_specularTexture;
     ctx.gShininessTex = m_shininessTexture;
-    ctx.gUIDTex       = m_uidTexture;
-    ctx.gDepthTex     = m_depthTexture;
+    ctx.gUIDTex = m_uidTexture;
+    ctx.gDepthTex = m_depthTexture;
 }
 
 void GeometryPass::RenderRenderable(Renderable *renderable)
@@ -110,12 +119,12 @@ void GeometryPass::RenderRenderable(Renderable *renderable)
     }
 }
 
-unsigned int GeometryPass::getCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY)
+int GeometryPass::GetCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY)
 {
     m_frameBuffer.Bind();
     glReadBuffer(GL_COLOR_ATTACHMENT5);
-    unsigned int uid;
-    glReadPixels(mouseX, mouseY, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &uid);
+    int uid;
+    glReadPixels(mouseX, mouseY, 1, 1, GL_RED_INTEGER, GL_INT, &uid);
     m_frameBuffer.Unbind();
     return uid;
 }

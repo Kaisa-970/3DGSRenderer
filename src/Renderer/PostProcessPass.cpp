@@ -8,7 +8,7 @@ RENDERER_NAMESPACE_BEGIN
 static const float vertices[] = {-1.0f, -1.0f, 0.0f, 0.0f, 1.0f,  -1.0f, 1.0f, 0.0f,
                                  1.0f,  1.0f,  1.0f, 1.0f, -1.0f, 1.0f,  0.0f, 1.0f};
 
-PostProcessPass::PostProcessPass(const int &width, const int &height, const std::shared_ptr<Shader>& shader)
+PostProcessPass::PostProcessPass(const int &width, const int &height, const std::shared_ptr<Shader> &shader)
     : m_shader(shader)
 {
     glGenVertexArrays(1, &m_vao);
@@ -21,19 +21,22 @@ PostProcessPass::PostProcessPass(const int &width, const int &height, const std:
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    m_colorTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
+    m_colorTexture = RenderHelper::CreateTexture2D(width, height, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_colorTexture);
 }
 
 PostProcessPass::~PostProcessPass()
 {
     m_frameBuffer.Detach(FrameBuffer::Attachment::Color0);
-    if (m_colorTexture != 0) glDeleteTextures(1, &m_colorTexture);
-    if (m_vao != 0) glDeleteVertexArrays(1, &m_vao);
-    if (m_vbo != 0) glDeleteBuffers(1, &m_vbo);
+    if (m_colorTexture != 0)
+        glDeleteTextures(1, &m_colorTexture);
+    if (m_vao != 0)
+        glDeleteVertexArrays(1, &m_vao);
+    if (m_vbo != 0)
+        glDeleteBuffers(1, &m_vbo);
 }
 
-void PostProcessPass::Execute(RenderContext& ctx)
+void PostProcessPass::Execute(RenderContext &ctx)
 {
     m_frameBuffer.Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -62,11 +65,10 @@ void PostProcessPass::Execute(RenderContext& ctx)
     // ---- 从 ctx 读取相机位置和选中 UID ----
     if (ctx.camera)
     {
-        m_shader->setVec3("viewPos", ctx.camera->getPosition().x,
-                                      ctx.camera->getPosition().y,
-                                      ctx.camera->getPosition().z);
+        m_shader->setVec3("viewPos", ctx.camera->getPosition().x, ctx.camera->getPosition().y,
+                          ctx.camera->getPosition().z);
     }
-    m_shader->setUint("u_currentSelectedUID", ctx.selectedUID);
+    m_shader->setInt("u_currentSelectedUID", ctx.selectedUID);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

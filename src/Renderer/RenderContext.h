@@ -11,7 +11,7 @@
 RENDERER_NAMESPACE_BEGIN
 
 /// RenderContext: Pass 之间的共享黑板
-/// 
+///
 /// 管线执行时，RenderPipeline 先填充输入数据，然后依次执行各 Pass。
 /// 每个 Pass 从 ctx 读取它需要的输入，执行渲染后将输出写回 ctx。
 /// 后续 Pass 就能从 ctx 读取前面 Pass 的产出，形成数据流。
@@ -25,19 +25,25 @@ RENDERER_NAMESPACE_BEGIN
 ///     → FinalPass      读取 displayTex，输出到屏幕
 struct RENDERER_API RenderContext
 {
+    struct ForwardRenderItem
+    {
+        std::shared_ptr<Renderable> renderable;
+        std::shared_ptr<Shader> shader;
+    };
+
     // ==== 输入（由 RenderPipeline 在执行 Pass 之前填充）====
-    Camera* camera = nullptr;
+    Camera *camera = nullptr;
     int width = 0;
     int height = 0;
     float currentTime = 0.0f;
-    unsigned int selectedUID = 0;
-    const Light* light = nullptr;
+    int selectedUID = -1;
+    const Light *light = nullptr;
 
     // 场景物体
-    const std::vector<std::shared_ptr<Renderable>>* sceneRenderables = nullptr;
+    const std::vector<std::shared_ptr<Renderable>> *sceneRenderables = nullptr;
 
-    // 前向渲染资源
-    const std::vector<std::shared_ptr<Renderable>>* forwardRenderables = nullptr;
+    // 前向渲染资源（每个物体可选独立 shader，未设置时回退到 forwardShader）
+    const std::vector<ForwardRenderItem> *forwardRenderables = nullptr;
     std::shared_ptr<Shader> forwardShader;
 
     // 预计算的矩阵

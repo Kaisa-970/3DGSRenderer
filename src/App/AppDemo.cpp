@@ -39,7 +39,7 @@ public:
     int gbufferViewMode = static_cast<int>(Renderer::ViewMode::Final);
 
     // 应用状态
-    unsigned int currentSelectedUID = 0;
+    int currentSelectedUID = -1;
     std::shared_ptr<Renderer::Renderable> selectedRenderable = nullptr;
     float currentTime = 0.0f;
 };
@@ -70,11 +70,12 @@ bool AppDemo::OnInit()
     m_scene->AddLight(pImpl->mainLight);
 
     // 初始化渲染管线（传入 ShaderManager，内部统一加载 Shader）
-    pImpl->renderPipeline = std::make_unique<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager);
+    pImpl->renderPipeline =
+        std::make_unique<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager);
 
     // 通过 ShaderManager 加载前向渲染 Shader
-    auto forwardEffectShader = m_shaderManager->LoadShader(
-        "forward_effect", "res/shaders/forward_effect.vs.glsl", "res/shaders/forward_effect.fs.glsl");
+    auto forwardEffectShader = m_shaderManager->LoadShader("forward_effect", "res/shaders/forward_effect.vs.glsl",
+                                                           "res/shaders/forward_effect.fs.glsl");
     pImpl->renderPipeline->SetForwardShader(forwardEffectShader);
 
     // 创建几何体
@@ -124,17 +125,17 @@ void AppDemo::OnUpdate(float deltaTime)
         unsigned int mouseXInt = static_cast<unsigned int>(m_inputState.mouseX);
         unsigned int mouseYInt = m_appConfig.height - static_cast<unsigned int>(m_inputState.mouseY);
 
-        unsigned int picked = pImpl->renderPipeline->PickObject(mouseXInt, mouseYInt);
+        int picked = pImpl->renderPipeline->PickObject(mouseXInt, mouseYInt);
         m_inputState.pickRequested = false;
 
-        if (picked != 0)
+        if (picked != -1)
         {
             pImpl->currentSelectedUID = picked;
             pImpl->selectedRenderable = m_scene->GetRenderableByUID(picked);
         }
         else
         {
-            pImpl->currentSelectedUID = 0;
+            pImpl->currentSelectedUID = -1;
         }
     }
 }

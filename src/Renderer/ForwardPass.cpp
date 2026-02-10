@@ -8,13 +8,13 @@ ForwardPass::ForwardPass()
 {
 }
 
-void ForwardPass::Execute(RenderContext& ctx)
+void ForwardPass::Execute(RenderContext &ctx)
 {
-    if (!ctx.forwardRenderables || ctx.forwardRenderables->empty() || !ctx.forwardShader)
+    if (!ctx.forwardRenderables || ctx.forwardRenderables->empty())
         return;
 
     // 将颜色写入后处理阶段的颜色纹理，同时复用几何阶段的深度纹理以保持遮挡关系
-    m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, ctx.postProcessColorTex);
+    m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, ctx.lightingTex);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Depth, ctx.gDepthTex);
     m_frameBuffer.Bind();
 
@@ -26,45 +26,57 @@ void ForwardPass::Execute(RenderContext& ctx)
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
 
-    auto& shader = ctx.forwardShader;
-    shader->use();
-    shader->setMat4("view", ctx.viewMatrix);
-    shader->setMat4("projection", ctx.projMatrix);
-    shader->setFloat("u_time", ctx.currentTime);
-
-    // 设置相机位置
-    if (ctx.camera)
+    std::shared_ptr<Shader> currentShader = nullptr;
+    for (const auto &item : *ctx.forwardRenderables)
     {
-        float vx, vy, vz;
-        ctx.camera->getPosition(vx, vy, vz);
-        shader->setVec3("u_viewPos", vx, vy, vz);
-    }
-
-    for (const auto &r : *ctx.forwardRenderables)
-    {
+        auto &r = item.renderable;
         if (!r)
             continue;
 
-        shader->setMat4("model", r->getTransform().m);
-        shader->setInt("uUID", static_cast<int>(r->getUid()));
-        shader->setVec3("uColor", r->getColor().x, r->getColor().y, r->getColor().z);
+        // 物体可自带 shader；若为空则回退到全局默认 forward shader
+        auto drawShader = item.shader ? item.shader : ctx.forwardShader;
+        if (!drawShader)
+            continue;
+
+        if (drawShader != currentShader)
+        {
+            if (currentShader)
+                currentShader->unuse();
+            currentShader = drawShader;
+            currentShader->use();
+            currentShader->setMat4("view", ctx.viewMatrix);
+            currentShader->setMat4("projection", ctx.projMatrix);
+            currentShader->setFloat("u_time", ctx.currentTime);
+
+            if (ctx.camera)
+            {
+                float vx, vy, vz;
+                ctx.camera->getPosition(vx, vy, vz);
+                currentShader->setVec3("u_viewPos", vx, vy, vz);
+            }
+        }
+
+        currentShader->setMat4("model", r->getTransform().m);
+        currentShader->setInt("uUID", static_cast<int>(r->getUid()));
+        currentShader->setVec3("uColor", r->getColor().x, r->getColor().y, r->getColor().z);
 
         if (r->getType() == RenderableType::Primitive && r->getPrimitive())
         {
             if (r->getMaterial())
-                r->getMaterial()->UpdateShaderParams(shader);
+                r->getMaterial()->UpdateShaderParams(currentShader);
             r->getPrimitive()->draw();
         }
         else if (r->getType() == RenderableType::Model && r->getModel())
         {
-            r->getModel()->draw(shader);
+            r->getModel()->draw(currentShader);
         }
     }
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
-    shader->unuse();
+    if (currentShader)
+        currentShader->unuse();
     m_frameBuffer.Unbind();
 }
 
