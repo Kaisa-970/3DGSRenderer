@@ -136,23 +136,22 @@ void AppDemo::OnUpdate(float deltaTime)
         else
         {
             pImpl->currentSelectedUID = -1;
+            pImpl->selectedRenderable = nullptr;
         }
     }
 }
 
 void AppDemo::OnRender(float deltaTime)
 {
-    // 整个渲染管线的执行现在只需一行调用
+    // 在编辑器模式下渲染到纹理，交由 Scene 面板显示
     pImpl->renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), *pImpl->mainLight, pImpl->currentSelectedUID,
-                                   static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode), pImpl->currentTime);
+                                   static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode), pImpl->currentTime, false);
 }
 
 void AppDemo::OnGUI()
 {
-    if (pImpl->selectedRenderable)
-    {
+    m_guiLayer->SetSceneViewTexture(pImpl->renderPipeline->GetLastDisplayTexture());
         m_guiLayer->SetSelectedRenderable(pImpl->selectedRenderable, pImpl->currentSelectedUID);
-    }
     m_guiLayer->RenderGUI();
 }
 

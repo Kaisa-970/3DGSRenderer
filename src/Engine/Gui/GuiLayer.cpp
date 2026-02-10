@@ -8,7 +8,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <cmath>
-
+#include <cstdint>
+#include <string>
 
 GSENGINE_NAMESPACE_BEGIN
 
@@ -42,6 +43,8 @@ void GuiLayer::Init(Window *window)
 
 void GuiLayer::BeginFrame()
 {
+    sceneHovered_ = false;
+    sceneFocused_ = false;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -55,37 +58,171 @@ void GuiLayer::EndFrame()
 
 void GuiLayer::RenderGUI()
 {
-    // ImGui::ShowDemoWindow();
+    ImGuiIO &io = ImGui::GetIO();
+    const ImVec2 display = io.DisplaySize;
+    const float rightPanelWidth = 420.0f;
+    const float hierarchyHeightRatio = 0.45f;
 
-    if (auto scene = scene_.lock())
+    // 左侧 Scene 视图
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+    ImGui::SetNextWindowSize(ImVec2(1920, 1080));
+    ImGui::Begin("Scene", nullptr);
+    RenderScenePanel();
+    ImGui::End();
+
+    // 右上 Hierarchy
+    ImGui::SetNextWindowPos(ImVec2(display.x - rightPanelWidth, 0.0f));
+    ImGui::SetNextWindowSize(ImVec2(rightPanelWidth, display.y * hierarchyHeightRatio));
+    ImGui::Begin("Hierarchy", nullptr);
+    RenderHierarchyPanel();
+    ImGui::End();
+
+    // 右下 Inspector
+    ImGui::SetNextWindowPos(ImVec2(display.x - rightPanelWidth, display.y * hierarchyHeightRatio));
+    ImGui::SetNextWindowSize(ImVec2(rightPanelWidth, display.y * (1.0f - hierarchyHeightRatio)));
+    ImGui::Begin("Inspector", nullptr);
+    RenderInspectorPanel();
+    ImGui::End();
+}
+
+void GuiLayer::Shutdown()
+{
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
+bool GuiLayer::WantCaptureMouse() const
+{
+    if (!ImGui::GetCurrentContext())
+        return false;
+    // Scene 面板交互时，把鼠标输入交给相机/场景控制
+    if (sceneHovered_ || sceneFocused_)
+        return false;
+    return ImGui::GetIO().WantCaptureMouse;
+}
+
+bool GuiLayer::WantCaptureKeyboard() const
+{
+    if (!ImGui::GetCurrentContext())
+        return false;
+    // Scene 面板聚焦时，允许 WASD 等键盘控制
+    if (sceneFocused_ || sceneHovered_)
+        return false;
+    return ImGui::GetIO().WantCaptureKeyboard;
+}
+
+void GuiLayer::SetScene(const std::shared_ptr<Scene> &scene)
+{
+    if (!scene)
+        return;
+    scene_ = std::weak_ptr<Scene>(scene);
+}
+
+void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid)
+{
+    if (!renderable)
     {
-        ImGui::Begin("Settings");
-        if (ImGui::Button("Create Sphere"))
-        {
-            std::shared_ptr<Renderer::SpherePrimitive> spherePrimitive =
-                std::make_shared<Renderer::SpherePrimitive>(1.0f, 36, 18);
-            auto sphereRenderable = std::make_shared<Renderer::Renderable>();
-            sphereRenderable->setPrimitive(spherePrimitive);
-            sphereRenderable->setTransform(Renderer::Matrix4::identity());
-            Renderer::Vector3 color = Renderer::Random::randomColor();
-            sphereRenderable->setColor(color);
-            if (auto matMgr = materialManager_.lock())
-            {
-                sphereRenderable->setMaterial(matMgr->GetDefaultMaterial());
-            }
-            scene->AddRenderable(sphereRenderable);
-        }
+        ClearSelection();
+        return;
+    }
+    selected_ = renderable;
+    selectedUid_ = uid;
+    SyncEditableFromTransform(*renderable);
+}
 
-        ImGui::End();
+void GuiLayer::SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels)
+{
+    gbufferViewMode_ = modePtr;
+    gbufferViewLabels_ = labels;
+}
+
+void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
+{
+    if (!materialManager)
+        return;
+    materialManager_ = std::weak_ptr<MaterialManager>(materialManager);
+}
+
+void GuiLayer::SetSceneViewTexture(unsigned int textureId)
+{
+    sceneViewTexture_ = textureId;
+}
+
+void GuiLayer::RenderScenePanel()
+{
+    sceneHovered_ = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+    sceneFocused_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    if (sceneViewTexture_ == 0)
+    {
+        ImGui::TextDisabled("No scene texture.");
+        return;
+    }
+    if (avail.x < 1.0f || avail.y < 1.0f)
+        return;
+
+    // OpenGL 纹理坐标原点在左下，ImGui 默认左上，因此 V 方向翻转
+    ImGui::Image((ImTextureID)(intptr_t)sceneViewTexture_, avail, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+}
+
+void GuiLayer::RenderHierarchyPanel()
+{
+    auto scene = scene_.lock();
+    if (!scene)
+    {
+        ImGui::TextDisabled("No scene bound.");
+        return;
     }
 
+    if (ImGui::Button("Create Sphere"))
+    {
+        std::shared_ptr<Renderer::SpherePrimitive> spherePrimitive =
+            std::make_shared<Renderer::SpherePrimitive>(1.0f, 36, 18);
+        auto sphereRenderable = std::make_shared<Renderer::Renderable>();
+        sphereRenderable->setPrimitive(spherePrimitive);
+        sphereRenderable->setTransform(Renderer::Matrix4::identity());
+        sphereRenderable->setColor(Renderer::Random::randomColor());
+        if (auto matMgr = materialManager_.lock())
+            sphereRenderable->setMaterial(matMgr->GetDefaultMaterial());
+        scene->AddRenderable(sphereRenderable);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Clear Selection"))
+        ClearSelection();
+
+    ImGui::Separator();
+    const auto &renderables = scene->GetRenderables();
+    for (const auto &r : renderables)
+    {
+        if (!r)
+            continue;
+        unsigned int uid = r->getUid();
+        bool isSelected = (selectedUid_ == uid) && !selected_.expired();
+
+        std::string label = "[" + std::to_string(uid) + "] ";
+        label += (r->getType() == Renderer::RenderableType::Model) ? "Model" : "Primitive";
+
+        ImGui::PushID(static_cast<int>(uid));
+        if (ImGui::Selectable(label.c_str(), isSelected))
+        {
+            selected_ = r;
+            selectedUid_ = uid;
+            SyncEditableFromTransform(*r);
+        }
+        ImGui::PopID();
+    }
+}
+
+void GuiLayer::RenderInspectorPanel()
+{
     if (auto selected = selected_.lock())
     {
-        ImGui::Begin("Selection");
         ImGui::Text("UID: %u", selectedUid_);
         ImGui::Text("Type: %s", selected->getType() == Renderer::RenderableType::Model ? "Model" : "Primitive");
 
-        // 变换可编辑
         bool changed = false;
         changed |= ImGui::DragFloat3("Position", &editPosition_.x, 0.01f, -FLT_MAX, FLT_MAX, "%.3f");
         changed |= ImGui::DragFloat3("Rotation (deg XYZ)", &editRotationDeg_.x, 0.1f, -360.0f, 360.0f, "%.3f");
@@ -98,16 +235,12 @@ void GuiLayer::RenderGUI()
             changed = true;
         }
         if (changed)
-        {
             ApplyEditableToRenderable(*selected);
-        }
 
         ImGui::Separator();
         Renderer::Vector3 color = selected->getColor();
         if (ImGui::ColorEdit3("Color", &color.x))
-        {
             selected->setColor(color);
-        }
 
         if (selected->getType() == Renderer::RenderableType::Primitive)
         {
@@ -124,9 +257,7 @@ void GuiLayer::RenderGUI()
                             mat->getAmbientColor().z);
                 float shininess = mat->getShininess();
                 if (ImGui::SliderFloat("Shininess", &shininess, 1.0f, 256.0f, "%.1f"))
-                {
                     mat->setShininess(shininess);
-                }
                 ImGui::Text("Textures: diffuse %zu, specular %zu, normal %zu", mat->getDiffuseTextures().size(),
                             mat->getSpecularTextures().size(), mat->getNormalTextures().size());
             }
@@ -148,9 +279,7 @@ void GuiLayer::RenderGUI()
                                 mat->getSpecularColor().y, mat->getSpecularColor().z);
                     float shininess = mat->getShininess();
                     if (ImGui::SliderFloat("Material[0] Shininess", &shininess, 1.0f, 256.0f, "%.1f"))
-                    {
                         mat->setShininess(shininess);
-                    }
                     ImGui::Text("Material[0] Textures: diffuse %zu, specular %zu, normal %zu",
                                 mat->getDiffuseTextures().size(), mat->getSpecularTextures().size(),
                                 mat->getNormalTextures().size());
@@ -165,58 +294,25 @@ void GuiLayer::RenderGUI()
             ImGui::Combo("Texture", gbufferViewMode_, gbufferViewLabels_.data(),
                          static_cast<int>(gbufferViewLabels_.size()));
         }
-        ImGui::End();
+    }
+    else
+    {
+        ImGui::TextDisabled("No selection");
+        ImGui::Separator();
+        if (gbufferViewMode_ && !gbufferViewLabels_.empty())
+        {
+            ImGui::Text("G-Buffer View");
+            ImGui::Combo("Texture", gbufferViewMode_, gbufferViewLabels_.data(),
+                         static_cast<int>(gbufferViewLabels_.size()));
+        }
     }
 }
 
-void GuiLayer::Shutdown()
+void GuiLayer::ClearSelection()
 {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-}
-
-bool GuiLayer::WantCaptureMouse() const
-{
-    if (!ImGui::GetCurrentContext())
-        return false;
-    return ImGui::GetIO().WantCaptureMouse;
-}
-
-bool GuiLayer::WantCaptureKeyboard() const
-{
-    if (!ImGui::GetCurrentContext())
-        return false;
-    return ImGui::GetIO().WantCaptureKeyboard;
-}
-
-void GuiLayer::SetScene(const std::shared_ptr<Scene> &scene)
-{
-    if (!scene)
-        return;
-    scene_ = std::weak_ptr<Scene>(scene);
-}
-
-void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid)
-{
-    if (!renderable)
-        return; // 保留上一选中
-    selected_ = renderable;
-    selectedUid_ = uid;
-    SyncEditableFromTransform(*renderable);
-}
-
-void GuiLayer::SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels)
-{
-    gbufferViewMode_ = modePtr;
-    gbufferViewLabels_ = labels;
-}
-
-void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
-{
-    if (!materialManager)
-        return;
-    materialManager_ = std::weak_ptr<MaterialManager>(materialManager);
+    selected_.reset();
+    selectedUid_ = 0;
+    hasEditState_ = false;
 }
 
 void GuiLayer::SyncEditableFromTransform(const Renderer::Renderable &renderable)

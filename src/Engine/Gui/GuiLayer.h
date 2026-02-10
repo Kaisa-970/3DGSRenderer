@@ -30,8 +30,13 @@ public:
     void SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid);
     void SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels);
     void SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager);
+    void SetSceneViewTexture(unsigned int textureId);
 
 private:
+    void RenderScenePanel();
+    void RenderHierarchyPanel();
+    void RenderInspectorPanel();
+    void ClearSelection();
     void SyncEditableFromTransform(const Renderer::Renderable &renderable);
     void ApplyEditableToRenderable(Renderer::Renderable &renderable);
 
@@ -45,6 +50,9 @@ private:
     bool hasEditState_{false};
     int *gbufferViewMode_{nullptr};
     std::vector<const char *> gbufferViewLabels_;
+    unsigned int sceneViewTexture_{0};
+    bool sceneHovered_{false};
+    bool sceneFocused_{false};
 };
 
 GSENGINE_NAMESPACE_END

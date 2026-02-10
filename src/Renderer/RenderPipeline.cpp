@@ -43,7 +43,8 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
 RenderPipeline::~RenderPipeline() = default;
 
 void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<Renderable>> &sceneRenderables,
-                             const Light &light, int selectedUID, ViewMode viewMode, float currentTime)
+                             const Light &light, int selectedUID, ViewMode viewMode, float currentTime,
+                             bool presentToScreen)
 {
     // ---- 1. 填充 RenderContext ----
     RenderContext ctx;
@@ -96,9 +97,11 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
         ctx.displayTex = ctx.gDepthTex;
         break;
     }
+    m_lastDisplayTex = ctx.displayTex;
 
     // ---- 4. 最后一个 Pass（FinalPass）输出到屏幕 ----
-    m_passes.back()->Execute(ctx);
+    if (presentToScreen)
+        m_passes.back()->Execute(ctx);
 }
 
 void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable> &renderable)
