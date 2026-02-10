@@ -66,6 +66,7 @@ public:
     virtual void OnRender(float deltaTime) {}                // 渲染逻辑
     virtual void OnHandleInput() {}                          // 输入处理
     virtual void OnGUI() {}                                  // GUI渲染
+    virtual void OnResize(int width, int height) {}          // 窗口大小变化
 
 protected:
     std::shared_ptr<Window> m_window;
@@ -85,6 +86,7 @@ protected:
     virtual void HandleMouseButtonEvent(int button, int action, int mods, double xpos, double ypos);
     virtual void HandleMouseMoveEvent(double xpos, double ypos, double dx, double dy);
     virtual void HandleScrollEvent(double xoffset, double yoffset);
+    virtual void HandleWindowResize(int width, int height);
 
 private:
     // 私有辅助方法

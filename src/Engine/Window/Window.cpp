@@ -179,6 +179,19 @@ void Window::setKeyCallback(KeyCallback callback)
     }
 }
 
+void Window::setFramebufferSizeCallback(FramebufferSizeCallback callback)
+{
+    framebufferSizeCallback_ = callback;
+    if (callback)
+    {
+        glfwSetFramebufferSizeCallback(window_, glfwFramebufferSizeCallback);
+    }
+    else
+    {
+        glfwSetFramebufferSizeCallback(window_, nullptr);
+    }
+}
+
 // GLFW静态回调实现（转发到成员函数）
 void Window::glfwMouseCallback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -216,6 +229,20 @@ void Window::glfwKeyCallback(GLFWwindow *window, int key, int scancode, int acti
     if (win && win->keyCallback_)
     {
         win->keyCallback_(key, scancode, action, mods);
+    }
+}
+
+void Window::glfwFramebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
+    Window *win = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (win)
+    {
+        win->width_ = width;
+        win->height_ = height;
+        if (win->framebufferSizeCallback_)
+        {
+            win->framebufferSizeCallback_(width, height);
+        }
     }
 }
 

@@ -137,11 +137,13 @@ public:
     using MouseScrollCallback = std::function<void(double xoffset, double yoffset)>;
     using MouseButtonCallback = std::function<void(int button, int action, int mods, double xpos, double ypos)>;
     using KeyCallback = std::function<void(int key, int scancode, int action, int mods)>;
+    using FramebufferSizeCallback = std::function<void(int width, int height)>;
 
     void setMouseMoveCallback(MouseMoveCallback callback);
     void setMouseScrollCallback(MouseScrollCallback callback);
     void setMouseButtonCallback(MouseButtonCallback callback);
     void setKeyCallback(KeyCallback callback);
+    void setFramebufferSizeCallback(FramebufferSizeCallback callback);
 
     static bool initGLFW();
     static void terminateGLFW();
@@ -158,12 +160,14 @@ private:
     MouseScrollCallback mouseScrollCallback_;
     MouseButtonCallback mouseButtonCallback_;
     KeyCallback keyCallback_;
+    FramebufferSizeCallback framebufferSizeCallback_;
 
     // GLFW静态回调（转发到成员函数）
     static void glfwMouseCallback(GLFWwindow *window, double xpos, double ypos);
     static void glfwScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
     static void glfwMouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
     static void glfwKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+    static void glfwFramebufferSizeCallback(GLFWwindow *window, int width, int height);
 };
 
 GSENGINE_NAMESPACE_END

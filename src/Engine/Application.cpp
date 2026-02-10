@@ -112,6 +112,20 @@ void Application::HandleScrollEvent(double xoffset, double yoffset)
     m_camera->processMouseScroll(static_cast<float>(yoffset));
 }
 
+void Application::HandleWindowResize(int width, int height)
+{
+    if (width <= 0 || height <= 0)
+        return; // 窗口最小化时 framebuffer 尺寸可能为 0，跳过
+
+    m_appConfig.width = width;
+    m_appConfig.height = height;
+
+    LOG_INFO("窗口大小变化: {}x{}", width, height);
+
+    // 通知派生类
+    OnResize(width, height);
+}
+
 bool Application::InitWindow()
 {
     // 初始化 GLFW
@@ -185,6 +199,10 @@ void Application::InitInputHandling()
         m_eventBus->Emplace<ScrollEvent>(xoffset, yoffset, Window::getTime());
     });
 
+    m_window->setFramebufferSizeCallback([this](int width, int height) {
+        m_eventBus->Emplace<WindowResizeEvent>(width, height);
+    });
+
     // 注册基础输入事件处理
     m_eventBus->Subscribe(EventType::Key, 10, [this](Event &evt) {
         auto &e = static_cast<KeyEvent &>(evt);
@@ -212,6 +230,11 @@ void Application::InitInputHandling()
         if (m_guiLayer->WantCaptureMouse())
             return;
         HandleScrollEvent(e.xoffset, e.yoffset);
+    });
+
+    m_eventBus->Subscribe(EventType::WindowResize, 10, [this](Event &evt) {
+        auto &e = static_cast<WindowResizeEvent &>(evt);
+        HandleWindowResize(e.width, e.height);
     });
 }
 
@@ -243,6 +266,10 @@ void Application::Run()
         // 检查退出条件
         if (m_inputState.exitRequested)
             break;
+
+        // 窗口最小化时跳过渲染，避免 framebuffer 为 0 导致的异常
+        if (m_window->getWidth() <= 0 || m_window->getHeight() <= 0)
+            continue;
 
         // 更新相机
         UpdateCamera(deltaTime);
