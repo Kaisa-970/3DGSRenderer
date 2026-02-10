@@ -33,6 +33,9 @@ public:
     void SetSceneViewTexture(unsigned int textureId, int texWidth, int texHeight);
     void GetSceneViewportSize(int &width, int &height) const;
 
+    /// 获取当前 GUI 选中的物体 UID（0 表示无选中）
+    unsigned int GetSelectedUid() const { return selectedUid_; }
+
     /// 将窗口坐标转换为场景视口（帧缓冲）坐标
     /// @return true 如果坐标在场景图像范围内
     bool WindowToSceneViewport(double windowX, double windowY, int &outX, int &outY) const;

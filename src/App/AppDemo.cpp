@@ -119,7 +119,7 @@ void AppDemo::OnUpdate(float deltaTime)
     lightModel = lightModel.transpose();
     pImpl->lightSphereRenderable->setTransform(lightModel);
 
-    // 处理拾取（通过 RenderPipeline 的接口）
+    // 处理拾取（通过 RenderPipeline 的接口）—— 场景点击也通过 GuiLayer 更新选中状态
     if (m_inputState.pickRequested)
     {
         m_inputState.pickRequested = false;
@@ -133,13 +133,12 @@ void AppDemo::OnUpdate(float deltaTime)
                 pImpl->renderPipeline->PickObject(static_cast<unsigned int>(sceneX), static_cast<unsigned int>(sceneY));
         if (picked != -1)
         {
-            pImpl->currentSelectedUID = picked;
-            pImpl->selectedRenderable = m_scene->GetRenderableByUID(picked);
+                auto renderable = m_scene->GetRenderableByUID(static_cast<unsigned int>(picked));
+                m_guiLayer->SetSelectedRenderable(renderable, static_cast<unsigned int>(picked));
         }
         else
         {
-            pImpl->currentSelectedUID = -1;
-            pImpl->selectedRenderable = nullptr;
+                m_guiLayer->SetSelectedRenderable(nullptr, 0);
             }
         }
     }
@@ -162,11 +161,15 @@ void AppDemo::OnGUI()
 {
     m_guiLayer->SetSceneViewTexture(pImpl->renderPipeline->GetLastDisplayTexture(),
                                     pImpl->renderPipeline->GetRenderWidth(), pImpl->renderPipeline->GetRenderHeight());
-    if (pImpl->selectedRenderable)
-    {
-        m_guiLayer->SetSelectedRenderable(pImpl->selectedRenderable, pImpl->currentSelectedUID);
-    }
+
+    // 先渲染 GUI（Hierarchy 面板点击会更新 GuiLayer 的选中状态）
     m_guiLayer->RenderGUI();
+
+    // 从 GuiLayer 读回选中状态，保持 AppDemo 与 GUI 同步
+    // （场景拾取 和 面板点击 都会更新 GuiLayer，这里统一读取）
+    unsigned int guiUID = m_guiLayer->GetSelectedUid();
+    pImpl->currentSelectedUID = (guiUID > 0) ? static_cast<int>(guiUID) : -1;
+    pImpl->selectedRenderable = (guiUID > 0) ? m_scene->GetRenderableByUID(guiUID) : nullptr;
 }
 
 void AppDemo::HandleKeyEvent(int key, int scancode, int action, int mods)

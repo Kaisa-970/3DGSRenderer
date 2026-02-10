@@ -186,7 +186,6 @@ void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPi
     yaw_ += xOffset;
     pitch_ += yOffset;
 
-    LOG_INFO("Camera yaw: {}, pitch: {}", yaw_, pitch_);
     // 限制俯仰角
     if (constrainPitch)
     {
