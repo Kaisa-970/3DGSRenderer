@@ -20,15 +20,31 @@ RENDERER_NAMESPACE_BEGIN
 ///   RenderPipeline 填充输入
 ///     → GeometryPass   写入 G-Buffer 纹理
 ///     → LightingPass   读取 G-Buffer，写入 lightingTex
+///     → ForwardPass    读取 lightingTex + depthTex，写回 lightingTex
 ///     → PostProcessPass 读取 G-Buffer + lightingTex，写入 postProcessColorTex
-///     → ForwardPass    读取 postProcessColorTex + depthTex，写入 postProcessColorTex
 ///     → FinalPass      读取 displayTex，输出到屏幕
 struct RENDERER_API RenderContext
 {
+    enum class ForwardBlendMode
+    {
+        Alpha,    // src * a + dst * (1 - a)
+        Additive, // src * a + dst
+    };
+
+    struct ForwardRenderState
+    {
+        ForwardBlendMode blendMode = ForwardBlendMode::Alpha;
+        bool blending = true;
+        bool depthTest = true;
+        bool depthWrite = false;
+        bool cullFace = false;
+    };
+
     struct ForwardRenderItem
     {
         std::shared_ptr<Renderable> renderable;
         std::shared_ptr<Shader> shader;
+        ForwardRenderState state;
     };
 
     // ==== 输入（由 RenderPipeline 在执行 Pass 之前填充）====

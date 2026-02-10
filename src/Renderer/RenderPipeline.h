@@ -47,6 +47,10 @@ public:
     void AddForwardRenderable(const std::shared_ptr<Renderable> &renderable);
     /// 添加前向渲染物体，并为该物体指定独立 shader（用于 App 层快速试验特效）
     void AddForwardRenderable(const std::shared_ptr<Renderable> &renderable, const std::shared_ptr<Shader> &shader);
+    /// 添加前向渲染物体，指定独立 shader + 渲染状态（混合/深度/剔除）
+    void AddForwardRenderable(const std::shared_ptr<Renderable> &renderable,
+                             const std::shared_ptr<Shader> &shader,
+                             const RenderContext::ForwardRenderState &state);
 
     /// 设置默认前向渲染 Shader（当单个物体未指定独立 shader 时作为回退）
     void SetForwardShader(const std::shared_ptr<Shader> &shader);

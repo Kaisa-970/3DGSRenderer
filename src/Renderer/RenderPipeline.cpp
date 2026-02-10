@@ -103,15 +103,22 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
 
 void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable> &renderable)
 {
-    AddForwardRenderable(renderable, nullptr);
+    AddForwardRenderable(renderable, nullptr, RenderContext::ForwardRenderState{});
 }
 
 void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable> &renderable,
                                           const std::shared_ptr<Shader> &shader)
 {
+    AddForwardRenderable(renderable, shader, RenderContext::ForwardRenderState{});
+}
+
+void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable> &renderable,
+                                          const std::shared_ptr<Shader> &shader,
+                                          const RenderContext::ForwardRenderState &state)
+{
     if (!renderable)
         return;
-    m_forwardRenderables.push_back({renderable, shader});
+    m_forwardRenderables.push_back({renderable, shader, state});
 }
 
 void RenderPipeline::SetForwardShader(const std::shared_ptr<Shader> &shader)
