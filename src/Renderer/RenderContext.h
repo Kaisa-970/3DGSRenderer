@@ -53,7 +53,7 @@ struct RENDERER_API RenderContext
     int height = 0;
     float currentTime = 0.0f;
     int selectedUID = -1;
-    const Light *light = nullptr;
+    const std::vector<std::shared_ptr<Light>> *lights = nullptr;
 
     // 场景物体
     const std::vector<std::shared_ptr<Renderable>> *sceneRenderables = nullptr;
@@ -84,8 +84,8 @@ struct RENDERER_API RenderContext
     unsigned int postProcessColorTex = 0;
 
     // ==== HDR / Tone Mapping 参数 ====
-    float exposure = 1.0f;        // 曝光度（默认 1.0）
-    int tonemapMode = 2;          // 0 = None, 1 = Reinhard, 2 = ACES Filmic（默认 ACES）
+    float exposure = 1.0f; // 曝光度（默认 1.0）
+    int tonemapMode = 2;   // 0 = None, 1 = Reinhard, 2 = ACES Filmic（默认 ACES）
 
     // ==== 最终输出 ====
 

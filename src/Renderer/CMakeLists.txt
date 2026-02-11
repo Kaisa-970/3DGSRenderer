@@ -28,6 +28,7 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ShaderManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Transform.cpp
 )
 
 set(RENDERER_HEADERS
@@ -66,6 +67,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Light.h
     ${CMAKE_CURRENT_SOURCE_DIR}/IRenderPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ShaderManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Transform.h
 )
 
 if(USE_GLES3)

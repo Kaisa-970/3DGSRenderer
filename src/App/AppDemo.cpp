@@ -173,8 +173,9 @@ void AppDemo::OnRender(float deltaTime)
     pImpl->renderPipeline->SetTonemapMode(pImpl->tonemapMode);
 
     // 在编辑器模式下渲染到纹理，交由 Scene 面板显示
-    pImpl->renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), *pImpl->mainLight, pImpl->currentSelectedUID,
-                                   static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode), pImpl->currentTime, false);
+    pImpl->renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(),
+                                   pImpl->currentSelectedUID, static_cast<Renderer::ViewMode>(pImpl->gbufferViewMode),
+                                   pImpl->currentTime, false);
 }
 
 void AppDemo::OnGUI()

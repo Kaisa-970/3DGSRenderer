@@ -41,8 +41,9 @@ public:
     RenderPipeline &operator=(const RenderPipeline &) = delete;
 
     /// 执行完整的延迟渲染管线
-    void Execute(Camera &camera, const std::vector<std::shared_ptr<Renderable>> &sceneRenderables, const Light &light,
-                 int selectedUID, ViewMode viewMode, float currentTime, bool presentToScreen = true);
+    void Execute(Camera &camera, const std::vector<std::shared_ptr<Renderable>> &sceneRenderables,
+                 const std::vector<std::shared_ptr<Light>> &lights, int selectedUID, ViewMode viewMode,
+                 float currentTime, bool presentToScreen = true);
     /// 动态调整渲染尺寸（用于编辑器 Scene 面板变化）
     void Resize(int width, int height);
 
@@ -61,10 +62,22 @@ public:
     int PickObject(unsigned int mouseX, unsigned int mouseY);
 
     // ---- HDR / Tone Mapping 控制 ----
-    void SetExposure(float exposure) { m_exposure = exposure; }
-    float GetExposure() const { return m_exposure; }
-    void SetTonemapMode(int mode) { m_tonemapMode = mode; }
-    int GetTonemapMode() const { return m_tonemapMode; }
+    void SetExposure(float exposure)
+    {
+        m_exposure = exposure;
+    }
+    float GetExposure() const
+    {
+        return m_exposure;
+    }
+    void SetTonemapMode(int mode)
+    {
+        m_tonemapMode = mode;
+    }
+    int GetTonemapMode() const
+    {
+        return m_tonemapMode;
+    }
 
     /// 获取 G-Buffer 可视化模式的标签列表（供 GUI 使用）
     static const std::vector<const char *> &GetViewModeLabels();

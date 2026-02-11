@@ -7,16 +7,17 @@
 #include "Renderer/Camera.h"
 #include "Scene/Scene.h"
 #include "Window/Window.h"
+#include "Renderer/RenderPipeline.h"
 
 GSENGINE_NAMESPACE_BEGIN
 
-static const Renderer::Vector3 DEFAULT_CAM_POS(4.42f, 1.0f, -3.63f);
+static const Renderer::Vector3 DEFAULT_CAM_POS(0.0f, 1.0f, 3.0f);
 
 Application::Application(AppConfig config) : m_appConfig(config)
 {
     m_eventBus = std::make_shared<EventBus>();
     m_scene = std::make_shared<Scene>();
-    m_camera = std::make_shared<Renderer::Camera>(DEFAULT_CAM_POS, Renderer::Vector3(0.0f, 1.0f, 0.0f), 133.5f, -14.0f);
+    m_camera = std::make_shared<Renderer::Camera>(DEFAULT_CAM_POS, Renderer::Vector3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
     m_camera->setMovementSpeed(2.0f);
     m_camera->setMouseSensitivity(0.1f);
 }
@@ -42,6 +43,9 @@ bool Application::Init()
     m_textureManager = std::make_shared<TextureManager>();
     m_materialManager = std::make_shared<MaterialManager>(*m_textureManager);
     m_shaderManager = std::make_shared<Renderer::ShaderManager>();
+
+    m_renderPipeline =
+        std::make_shared<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager);
 
     InitInputHandling();
 
@@ -199,9 +203,8 @@ void Application::InitInputHandling()
         m_eventBus->Emplace<ScrollEvent>(xoffset, yoffset, Window::getTime());
     });
 
-    m_window->setFramebufferSizeCallback([this](int width, int height) {
-        m_eventBus->Emplace<WindowResizeEvent>(width, height);
-    });
+    m_window->setFramebufferSizeCallback(
+        [this](int width, int height) { m_eventBus->Emplace<WindowResizeEvent>(width, height); });
 
     // 注册基础输入事件处理
     m_eventBus->Subscribe(EventType::Key, 10, [this](Event &evt) {
@@ -280,6 +283,10 @@ void Application::Run()
         // GUI开始帧
         m_guiLayer->BeginFrame();
 
+        // 渲染
+        m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(), -1,
+                                  Renderer::ViewMode::Final, 0, true);
+
         // 调用派生类的渲染逻辑
         OnRender(deltaTime);
 
@@ -333,6 +340,7 @@ void Application::Shutdown()
     m_camera.reset();
     m_eventBus.reset();
     m_guiLayer.reset();
+    m_renderPipeline.reset();
 
     // 最后销毁窗口并终止 GLFW
     m_window.reset();
@@ -341,4 +349,26 @@ void Application::Shutdown()
     LOG_INFO("3DGS Engine 正常退出");
 }
 
+bool Application::OnInit()
+{
+    return true;
+}
+void Application::OnShutdown()
+{
+}
+void Application::OnUpdate(float deltaTime)
+{
+}
+void Application::OnRender(float deltaTime)
+{
+}
+void Application::OnHandleInput()
+{
+}
+void Application::OnGUI()
+{
+}
+void Application::OnResize(int width, int height)
+{
+}
 GSENGINE_NAMESPACE_END

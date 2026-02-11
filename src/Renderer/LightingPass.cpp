@@ -50,14 +50,15 @@ void LightingPass::Execute(RenderContext &ctx)
     m_shader->use();
 
     // ---- 从 ctx 读取光源属性 ----
-    if (ctx.light)
+    if (ctx.lights && !ctx.lights->empty())
     {
-        m_shader->setVec3("lightPos", ctx.light->position.x, ctx.light->position.y, ctx.light->position.z);
-        m_shader->setVec3("lightColor", ctx.light->color.x * ctx.light->intensity,
-                          ctx.light->color.y * ctx.light->intensity, ctx.light->color.z * ctx.light->intensity);
-        m_shader->setFloat("ambientStrength", ctx.light->ambientStrength);
-        m_shader->setFloat("diffuseStrength", ctx.light->diffuseStrength);
-        m_shader->setFloat("specularStrength", ctx.light->specularStrength);
+        const std::shared_ptr<Light> mainLight = ctx.lights->at(0);
+        m_shader->setVec3("lightPos", mainLight->position.x, mainLight->position.y, mainLight->position.z);
+        m_shader->setVec3("lightColor", mainLight->color.x * mainLight->intensity,
+                          mainLight->color.y * mainLight->intensity, mainLight->color.z * mainLight->intensity);
+        m_shader->setFloat("ambientStrength", mainLight->ambientStrength);
+        m_shader->setFloat("diffuseStrength", mainLight->diffuseStrength);
+        m_shader->setFloat("specularStrength", mainLight->specularStrength);
     }
 
     // ---- 从 ctx 读取相机位置 ----

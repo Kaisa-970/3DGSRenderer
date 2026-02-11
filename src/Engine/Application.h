@@ -9,6 +9,7 @@
 #include "Assets/TextureManager.h"
 #include "Assets/MaterialManager.h"
 #include "Renderer/ShaderManager.h"
+#include "Renderer/RenderPipeline.h"
 #include <memory>
 
 GSENGINE_NAMESPACE_BEGIN
@@ -26,7 +27,6 @@ class Window;
 class Scene;
 class GuiLayer;
 class EventBus;
-class Camera;
 
 struct InputState
 {
@@ -60,13 +60,13 @@ public:
     void Shutdown();
 
     // 虚方法供派生类实现
-    virtual bool OnInit() { return true; }                    // 应用特定的初始化
-    virtual void OnShutdown() {}                              // 应用特定的清理（在基础资源释放前调用）
-    virtual void OnUpdate(float deltaTime) {}                // 每帧更新逻辑
-    virtual void OnRender(float deltaTime) {}                // 渲染逻辑
-    virtual void OnHandleInput() {}                          // 输入处理
-    virtual void OnGUI() {}                                  // GUI渲染
-    virtual void OnResize(int width, int height) {}          // 窗口大小变化
+    virtual bool OnInit();
+    virtual void OnShutdown();
+    virtual void OnUpdate(float deltaTime);
+    virtual void OnRender(float deltaTime);
+    virtual void OnHandleInput();
+    virtual void OnGUI();
+    virtual void OnResize(int width, int height);
 
 protected:
     std::shared_ptr<Window> m_window;
@@ -77,6 +77,7 @@ protected:
     std::shared_ptr<TextureManager> m_textureManager;
     std::shared_ptr<MaterialManager> m_materialManager;
     std::shared_ptr<Renderer::ShaderManager> m_shaderManager;
+    std::shared_ptr<Renderer::RenderPipeline> m_renderPipeline;
 
     InputState m_inputState;
     AppConfig m_appConfig;

@@ -62,7 +62,24 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
     m_passes.push_back(std::move(finalPass));
 }
 
-RenderPipeline::~RenderPipeline() = default;
+RenderPipeline::~RenderPipeline()
+{
+    for (auto &pass : m_passes)
+    {
+        if (pass)
+            pass.reset();
+    }
+    m_passes.clear();
+    m_forwardRenderables.clear();
+    m_forwardShader.reset();
+    m_finalPass = nullptr;
+    m_geometryPass = nullptr;
+    m_width = 0;
+    m_height = 0;
+    m_exposure = 1.0f;
+    m_tonemapMode = 2;
+    m_lastDisplayTex = 0;
+}
 
 void RenderPipeline::Resize(int width, int height)
 {
@@ -81,8 +98,8 @@ void RenderPipeline::Resize(int width, int height)
 }
 
 void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<Renderable>> &sceneRenderables,
-                             const Light &light, int selectedUID, ViewMode viewMode, float currentTime,
-                             bool presentToScreen)
+                             const std::vector<std::shared_ptr<Light>> &lights, int selectedUID, ViewMode viewMode,
+                             float currentTime, bool presentToScreen)
 {
     // ---- 1. 填充 RenderContext ----
     RenderContext ctx;
@@ -91,7 +108,7 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
     ctx.height = m_height;
     ctx.currentTime = currentTime;
     ctx.selectedUID = selectedUID;
-    ctx.light = &light;
+    ctx.lights = &lights;
     ctx.sceneRenderables = &sceneRenderables;
     ctx.forwardRenderables = &m_forwardRenderables;
     ctx.forwardShader = m_forwardShader;
