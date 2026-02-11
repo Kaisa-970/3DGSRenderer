@@ -8,6 +8,8 @@
 #include "Renderer/Primitives/QuadPrimitive.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Renderer/RenderPipeline.h"
+#include "Renderer/PostProcessChain.h"
+#include "Renderer/Effects/BloomEffect.h"
 #include "Renderer/Renderable.h"
 #include "Renderer/ShaderManager.h"
 #include <memory>
@@ -80,6 +82,17 @@ bool AppDemo::OnInit()
     auto forwardEffectShader = m_shaderManager->LoadShader("forward_effect", "res/shaders/forward_effect.vs.glsl",
                                                            "res/shaders/forward_effect.fs.glsl");
     pImpl->renderPipeline->SetForwardShader(forwardEffectShader);
+
+    // 获取 PostProcessChain 中的 BloomEffect，将参数指针连接到 GUI
+    if (auto *ppChain =
+            dynamic_cast<Renderer::PostProcessChain *>(pImpl->renderPipeline->GetPass("PostProcessChain")))
+    {
+        if (auto *bloom = dynamic_cast<Renderer::BloomEffect *>(ppChain->GetEffect("BloomEffect")))
+        {
+            m_guiLayer->SetBloomControls(&bloom->threshold, &bloom->intensity, &bloom->blurIterations,
+                                         &bloom->enabled);
+        }
+    }
 
     // 创建几何体
     auto cubePrimitive = std::make_shared<Renderer::CubePrimitive>(1.0f);

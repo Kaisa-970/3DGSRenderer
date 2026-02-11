@@ -24,6 +24,7 @@ void main()
 {
     vec3 FragPos = texture(u_positionTexture, texCoord).rgb;
     vec3 Normal = texture(u_normalTexture, texCoord).rgb;
+    if(length(Normal) < 0.01) discard;
     vec3 diffuseColor = texture(u_diffuseTexture, texCoord).rgb;
     vec3 specularColor = texture(u_specularTexture, texCoord).rgb;
     float shininessTex = (texture(u_shininessTexture, texCoord).r);
@@ -31,23 +32,23 @@ void main()
     vec3 baseColor = diffuseColor;
 
     // 1. 环境光 (Ambient)
-    vec3 ambient = vec3(ambientStrength);//ambientStrength * lightColor;
-    
+    vec3 ambient = ambientStrength * baseColor * lightColor;
+
     // 2. 漫反射 (Diffuse) - Lambert 光照
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);  // Lambert 余弦定律
     vec3 diffuse = diff * lightColor * diffuseStrength;
-    
+
     // 3. 镜面反射 (Specular) - Blinn-Phong 模型
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 halfDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfDir), 0.0), shininessTex);
     vec3 specular = specularStrength * spec * lightColor * specularColor;
-    
+
     // 组合所有光照分量
     vec3 result = (ambient + diffuse) * baseColor + specular;
-    
+
     FragColor = vec4(result, 1.0);
     //FragColor = vec4(vec3(shininessTex), 1.0);
     //FragColor = vec4(norm, 1.0);

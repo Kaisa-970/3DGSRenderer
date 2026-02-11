@@ -3,7 +3,9 @@
 #include "ForwardPass.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
-#include "PostProcessPass.h"
+#include "PostProcessChain.h"
+#include "Effects/OutlineEffect.h"
+#include "Effects/BloomEffect.h"
 #include "RenderContext.h"
 #include "ShaderManager.h"
 #include "Logger/Log.h"
@@ -22,26 +24,41 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
         shaderManager.LoadShader("basepass", "res/shaders/basepass.vs.glsl", "res/shaders/basepass.fs.glsl");
     auto lambertShader =
         shaderManager.LoadShader("lambert", "res/shaders/lambert.vs.glsl", "res/shaders/lambert.fs.glsl");
-    auto postprocessShader =
-        shaderManager.LoadShader("postprocess", "res/shaders/final.vs.glsl", "res/shaders/postprocess.fs.glsl");
+    auto outlineShader =
+        shaderManager.LoadShader("outline", "res/shaders/final.vs.glsl", "res/shaders/outline.fs.glsl");
     auto finalShader = shaderManager.LoadShader("final", "res/shaders/final.vs.glsl", "res/shaders/final.fs.glsl");
 
-    if (!basepassShader || !lambertShader || !postprocessShader || !finalShader)
+    // Bloom Shaders
+    auto bloomThresholdShader =
+        shaderManager.LoadShader("bloom_threshold", "res/shaders/final.vs.glsl", "res/shaders/bloom_threshold.fs.glsl");
+    auto bloomBlurShader =
+        shaderManager.LoadShader("bloom_blur", "res/shaders/final.vs.glsl", "res/shaders/bloom_blur.fs.glsl");
+    auto bloomCompositeShader =
+        shaderManager.LoadShader("bloom_composite", "res/shaders/final.vs.glsl", "res/shaders/bloom_composite.fs.glsl");
+
+    if (!basepassShader || !lambertShader || !outlineShader || !finalShader || !bloomThresholdShader ||
+        !bloomBlurShader || !bloomCompositeShader)
     {
         throw std::runtime_error("RenderPipeline initialization failed: required shader load failed");
     }
 
-    // 按执行顺序构建 Pass 列表，注入各自的 Shader
+    // 按执行顺序构建 Pass 列表
     auto geometry = std::make_unique<GeometryPass>(width, height, basepassShader);
-    m_geometryPass = geometry.get(); // 保留裸指针用于 PickObject
+    m_geometryPass = geometry.get();
 
     m_passes.push_back(std::move(geometry));
     m_passes.push_back(std::make_unique<LightingPass>(width, height, lambertShader));
     m_passes.push_back(std::make_unique<ForwardPass>());
-    m_passes.push_back(std::make_unique<PostProcessPass>(width, height, postprocessShader));
+
+    // 后处理效果链（替代原来的 PostProcessPass）
+    auto ppChain = std::make_unique<PostProcessChain>(width, height);
+    ppChain->AddEffect(std::make_unique<OutlineEffect>(outlineShader));
+    ppChain->AddEffect(
+        std::make_unique<BloomEffect>(width, height, bloomThresholdShader, bloomBlurShader, bloomCompositeShader));
+    m_passes.push_back(std::move(ppChain));
 
     auto finalPass = std::make_unique<FinalPass>(width, height, finalShader);
-    m_finalPass = finalPass.get(); // 保留裸指针用于 PresentToScreen
+    m_finalPass = finalPass.get();
     m_passes.push_back(std::move(finalPass));
 }
 

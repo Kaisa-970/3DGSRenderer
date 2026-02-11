@@ -30,6 +30,7 @@ public:
     void SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid);
     void SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels);
     void SetHDRControls(float *exposurePtr, int *tonemapModePtr);
+    void SetBloomControls(float *thresholdPtr, float *intensityPtr, int *iterationsPtr, bool *enabledPtr);
     void SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager);
     void SetSceneViewTexture(unsigned int textureId, int texWidth, int texHeight);
     void GetSceneViewportSize(int &width, int &height) const;
@@ -61,6 +62,10 @@ private:
     std::vector<const char *> gbufferViewLabels_;
     float *exposurePtr_{nullptr};
     int *tonemapModePtr_{nullptr};
+    float *bloomThresholdPtr_{nullptr};
+    float *bloomIntensityPtr_{nullptr};
+    int *bloomIterationsPtr_{nullptr};
+    bool *bloomEnabledPtr_{nullptr};
     unsigned int sceneViewTexture_{0};
     int sceneViewTexWidth_{1};
     int sceneViewTexHeight_{1};

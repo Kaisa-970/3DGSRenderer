@@ -22,6 +22,9 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessChain.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Effects/OutlineEffect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Effects/BloomEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ShaderManager.cpp
@@ -53,6 +56,10 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderHelper/RenderHelper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/LightingPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessPass.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessEffect.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/PostProcessChain.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Effects/OutlineEffect.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Effects/BloomEffect.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MathUtils/Random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderPipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/RenderContext.h

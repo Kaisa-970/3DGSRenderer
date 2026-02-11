@@ -173,6 +173,14 @@ void GuiLayer::SetHDRControls(float *exposurePtr, int *tonemapModePtr)
     tonemapModePtr_ = tonemapModePtr;
 }
 
+void GuiLayer::SetBloomControls(float *thresholdPtr, float *intensityPtr, int *iterationsPtr, bool *enabledPtr)
+{
+    bloomThresholdPtr_ = thresholdPtr;
+    bloomIntensityPtr_ = intensityPtr;
+    bloomIterationsPtr_ = iterationsPtr;
+    bloomEnabledPtr_ = enabledPtr;
+}
+
 void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
 {
     if (!materialManager)
@@ -368,6 +376,23 @@ void GuiLayer::RenderInspectorPanel()
         {
             static const char *tonemapLabels[] = {"None (Clamp)", "Reinhard", "ACES Filmic"};
             ImGui::Combo("Tonemap", tonemapModePtr_, tonemapLabels, 3);
+        }
+    }
+
+    // Bloom 控制
+    if (bloomEnabledPtr_)
+    {
+        ImGui::Separator();
+        ImGui::Text("Bloom");
+        ImGui::Checkbox("Enable Bloom", bloomEnabledPtr_);
+        if (*bloomEnabledPtr_)
+        {
+            if (bloomThresholdPtr_)
+                ImGui::SliderFloat("Threshold", bloomThresholdPtr_, 0.0f, 5.0f, "%.2f");
+            if (bloomIntensityPtr_)
+                ImGui::SliderFloat("Intensity", bloomIntensityPtr_, 0.0f, 3.0f, "%.2f");
+            if (bloomIterationsPtr_)
+                ImGui::SliderInt("Blur Iterations", bloomIterationsPtr_, 1, 20);
         }
     }
 }
