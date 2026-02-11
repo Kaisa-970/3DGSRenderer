@@ -6,6 +6,8 @@
 #include "PostProcessPass.h"
 #include "RenderContext.h"
 #include "ShaderManager.h"
+#include "Logger/Log.h"
+#include <cstring>
 #include <stdexcept>
 
 RENDERER_NAMESPACE_BEGIN
@@ -147,12 +149,124 @@ void RenderPipeline::SetForwardShader(const std::shared_ptr<Shader> &shader)
 
 int RenderPipeline::PickObject(unsigned int mouseX, unsigned int mouseY)
 {
+    if (!m_geometryPass)
+        return -1;
     return m_geometryPass->GetCurrentSelectedUID(mouseX, mouseY);
 }
 
 const std::vector<const char *> &RenderPipeline::GetViewModeLabels()
 {
     return s_viewModeLabels;
+}
+
+// ---- Pass 管理 API 实现 ----
+
+int RenderPipeline::FindPassIndex(const char *name) const
+{
+    if (!name)
+        return -1;
+    for (size_t i = 0; i < m_passes.size(); ++i)
+    {
+        if (m_passes[i] && std::strcmp(m_passes[i]->GetName(), name) == 0)
+            return static_cast<int>(i);
+    }
+    return -1;
+}
+
+bool RenderPipeline::InsertPassAfter(const char *existingPassName, std::unique_ptr<IRenderPass> pass)
+{
+    if (!pass)
+        return false;
+    int idx = FindPassIndex(existingPassName);
+    if (idx < 0)
+    {
+        LOG_CORE_WARN("RenderPipeline::InsertPassAfter: pass '{}' not found", existingPassName);
+        return false;
+    }
+
+    pass->Resize(m_width, m_height);
+    m_passes.insert(m_passes.begin() + idx + 1, std::move(pass));
+    return true;
+}
+
+bool RenderPipeline::InsertPassBefore(const char *existingPassName, std::unique_ptr<IRenderPass> pass)
+{
+    if (!pass)
+        return false;
+    int idx = FindPassIndex(existingPassName);
+    if (idx < 0)
+    {
+        LOG_CORE_WARN("RenderPipeline::InsertPassBefore: pass '{}' not found", existingPassName);
+        return false;
+    }
+
+    pass->Resize(m_width, m_height);
+    m_passes.insert(m_passes.begin() + idx, std::move(pass));
+    return true;
+}
+
+std::unique_ptr<IRenderPass> RenderPipeline::RemovePass(const char *passName)
+{
+    int idx = FindPassIndex(passName);
+    if (idx < 0)
+    {
+        LOG_CORE_WARN("RenderPipeline::RemovePass: pass '{}' not found", passName);
+        return nullptr;
+    }
+
+    // 如果移除的是 GeometryPass，清除缓存指针
+    if (m_passes[idx].get() == m_geometryPass)
+    {
+        LOG_CORE_WARN("RenderPipeline::RemovePass: removing GeometryPass, PickObject will be unavailable");
+        m_geometryPass = nullptr;
+    }
+
+    auto removed = std::move(m_passes[idx]);
+    m_passes.erase(m_passes.begin() + idx);
+    return removed;
+}
+
+std::unique_ptr<IRenderPass> RenderPipeline::ReplacePass(const char *passName, std::unique_ptr<IRenderPass> newPass)
+{
+    if (!newPass)
+        return nullptr;
+    int idx = FindPassIndex(passName);
+    if (idx < 0)
+    {
+        LOG_CORE_WARN("RenderPipeline::ReplacePass: pass '{}' not found", passName);
+        return nullptr;
+    }
+
+    bool wasGeometryPass = (m_passes[idx].get() == m_geometryPass);
+
+    newPass->Resize(m_width, m_height);
+    auto old = std::move(m_passes[idx]);
+    m_passes[idx] = std::move(newPass);
+
+    // 维护 GeometryPass 缓存指针
+    if (wasGeometryPass)
+    {
+        auto *asGeometry = dynamic_cast<GeometryPass *>(m_passes[idx].get());
+        if (asGeometry)
+        {
+            m_geometryPass = asGeometry;
+        }
+        else
+        {
+            LOG_CORE_WARN("RenderPipeline::ReplacePass: new pass is not a GeometryPass, PickObject will be unavailable");
+            m_geometryPass = nullptr;
+        }
+    }
+
+    return old;
+}
+
+IRenderPass *RenderPipeline::GetPass(const char *passName) const
+{
+    int idx = FindPassIndex(passName);
+    if (idx < 0)
+        return nullptr;
+    return m_passes[idx].get();
 }
 
 RENDERER_NAMESPACE_END

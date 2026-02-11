@@ -67,6 +67,21 @@ public:
     int GetRenderWidth() const { return m_width; }
     int GetRenderHeight() const { return m_height; }
 
+    // ---- Pass 管理 API ----
+
+    /// 在指定名称的 Pass 之后插入新 Pass（自动同步当前渲染尺寸）
+    bool InsertPassAfter(const char *existingPassName, std::unique_ptr<IRenderPass> pass);
+    /// 在指定名称的 Pass 之前插入新 Pass（自动同步当前渲染尺寸）
+    bool InsertPassBefore(const char *existingPassName, std::unique_ptr<IRenderPass> pass);
+    /// 按名称移除 Pass，返回被移除的 Pass（失败返回 nullptr）
+    std::unique_ptr<IRenderPass> RemovePass(const char *passName);
+    /// 按名称替换 Pass，返回被替换的旧 Pass（失败返回 nullptr）
+    std::unique_ptr<IRenderPass> ReplacePass(const char *passName, std::unique_ptr<IRenderPass> newPass);
+    /// 按名称查找 Pass（返回裸指针用于运行时配置，生命周期由管线管理）
+    IRenderPass *GetPass(const char *passName) const;
+    /// 获取当前 Pass 数量
+    size_t GetPassCount() const { return m_passes.size(); }
+
 private:
     // Pass 列表（按执行顺序排列）
     std::vector<std::unique_ptr<IRenderPass>> m_passes;
@@ -82,6 +97,9 @@ private:
     int m_width;
     int m_height;
     unsigned int m_lastDisplayTex = 0;
+
+    // Pass 查找辅助
+    int FindPassIndex(const char *name) const;
 };
 
 RENDERER_NAMESPACE_END
