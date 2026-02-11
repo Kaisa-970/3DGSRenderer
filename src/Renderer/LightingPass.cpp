@@ -25,7 +25,7 @@ LightingPass::LightingPass(const int &width, const int &height, const std::share
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    m_lightingTexture = RenderHelper::CreateTexture2D(width, height, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+    m_lightingTexture = RenderHelper::CreateTexture2D(width, height, GL_RGBA16F, GL_RGBA, GL_FLOAT);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_lightingTexture);
 }
 
@@ -43,7 +43,7 @@ LightingPass::~LightingPass()
 void LightingPass::Execute(RenderContext &ctx)
 {
     m_frameBuffer.Bind();
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // alpha=1 确保背景不透明，避免 ImGui 显示时透明穿透
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 
@@ -100,7 +100,7 @@ void LightingPass::Execute(RenderContext &ctx)
 void LightingPass::Resize(int width, int height)
 {
     glBindTexture(GL_TEXTURE_2D, m_lightingTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 

@@ -21,7 +21,7 @@ PostProcessPass::PostProcessPass(const int &width, const int &height, const std:
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    m_colorTexture = RenderHelper::CreateTexture2D(width, height, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+    m_colorTexture = RenderHelper::CreateTexture2D(width, height, GL_RGBA16F, GL_RGBA, GL_FLOAT);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_colorTexture);
 }
 
@@ -39,7 +39,7 @@ PostProcessPass::~PostProcessPass()
 void PostProcessPass::Execute(RenderContext &ctx)
 {
     m_frameBuffer.Bind();
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // alpha=1 确保不透明
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 
@@ -83,7 +83,7 @@ void PostProcessPass::Execute(RenderContext &ctx)
 void PostProcessPass::Resize(int width, int height)
 {
     glBindTexture(GL_TEXTURE_2D, m_colorTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 

@@ -167,6 +167,12 @@ void GuiLayer::SetGBufferViewModes(int *modePtr, const std::vector<const char *>
     gbufferViewLabels_ = labels;
 }
 
+void GuiLayer::SetHDRControls(float *exposurePtr, int *tonemapModePtr)
+{
+    exposurePtr_ = exposurePtr;
+    tonemapModePtr_ = tonemapModePtr;
+}
+
 void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
 {
     if (!materialManager)
@@ -334,24 +340,34 @@ void GuiLayer::RenderInspectorPanel()
                 }
             }
         }
-
-        ImGui::Separator();
-        if (gbufferViewMode_ && !gbufferViewLabels_.empty())
-        {
-            ImGui::Text("G-Buffer View");
-            ImGui::Combo("Texture", gbufferViewMode_, gbufferViewLabels_.data(),
-                         static_cast<int>(gbufferViewLabels_.size()));
-        }
     }
     else
     {
         ImGui::TextDisabled("No selection");
+    }
+
+    // ---- Rendering Settings（始终显示，不依赖物体选中状态）----
+    ImGui::Separator();
+    if (gbufferViewMode_ && !gbufferViewLabels_.empty())
+    {
+        ImGui::Text("G-Buffer View");
+        ImGui::Combo("Texture", gbufferViewMode_, gbufferViewLabels_.data(),
+                     static_cast<int>(gbufferViewLabels_.size()));
+    }
+
+    // HDR / Tone Mapping 控制
+    if (exposurePtr_ || tonemapModePtr_)
+    {
         ImGui::Separator();
-        if (gbufferViewMode_ && !gbufferViewLabels_.empty())
+        ImGui::Text("HDR / Tone Mapping");
+        if (exposurePtr_)
         {
-            ImGui::Text("G-Buffer View");
-            ImGui::Combo("Texture", gbufferViewMode_, gbufferViewLabels_.data(),
-                         static_cast<int>(gbufferViewLabels_.size()));
+            ImGui::SliderFloat("Exposure", exposurePtr_, 0.1f, 10.0f, "%.2f");
+        }
+        if (tonemapModePtr_)
+        {
+            static const char *tonemapLabels[] = {"None (Clamp)", "Reinhard", "ACES Filmic"};
+            ImGui::Combo("Tonemap", tonemapModePtr_, tonemapLabels, 3);
         }
     }
 }

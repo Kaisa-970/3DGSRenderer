@@ -83,10 +83,17 @@ struct RENDERER_API RenderContext
     // 后处理结果（PostProcessPass 输出）
     unsigned int postProcessColorTex = 0;
 
+    // ==== HDR / Tone Mapping 参数 ====
+    float exposure = 1.0f;        // 曝光度（默认 1.0）
+    int tonemapMode = 2;          // 0 = None, 1 = Reinhard, 2 = ACES Filmic（默认 ACES）
+
     // ==== 最终输出 ====
 
-    // 显示纹理（由 RenderPipeline 根据 ViewMode 选择）
+    // 显示纹理（由 RenderPipeline 根据 ViewMode 选择，FinalPass 的输入）
     unsigned int displayTex = 0;
+
+    // FinalPass 输出（经过 ToneMapping + Gamma 的 LDR 纹理）
+    unsigned int finalTex = 0;
 };
 
 RENDERER_NAMESPACE_END

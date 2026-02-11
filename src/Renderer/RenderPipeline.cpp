@@ -39,7 +39,10 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
     m_passes.push_back(std::make_unique<LightingPass>(width, height, lambertShader));
     m_passes.push_back(std::make_unique<ForwardPass>());
     m_passes.push_back(std::make_unique<PostProcessPass>(width, height, postprocessShader));
-    m_passes.push_back(std::make_unique<FinalPass>(finalShader));
+
+    auto finalPass = std::make_unique<FinalPass>(width, height, finalShader);
+    m_finalPass = finalPass.get(); // 保留裸指针用于 PresentToScreen
+    m_passes.push_back(std::move(finalPass));
 }
 
 RenderPipeline::~RenderPipeline() = default;
@@ -75,19 +78,21 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
     ctx.sceneRenderables = &sceneRenderables;
     ctx.forwardRenderables = &m_forwardRenderables;
     ctx.forwardShader = m_forwardShader;
+    ctx.exposure = m_exposure;
+    ctx.tonemapMode = m_tonemapMode;
 
     // 预计算矩阵
     camera.getViewMatrix(ctx.viewMatrix);
     camera.getPerspectiveMatrix(ctx.projMatrix, 45.0f, static_cast<float>(m_width) / static_cast<float>(m_height),
                                 0.01f, 1000.0f);
 
-    // ---- 2. 依次执行前 4 个 Pass（Geometry → Lighting → PostProcess → Forward）----
+    // ---- 2. 依次执行除 FinalPass 以外的所有 Pass ----
     for (size_t i = 0; i + 1 < m_passes.size(); ++i)
     {
         m_passes[i]->Execute(ctx);
     }
 
-    // ---- 3. 根据 ViewMode 选择显示纹理 ----
+    // ---- 3. 根据 ViewMode 选择 FinalPass 的输入纹理 ----
     switch (viewMode)
     {
     case ViewMode::Final:
@@ -115,11 +120,16 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
         ctx.displayTex = ctx.gDepthTex;
         break;
     }
-    m_lastDisplayTex = ctx.displayTex;
 
-    // ---- 4. 最后一个 Pass（FinalPass）输出到屏幕 ----
-    if (presentToScreen)
-        m_passes.back()->Execute(ctx);
+    // ---- 4. 始终执行 FinalPass（ToneMapping + Gamma → 离屏 LDR 纹理）----
+    m_passes.back()->Execute(ctx);
+    m_lastDisplayTex = ctx.finalTex;
+
+    // ---- 5. 如需直接输出到屏幕（非编辑器模式）----
+    if (presentToScreen && m_finalPass)
+    {
+        m_finalPass->PresentToScreen(m_width, m_height);
+    }
 }
 
 void RenderPipeline::AddForwardRenderable(const std::shared_ptr<Renderable> &renderable)
@@ -253,7 +263,8 @@ std::unique_ptr<IRenderPass> RenderPipeline::ReplacePass(const char *passName, s
         }
         else
         {
-            LOG_CORE_WARN("RenderPipeline::ReplacePass: new pass is not a GeometryPass, PickObject will be unavailable");
+            LOG_CORE_WARN(
+                "RenderPipeline::ReplacePass: new pass is not a GeometryPass, PickObject will be unavailable");
             m_geometryPass = nullptr;
         }
     }

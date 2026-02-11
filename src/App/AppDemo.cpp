@@ -37,6 +37,8 @@ public:
 
     // GUI状态
     int gbufferViewMode = static_cast<int>(Renderer::ViewMode::Final);
+    float exposure = 1.0f;
+    int tonemapMode = 2; // 默认 ACES Filmic
 
     // 应用状态
     int currentSelectedUID = -1;
@@ -56,6 +58,7 @@ bool AppDemo::OnInit()
 
     // 设置GUI - 使用 RenderPipeline 提供的标签列表
     m_guiLayer->SetGBufferViewModes(&pImpl->gbufferViewMode, Renderer::RenderPipeline::GetViewModeLabels());
+    m_guiLayer->SetHDRControls(&pImpl->exposure, &pImpl->tonemapMode);
     m_guiLayer->SetScene(m_scene);
     m_guiLayer->SetMaterialManager(m_materialManager);
 
@@ -151,6 +154,10 @@ void AppDemo::OnRender(float deltaTime)
     int viewportH = m_appConfig.height;
     m_guiLayer->GetSceneViewportSize(viewportW, viewportH);
     pImpl->renderPipeline->Resize(viewportW, viewportH);
+
+    // 将 GUI 的 HDR 参数同步到渲染管线
+    pImpl->renderPipeline->SetExposure(pImpl->exposure);
+    pImpl->renderPipeline->SetTonemapMode(pImpl->tonemapMode);
 
     // 在编辑器模式下渲染到纹理，交由 Scene 面板显示
     pImpl->renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), *pImpl->mainLight, pImpl->currentSelectedUID,
