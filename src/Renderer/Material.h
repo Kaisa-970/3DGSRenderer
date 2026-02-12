@@ -6,15 +6,14 @@
 #include "Texture2D.h"
 #include <vector>
 
-
 RENDERER_NAMESPACE_BEGIN
 
 class RENDERER_API Material
 {
 public:
     Material();
-    Material(const std::string &name, const Vector3 &diffuseColor = Vector3::ZERO,
-             const Vector3 &specularColor = Vector3::ONE, const Vector3 &ambientColor = Vector3::ZERO,
+    Material(const std::string &name, const Vector3 &diffuseColor = VECTOR3_ZERO,
+             const Vector3 &specularColor = VECTOR3_ONE, const Vector3 &ambientColor = VECTOR3_ZERO,
              float shininess = 32.0f);
     ~Material();
 
@@ -61,7 +60,7 @@ public:
         return m_specularTextures;
     }
 
-    void UpdateShaderParams(const std::shared_ptr<Shader>& shader) const;
+    void UpdateShaderParams(const std::shared_ptr<Shader> &shader) const;
 
 private:
     std::string m_name;

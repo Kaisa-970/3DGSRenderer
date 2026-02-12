@@ -25,7 +25,7 @@ public:
     Transform();
     ~Transform();
 
-    Matrix4 GetMatrix() const;
+    Mat4 GetMatrix() const;
 
 public:
     Vector3 position;

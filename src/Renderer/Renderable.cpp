@@ -3,19 +3,19 @@
 RENDERER_NAMESPACE_BEGIN
 
 Renderable::Renderable()
-    : m_uid(0), m_type(RenderableType::Primitive), m_transformMatrix(Matrix4::identity()), m_material(nullptr),
+    : m_uid(0), m_type(RenderableType::Primitive), m_transformMatrix(Mat4::Identity()), m_material(nullptr),
       m_primitive(nullptr), m_model(nullptr), m_color(Vector3(1.0f, 1.0f, 1.0f))
 {
 }
 
-Renderable::Renderable(unsigned int uid, const Matrix4 &transformMatrix, const std::shared_ptr<Material> &material,
+Renderable::Renderable(unsigned int uid, const Mat4 &transformMatrix, const std::shared_ptr<Material> &material,
                        const std::shared_ptr<Primitive> &primitive)
     : m_uid(uid), m_type(RenderableType::Primitive), m_transformMatrix(transformMatrix), m_material(material),
       m_primitive(primitive), m_model(nullptr), m_color(Vector3(1.0f, 1.0f, 1.0f))
 {
 }
 
-Renderable::Renderable(unsigned int uid, const Matrix4 &transformMatrix, const std::shared_ptr<Model> &model)
+Renderable::Renderable(unsigned int uid, const Mat4 &transformMatrix, const std::shared_ptr<Model> &model)
     : m_uid(uid), m_type(RenderableType::Model), m_transformMatrix(transformMatrix), m_material(nullptr),
       m_primitive(nullptr), m_model(model), m_color(Vector3(1.0f, 1.0f, 1.0f))
 {
@@ -31,7 +31,7 @@ Renderable::Renderable(Renderable &&other) noexcept
 {
     other.m_uid = 0;
     other.m_type = RenderableType::Primitive;
-    other.m_transformMatrix = Matrix4::identity();
+    other.m_transformMatrix = Mat4::Identity();
     other.m_material = nullptr;
     other.m_primitive = nullptr;
     other.m_model = nullptr;
@@ -51,7 +51,7 @@ Renderable &Renderable::operator=(Renderable &&other) noexcept
         m_color = other.m_color;
         other.m_uid = 0;
         other.m_type = RenderableType::Primitive;
-        other.m_transformMatrix = Matrix4::identity();
+        other.m_transformMatrix = Mat4::Identity();
         other.m_material = nullptr;
         other.m_primitive = nullptr;
         other.m_model = nullptr;

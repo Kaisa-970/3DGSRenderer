@@ -13,15 +13,14 @@ Transform::~Transform()
 {
 }
 
-Matrix4 Transform::GetMatrix() const
+Mat4 Transform::GetMatrix() const
 {
-    Matrix4 matrix = Matrix4::identity();
-    matrix.scaleBy(scale);
-    matrix.rotate(DEG2RAD(rotation.pitch), Vector3(1.0f, 0.0f, 0.0f));
-    matrix.rotate(DEG2RAD(rotation.yaw), Vector3(0.0f, 1.0f, 0.0f));
-    matrix.rotate(DEG2RAD(rotation.roll), Vector3(0.0f, 0.0f, 1.0f));
-    matrix.translate(position);
-    matrix = matrix.transpose();
+    Mat4 matrix(1.0f);
+    matrix.Translate(position);
+    matrix.Rotate(DEG2RAD(rotation.pitch), Vector3(1.0f, 0.0f, 0.0f));
+    matrix.Rotate(DEG2RAD(rotation.yaw), Vector3(0.0f, 1.0f, 0.0f));
+    matrix.Rotate(DEG2RAD(rotation.roll), Vector3(0.0f, 0.0f, 1.0f));
+    matrix.Scale(scale);
     return matrix;
 }
 

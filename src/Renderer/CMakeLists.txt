@@ -87,7 +87,7 @@ else()
     target_link_libraries(${MODULE_NAME} PRIVATE OpenGL::GL)
 endif()
 
-target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger)
+target_link_libraries(${MODULE_NAME} PRIVATE glfw Logger glm::glm-header-only)
 
 if(USE_GLES3)
     target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/vendor/glad-gles3/include)
@@ -95,6 +95,7 @@ else()
     target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/vendor/glad-gl/include)
 endif()
 
+target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src/vendor/glm)
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(${MODULE_NAME} PRIVATE RENDERER_EXPORTS)
 

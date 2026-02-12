@@ -11,13 +11,13 @@
 
 GSENGINE_NAMESPACE_BEGIN
 
-static const Renderer::Vector3 DEFAULT_CAM_POS(0.0f, 1.0f, -3.0f);
+static const Renderer::Vector3 DEFAULT_CAM_POS(0.0f, 1.0f, 3.0f);
 
 Application::Application(AppConfig config) : m_appConfig(config)
 {
     m_eventBus = std::make_shared<EventBus>();
     m_scene = std::make_shared<Scene>();
-    m_camera = std::make_shared<Renderer::Camera>(DEFAULT_CAM_POS, Renderer::Vector3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f);
+    m_camera = std::make_shared<Renderer::Camera>(DEFAULT_CAM_POS, Renderer::Vector3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
     m_camera->setMovementSpeed(2.0f);
     m_camera->setMouseSensitivity(0.1f);
 }
@@ -108,6 +108,7 @@ void Application::HandleMouseMoveEvent(double xpos, double ypos, double dx, doub
     m_inputState.mouseY = ypos;
     if (!m_inputState.rightMouseDown)
         return;
+
     m_camera->processMouseMovement(static_cast<float>(dx), static_cast<float>(dy));
 }
 

@@ -42,13 +42,10 @@ void ForwardPass::Execute(RenderContext &ctx)
         if (!item.renderable)
             continue;
 
-        const auto &m = item.renderable->getTransform().m;
+        const auto &m = item.renderable->m_transform.position;
         // 该工程中的 model 矩阵通常以转置后形式上传，平移分量在 m[12..14]。
-        float x = m[12], y = m[13], z = m[14];
-        float dx = x - camX;
-        float dy = y - camY;
-        float dz = z - camZ;
-        sorted.push_back({&item, dx * dx + dy * dy + dz * dz});
+
+        sorted.push_back({&item, VectorUtils::Distance(m, Vector3(camX, camY, camZ))});
     }
 
     std::sort(sorted.begin(), sorted.end(), [](const SortedItem &a, const SortedItem &b) {
@@ -89,9 +86,9 @@ void ForwardPass::Execute(RenderContext &ctx)
         if (!r)
             continue;
 
-        if (!hasState || item.state.blending != currentState.blending || item.state.depthTest != currentState.depthTest ||
-            item.state.depthWrite != currentState.depthWrite || item.state.cullFace != currentState.cullFace ||
-            item.state.blendMode != currentState.blendMode)
+        if (!hasState || item.state.blending != currentState.blending ||
+            item.state.depthTest != currentState.depthTest || item.state.depthWrite != currentState.depthWrite ||
+            item.state.cullFace != currentState.cullFace || item.state.blendMode != currentState.blendMode)
         {
             applyState(item.state);
             currentState = item.state;
@@ -121,7 +118,7 @@ void ForwardPass::Execute(RenderContext &ctx)
             }
         }
 
-        currentShader->setMat4("model", r->getTransform().m);
+        currentShader->setMat4("model", r->m_transform.GetMatrix().data());
         currentShader->setInt("uUID", static_cast<int>(r->getUid()));
         currentShader->setVec3("uColor", r->getColor().x, r->getColor().y, r->getColor().z);
 

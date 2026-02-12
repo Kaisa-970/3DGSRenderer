@@ -24,9 +24,9 @@ class RENDERER_API Renderable
 {
 public:
     Renderable();
-    Renderable(unsigned int uid, const Matrix4 &transformMatrix, const std::shared_ptr<Material> &material,
+    Renderable(unsigned int uid, const Mat4 &transformMatrix, const std::shared_ptr<Material> &material,
                const std::shared_ptr<Primitive> &primitive);
-    Renderable(unsigned int uid, const Matrix4 &transformMatrix, const std::shared_ptr<Model> &model);
+    Renderable(unsigned int uid, const Mat4 &transformMatrix, const std::shared_ptr<Model> &model);
     ~Renderable();
     Renderable(const Renderable &other) = delete;
     Renderable &operator=(const Renderable &other) = delete;
@@ -43,12 +43,12 @@ public:
         m_uid = newUid;
     }
 
-    const Matrix4 &getTransform() const
+    const Mat4 &getTransform() const
     {
         return m_transformMatrix;
         // return m_transform.GetMatrix();
     }
-    void setTransform(const Matrix4 &m)
+    void setTransform(const Mat4 &m)
     {
         m_transformMatrix = m;
     }
@@ -104,7 +104,7 @@ public:
 private:
     unsigned int m_uid;
     RenderableType m_type;
-    Matrix4 m_transformMatrix;
+    Mat4 m_transformMatrix;
     std::shared_ptr<Material> m_material;
     std::shared_ptr<Primitive> m_primitive;
     std::shared_ptr<Model> m_model;

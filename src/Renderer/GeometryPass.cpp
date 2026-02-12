@@ -120,8 +120,8 @@ void GeometryPass::Resize(int width, int height)
 
 void GeometryPass::RenderRenderable(Renderable *renderable)
 {
-    const Matrix4 &modelMatrix = renderable->m_transform.GetMatrix();
-    m_shader->setMat4("model", modelMatrix.m);
+    const Mat4 &modelMatrix = renderable->m_transform.GetMatrix();
+    m_shader->setMat4("model", modelMatrix.data());
     m_shader->setInt("uUID", static_cast<int>(renderable->getUid()));
     m_shader->setVec3("uColor", renderable->getColor().x, renderable->getColor().y, renderable->getColor().z);
 

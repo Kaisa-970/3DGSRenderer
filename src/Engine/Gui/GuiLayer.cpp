@@ -244,7 +244,6 @@ void GuiLayer::RenderHierarchyPanel()
             std::make_shared<Renderer::SpherePrimitive>(1.0f, 36, 18);
         auto sphereRenderable = std::make_shared<Renderer::Renderable>();
         sphereRenderable->setPrimitive(spherePrimitive);
-        sphereRenderable->setTransform(Renderer::Matrix4::identity());
         sphereRenderable->setColor(Renderer::Random::randomColor());
         if (auto matMgr = materialManager_.lock())
             sphereRenderable->setMaterial(matMgr->GetDefaultMaterial());

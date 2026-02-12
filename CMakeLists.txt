@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.28)
 project(3DGSRenderer)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -6,6 +6,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+cmake_policy(SET CMP0157 NEW)
+set(CMAKE_STOP_BUILD_ON_ERROR ON)       # 遇错即停
 
 # 设置编译选项
 if(MSVC)
@@ -54,6 +57,8 @@ set(ASSIMP_BUILD_USE_CCACHE OFF)
 add_subdirectory(src/vendor/assimp)
 target_include_directories(assimp PUBLIC ${CMAKE_BINARY_DIR})
 set(BUILD_SHARED_LIBS OFF)
+
+add_subdirectory(src/vendor/glm)
 
 # 子目录：Logger 模块
 add_subdirectory(src/Logger)
