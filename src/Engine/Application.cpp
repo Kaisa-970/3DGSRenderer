@@ -210,14 +210,14 @@ void Application::InitInputHandling()
     // 注册基础输入事件处理
     m_eventBus->Subscribe(EventType::Key, 10, [this](Event &evt) {
         auto &e = static_cast<KeyEvent &>(evt);
-        if (m_guiLayer->WantCaptureKeyboard())
+        if (m_guiLayer->WantCaptureKeyboard() && e.action == ACTION_PRESS)
             return;
         HandleKeyEvent(e.key, e.scancode, e.action, e.mods);
     });
 
     m_eventBus->Subscribe(EventType::MouseButton, 10, [this](Event &evt) {
         auto &e = static_cast<MouseButtonEvent &>(evt);
-        if (m_guiLayer->WantCaptureMouse())
+        if (m_guiLayer->WantCaptureMouse() && e.action == ACTION_PRESS)
             return;
         HandleMouseButtonEvent(e.button, e.action, e.mods, e.x, e.y);
     });
