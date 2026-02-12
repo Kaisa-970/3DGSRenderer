@@ -406,63 +406,28 @@ void GuiLayer::ClearSelection()
 
 void GuiLayer::SyncEditableFromTransform(const Renderer::Renderable &renderable)
 {
-    const auto &m = renderable.getTransform();
-    // 假定存储为列主序（构建后转置过），平移在 m[12/13/14]
-    editPosition_.x = m.m[12];
-    editPosition_.y = m.m[13];
-    editPosition_.z = m.m[14];
+    const Renderer::Transform &transform = renderable.m_transform;
 
-    // 提取缩放（列向量长度）
-    auto len = [](float a, float b, float c) { return std::sqrt(a * a + b * b + c * c); };
-    editScale_.x = len(m.m[0], m.m[1], m.m[2]);
-    editScale_.y = len(m.m[4], m.m[5], m.m[6]);
-    editScale_.z = len(m.m[8], m.m[9], m.m[10]);
-    // 防止零尺度
-    if (editScale_.x == 0)
-        editScale_.x = 1.0f;
-    if (editScale_.y == 0)
-        editScale_.y = 1.0f;
-    if (editScale_.z == 0)
-        editScale_.z = 1.0f;
+    editPosition_.x = transform.position.x;
+    editPosition_.y = transform.position.y;
+    editPosition_.z = transform.position.z;
 
-    // 归一化旋转矩阵
-    float r00 = m.m[0] / editScale_.x;
-    float r01 = m.m[4] / editScale_.y;
-    float r02 = m.m[8] / editScale_.z;
-    float r10 = m.m[1] / editScale_.x;
-    float r11 = m.m[5] / editScale_.y;
-    float r12 = m.m[9] / editScale_.z;
-    float r20 = m.m[2] / editScale_.x;
-    float r21 = m.m[6] / editScale_.y;
-    float r22 = m.m[10] / editScale_.z;
-    (void)r01;
-    (void)r02;
-    (void)r11;
-    (void)r12; // 当前欧拉提取未用到其余分量
+    editScale_.x = transform.scale.x;
+    editScale_.y = transform.scale.y;
+    editScale_.z = transform.scale.z;
 
-    // 简单 XYZ 欧拉角提取（行主序）
-    float pitch = std::asin(-r20);
-    float yaw = std::atan2(r10, r00);
-    float roll = std::atan2(r21, r22);
-    const float rad2deg = 180.0f / 3.1415926f;
-    editRotationDeg_.x = yaw * rad2deg;
-    editRotationDeg_.y = pitch * rad2deg;
-    editRotationDeg_.z = roll * rad2deg;
+    editRotationDeg_.x = transform.rotation.pitch;
+    editRotationDeg_.y = transform.rotation.yaw;
+    editRotationDeg_.z = transform.rotation.roll;
+
     hasEditState_ = true;
 }
 
 void GuiLayer::ApplyEditableToRenderable(Renderer::Renderable &renderable)
 {
-    // 以顺序: Scale -> RotX -> RotY -> RotZ ->
-    // Translate，然后转置以匹配列主序存储
-    Renderer::Matrix4 model = Renderer::Matrix4::identity();
-    model.scaleBy(editScale_.x, editScale_.y, editScale_.z);
-    const float deg2rad = 3.1415926f / 180.0f;
-    model.rotate(editRotationDeg_.x * deg2rad, Renderer::Vector3(1.0f, 0.0f, 0.0f));
-    model.rotate(editRotationDeg_.y * deg2rad, Renderer::Vector3(0.0f, 1.0f, 0.0f));
-    model.rotate(editRotationDeg_.z * deg2rad, Renderer::Vector3(0.0f, 0.0f, 1.0f));
-    model.translate(editPosition_.x, editPosition_.y, editPosition_.z);
-    renderable.setTransform(model.transpose());
+    renderable.m_transform.position = Renderer::Vector3(editPosition_.x, editPosition_.y, editPosition_.z);
+    renderable.m_transform.scale = Renderer::Vector3(editScale_.x, editScale_.y, editScale_.z);
+    renderable.m_transform.rotation = Renderer::Rotator(editRotationDeg_.x, editRotationDeg_.y, editRotationDeg_.z);
     hasEditState_ = true;
 }
 

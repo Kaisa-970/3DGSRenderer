@@ -11,13 +11,13 @@
 
 GSENGINE_NAMESPACE_BEGIN
 
-static const Renderer::Vector3 DEFAULT_CAM_POS(0.0f, 1.0f, 3.0f);
+static const Renderer::Vector3 DEFAULT_CAM_POS(0.0f, 1.0f, -3.0f);
 
 Application::Application(AppConfig config) : m_appConfig(config)
 {
     m_eventBus = std::make_shared<EventBus>();
     m_scene = std::make_shared<Scene>();
-    m_camera = std::make_shared<Renderer::Camera>(DEFAULT_CAM_POS, Renderer::Vector3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
+    m_camera = std::make_shared<Renderer::Camera>(DEFAULT_CAM_POS, Renderer::Vector3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f);
     m_camera->setMovementSpeed(2.0f);
     m_camera->setMouseSensitivity(0.1f);
 }
@@ -283,12 +283,13 @@ void Application::Run()
         // GUI开始帧
         m_guiLayer->BeginFrame();
 
-        // 渲染
-        m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(), -1,
-                                  Renderer::ViewMode::Final, 0, true);
-
         // 调用派生类的渲染逻辑
         OnRender(deltaTime);
+
+        // 渲染
+        m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(),
+                                  m_renderConfig.selectedUID, static_cast<Renderer::ViewMode>(m_renderConfig.viewMode),
+                                  0, m_renderConfig.presentToScreen);
 
         // 调用派生类的GUI逻辑
         OnGUI();

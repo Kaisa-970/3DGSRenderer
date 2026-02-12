@@ -23,6 +23,15 @@ struct AppConfig
     const char *title = "3DGS Engine";
 };
 
+struct RenderConfig
+{
+    int viewMode = static_cast<int>(Renderer::ViewMode::Final);
+    float exposure = 1.0f;
+    int tonemapMode = 2; // 0 = None, 1 = Reinhard, 2 = ACES Filmic
+    bool presentToScreen = true;
+    int selectedUID = -1;
+};
+
 class Window;
 class Scene;
 class GuiLayer;
@@ -81,6 +90,7 @@ protected:
 
     InputState m_inputState;
     AppConfig m_appConfig;
+    RenderConfig m_renderConfig;
 
     // 基础输入事件处理（可以被派生类扩展）
     virtual void HandleKeyEvent(int key, int scancode, int action, int mods);
