@@ -264,7 +264,14 @@ void GuiLayer::RenderHierarchyPanel()
         bool isSelected = (selectedUid_ == uid) && !selected_.expired();
 
         std::string label = "[" + std::to_string(uid) + "] ";
-        label += (r->getType() == Renderer::RenderableType::Model) ? "Model" : "Primitive";
+        if (r->getName().empty())
+        {
+            label += (r->getType() == Renderer::RenderableType::Model) ? "Model" : "Primitive";
+        }
+        else
+        {
+            label += r->getName();
+        }
 
         ImGui::PushID(static_cast<int>(uid));
         if (ImGui::Selectable(label.c_str(), isSelected))

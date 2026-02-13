@@ -82,7 +82,11 @@ struct RENDERER_API RenderContext
     // 后处理结果（PostProcessPass 输出）
     unsigned int postProcessColorTex = 0;
 
+    // 光照参数
     float shininess = 32.0f;
+    float ambientStrength = 0.1f;
+    float diffuseStrength = 0.9f;
+    float specularStrength = 0.5f;
 
     // ==== HDR / Tone Mapping 参数 ====
     float exposure = 1.0f; // 曝光度（默认 1.0）

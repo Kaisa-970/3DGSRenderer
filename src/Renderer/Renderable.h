@@ -34,6 +34,14 @@ public:
     Renderable &operator=(Renderable &&other) noexcept;
 
     // ---- 访问器 ----
+    const std::string &getName() const
+    {
+        return m_name;
+    }
+    void setName(const std::string &name)
+    {
+        m_name = name;
+    }
     unsigned int getUid() const
     {
         return m_uid;
@@ -102,13 +110,14 @@ public:
     Transform m_transform;
 
 private:
-    unsigned int m_uid;
+    std::string m_name;
     RenderableType m_type;
     Mat4 m_transformMatrix;
+    Vector3 m_color;
+    unsigned int m_uid;
     std::shared_ptr<Material> m_material;
     std::shared_ptr<Primitive> m_primitive;
     std::shared_ptr<Model> m_model;
-    Vector3 m_color;
 };
 
 RENDERER_NAMESPACE_END

@@ -50,16 +50,22 @@ void LightingPass::Execute(RenderContext &ctx)
     m_shader->use();
 
     // ---- 从 ctx 读取光源属性 ----
+    m_shader->setInt("numLights", ctx.lights->size());
     if (ctx.lights && !ctx.lights->empty())
     {
-        const std::shared_ptr<Light> mainLight = ctx.lights->at(0);
-        m_shader->setVec3("lightPos", mainLight->position.x, mainLight->position.y, mainLight->position.z);
-        m_shader->setVec3("lightColor", mainLight->color.x * mainLight->intensity,
-                          mainLight->color.y * mainLight->intensity, mainLight->color.z * mainLight->intensity);
-        m_shader->setFloat("ambientStrength", mainLight->ambientStrength);
-        m_shader->setFloat("diffuseStrength", mainLight->diffuseStrength);
-        m_shader->setFloat("specularStrength", mainLight->specularStrength);
+        for (int i = 0; i < ctx.lights->size(); i++)
+        {
+            const std::shared_ptr<Light> light = ctx.lights->at(i);
+            std::string lightName = "lights[" + std::to_string(i) + "]";
+            m_shader->setVec3((lightName + ".position").c_str(), light->position.x, light->position.y,
+                              light->position.z);
+            m_shader->setVec3((lightName + ".color").c_str(), light->color.x, light->color.y, light->color.z);
+            m_shader->setFloat((lightName + ".intensity").c_str(), light->intensity);
+        }
     }
+    m_shader->setFloat("ambientStrength", ctx.ambientStrength);
+    m_shader->setFloat("diffuseStrength", ctx.diffuseStrength);
+    m_shader->setFloat("specularStrength", ctx.specularStrength);
 
     // ---- 从 ctx 读取相机位置 ----
     if (ctx.camera)

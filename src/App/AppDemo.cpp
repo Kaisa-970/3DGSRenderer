@@ -34,6 +34,9 @@ public:
     // 场景光源（作为 Scene 的一部分管理）
     std::shared_ptr<Renderer::Light> mainLight;
 
+    std::vector<std::shared_ptr<Renderer::Light>> pointLights;
+    std::vector<std::shared_ptr<Renderer::Renderable>> pointLightSphereRenderables;
+
     // 光源的可视化球体
     std::shared_ptr<Renderer::Renderable> lightSphereRenderable;
 
@@ -73,6 +76,14 @@ bool AppDemo::OnInit()
     pImpl->mainLight =
         std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f, 0.0f)));
     m_scene->AddLight(pImpl->mainLight);
+
+    for (int i = 0; i < 10; i++)
+    {
+        auto pointLight =
+            std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f, 0.0f)));
+        m_scene->AddLight(pointLight);
+        pImpl->pointLights.push_back(pointLight);
+    }
 
     // 通过 ShaderManager 加载前向渲染 Shader
     auto forwardEffectShader = m_shaderManager->LoadShader("forward_effect", "res/shaders/forward_effect.vs.glsl",
@@ -120,11 +131,17 @@ void AppDemo::OnUpdate(float deltaTime)
     // 更新光源位置（直接修改 Light 对象）
     float curX = 5.0f * std::sin(pImpl->currentTime);
     float curZ = 5.0f * std::cos(pImpl->currentTime);
-    pImpl->mainLight->position = Renderer::Vector3(curX, 5.0f, curZ);
+    // pImpl->mainLight->position = Renderer::Vector3(curX, 5.0f, curZ);
 
     // 同步光源可视化球体的变换
-    pImpl->lightSphereRenderable->m_transform.scale = Renderer::Vector3(0.1f, 0.1f, 0.1f);
-    pImpl->lightSphereRenderable->m_transform.position = pImpl->mainLight->position;
+    // pImpl->lightSphereRenderable->m_transform.position = pImpl->mainLight->position;
+    pImpl->mainLight->position = pImpl->lightSphereRenderable->m_transform.position;
+    // pImpl->mainLight->color = pImpl->lightSphereRenderable->getColor();
+    for (int i = 0; i < pImpl->pointLights.size(); i++)
+    {
+        pImpl->pointLights[i]->position = pImpl->pointLightSphereRenderables[i]->m_transform.position;
+        pImpl->pointLights[i]->color = pImpl->pointLightSphereRenderables[i]->getColor();
+    }
 
     // 处理拾取（通过 RenderPipeline 的接口）—— 场景点击也通过 GuiLayer 更新选中状态
     if (m_inputState.pickRequested)
@@ -223,15 +240,30 @@ void AppDemo::SetupScene(std::shared_ptr<::Renderer::CubePrimitive> cubePrimitiv
     }
 
     // 光源可视化球体（颜色与 Light 一致）
-    auto emissiveShader =
-        m_shaderManager->LoadShader("emissive", "res/shaders/basepass.vs.glsl", "res/shaders/emissive.fs.glsl");
+    // auto emissiveShader =
+    // m_shaderManager->LoadShader("emissive", "res/shaders/basepass.vs.glsl", "res/shaders/emissive.fs.glsl");
     pImpl->lightSphereRenderable = std::make_shared<::Renderer::Renderable>();
     pImpl->lightSphereRenderable->setPrimitive(spherePrimitive);
-    pImpl->lightSphereRenderable->setColor(pImpl->mainLight->color);
-    emissiveShader->use();
-    emissiveShader->setFloat("uEmissiveStrength", 1.0f);
-    emissiveShader->unuse();
-    m_renderPipeline->AddForwardRenderable(pImpl->lightSphereRenderable, emissiveShader);
+    pImpl->lightSphereRenderable->setColor(pImpl->mainLight->color * 50.0f);
+    pImpl->lightSphereRenderable->m_transform.scale = Renderer::Vector3(0.2f, 0.2f, 0.2f);
+    pImpl->lightSphereRenderable->m_transform.position = pImpl->mainLight->position;
+    pImpl->lightSphereRenderable->setName("Main Light");
+    m_scene->AddRenderable(pImpl->lightSphereRenderable);
+
+    for (int i = 0; i < pImpl->pointLights.size(); i++)
+    {
+        pImpl->pointLights[i]->position = ::Renderer::Random::randomVector3(-3.0f, 10.0f);
+        pImpl->pointLights[i]->color = ::Renderer::Random::randomColor();
+        auto lightSphereRenderable = std::make_shared<::Renderer::Renderable>();
+        lightSphereRenderable->setPrimitive(spherePrimitive);
+        lightSphereRenderable->setColor(pImpl->pointLights[i]->color);
+        float scale = ::Renderer::Random::randomFloat(0.1f, 0.3f);
+        lightSphereRenderable->m_transform.scale = Renderer::Vector3(scale, scale, scale);
+        lightSphereRenderable->m_transform.position = pImpl->pointLights[i]->position;
+        lightSphereRenderable->setName("Point Light " + std::to_string(i));
+        m_scene->AddRenderable(lightSphereRenderable);
+        pImpl->pointLightSphereRenderables.push_back(lightSphereRenderable);
+    }
 
     // 特效立方体（前向渲染 —— 通过 RenderPipeline 管理）
     auto fxSphereRenderable = std::make_shared<::Renderer::Renderable>();

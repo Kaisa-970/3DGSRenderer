@@ -28,11 +28,6 @@ public:
     Vector3 color{1.0f, 1.0f, 1.0f};
     float intensity = 1.0f;
 
-    // --- 光照强度分量 ---
-    float ambientStrength = 0.1f;
-    float diffuseStrength = 0.9f;
-    float specularStrength = 0.5f;
-
     // --- 衰减参数（Point / Spot）---
     float constant = 1.0f;
     float linear = 0.09f;
