@@ -3,9 +3,15 @@
 in vec2 texCoord;
 out vec4 FragColor;
 
+const int MAX_LIGHTS = 32;
+struct Light{
+    vec3 position;
+    vec3 color;
+    float intensity;
+};
+
 // 光照参数
-uniform vec3 lightPos;       // 光源位置
-uniform vec3 lightColor;     // 光源颜色
+uniform Light lights[MAX_LIGHTS];
 uniform vec3 viewPos;        // 相机位置
 
 // 环境光、漫反射、镜面反射强度
@@ -19,30 +25,39 @@ uniform sampler2D u_normalTexture;
 uniform sampler2D u_diffuseTexture;
 uniform sampler2D u_specularTexture;
 
+uniform int numLights;
+
 void main()
 {
     vec3 FragPos = texture(u_positionTexture, texCoord).rgb;
     vec3 Normal = texture(u_normalTexture, texCoord).rgb;
     if(length(Normal) < 0.01) discard;
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 norm = normalize(Normal);
+
     vec3 diffuseColor = texture(u_diffuseTexture, texCoord).rgb;
     vec3 specularColor = texture(u_specularTexture, texCoord).rgb;
 
     vec3 baseColor = diffuseColor;
 
     // 1. 环境光 (Ambient)
-    vec3 ambient = ambientStrength * baseColor * lightColor;
+    vec3 ambient = ambientStrength * baseColor;
 
-    // 2. 漫反射 (Diffuse) - Lambert 光照
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);  // Lambert 余弦定律
-    vec3 diffuse = diff * lightColor * diffuseStrength;
+    vec3 diffuse = vec3(0.0);
+    vec3 specular = vec3(0.0);
+    for(int i = 0; i < numLights; i++){
+        // 2. 漫反射 (Diffuse)
+        vec3 lightDir = normalize(lights[i].position - FragPos);
+        float dist = length(lights[i].position - FragPos);
+        float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+        float diff = max(dot(norm, lightDir), 0.0);  // Lambert 余弦定律
+        diffuse += diff * lights[i].color * diffuseStrength * attenuation;
 
-    // 3. 镜面反射 (Specular) - Blinn-Phong 模型
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
-    vec3 specular = specularStrength * spec * lightColor * specularColor;
+        // 3. 镜面反射 (Specular) - Blinn-Phong 模型
+        vec3 halfDir = normalize(lightDir + viewDir);
+        float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
+        specular += spec * lights[i].color * specularColor * specularStrength * attenuation;
+    }
 
     // 组合所有光照分量
     vec3 result = (ambient + diffuse) * baseColor + specular;
