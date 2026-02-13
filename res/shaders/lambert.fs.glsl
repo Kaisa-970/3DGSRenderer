@@ -12,13 +12,12 @@ uniform vec3 viewPos;        // 相机位置
 uniform float ambientStrength;   // 环境光强度 (默认 0.1)
 uniform float diffuseStrength;   // 漫反射强度 (默认 0.9)
 uniform float specularStrength;  // 镜面反射强度 (默认 0.5)
-uniform int shininess;           // 镜面反射指数 (默认 32)
+uniform float shininess;           // 镜面反射指数 (默认 32)
 
 uniform sampler2D u_positionTexture;
 uniform sampler2D u_normalTexture;
 uniform sampler2D u_diffuseTexture;
 uniform sampler2D u_specularTexture;
-uniform sampler2D u_shininessTexture;
 
 void main()
 {
@@ -27,7 +26,6 @@ void main()
     if(length(Normal) < 0.01) discard;
     vec3 diffuseColor = texture(u_diffuseTexture, texCoord).rgb;
     vec3 specularColor = texture(u_specularTexture, texCoord).rgb;
-    float shininessTex = (texture(u_shininessTexture, texCoord).r);
 
     vec3 baseColor = diffuseColor;
 
@@ -43,14 +41,12 @@ void main()
     // 3. 镜面反射 (Specular) - Blinn-Phong 模型
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfDir), 0.0), shininessTex);
+    float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
     vec3 specular = specularStrength * spec * lightColor * specularColor;
 
     // 组合所有光照分量
     vec3 result = (ambient + diffuse) * baseColor + specular;
 
     FragColor = vec4(result, 1.0);
-    //FragColor = vec4(vec3(shininessTex), 1.0);
-    //FragColor = vec4(norm, 1.0);
 }
 
