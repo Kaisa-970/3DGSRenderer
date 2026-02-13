@@ -50,6 +50,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.h
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image_write.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Material.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Model.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Renderable.h

@@ -160,8 +160,8 @@ void AppDemo::OnRender(float deltaTime)
     m_renderPipeline->Resize(viewportW, viewportH);
 
     // 将 GUI 的 HDR 参数同步到渲染管线
-    m_renderPipeline->SetExposure(pImpl->exposure);
-    m_renderPipeline->SetTonemapMode(pImpl->tonemapMode);
+    m_renderPipeline->SetExposure(m_renderConfig.exposure);
+    m_renderPipeline->SetTonemapMode(m_renderConfig.tonemapMode);
 
     // // 在编辑器模式下渲染到纹理，交由 Scene 面板显示
     // m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(), pImpl->currentSelectedUID,
@@ -223,10 +223,15 @@ void AppDemo::SetupScene(std::shared_ptr<::Renderer::CubePrimitive> cubePrimitiv
     }
 
     // 光源可视化球体（颜色与 Light 一致）
+    auto emissiveShader =
+        m_shaderManager->LoadShader("emissive", "res/shaders/basepass.vs.glsl", "res/shaders/emissive.fs.glsl");
     pImpl->lightSphereRenderable = std::make_shared<::Renderer::Renderable>();
     pImpl->lightSphereRenderable->setPrimitive(spherePrimitive);
     pImpl->lightSphereRenderable->setColor(pImpl->mainLight->color);
-    m_scene->AddRenderable(pImpl->lightSphereRenderable);
+    emissiveShader->use();
+    emissiveShader->setFloat("uEmissiveStrength", 1.0f);
+    emissiveShader->unuse();
+    m_renderPipeline->AddForwardRenderable(pImpl->lightSphereRenderable, emissiveShader);
 
     // 特效立方体（前向渲染 —— 通过 RenderPipeline 管理）
     auto fxSphereRenderable = std::make_shared<::Renderer::Renderable>();
@@ -243,7 +248,7 @@ void AppDemo::SetupScene(std::shared_ptr<::Renderer::CubePrimitive> cubePrimitiv
     quadRenderable->setMaterial(defaultMaterial);
     quadRenderable->m_transform.position = ::Renderer::Vector3(0.0f, 0.0f, 0.0f);
     quadRenderable->m_transform.scale = ::Renderer::Vector3(10.0f, 10.0f, 10.0f);
-    quadRenderable->m_transform.rotation = ::Renderer::Rotator(90.0f, 0.0f, 0.0f);
+    quadRenderable->m_transform.rotation = ::Renderer::Rotator(-90.0f, 0.0f, 0.0f);
     quadRenderable->setColor(::Renderer::Vector3(0.5f, 0.5f, 0.5f));
     m_scene->AddRenderable(quadRenderable);
 

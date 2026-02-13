@@ -290,7 +290,7 @@ void Application::Run()
         // 渲染
         m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(),
                                   m_renderConfig.selectedUID, static_cast<Renderer::ViewMode>(m_renderConfig.viewMode),
-                                  0, m_renderConfig.presentToScreen);
+                                  currentTime, m_renderConfig.presentToScreen);
 
         // 调用派生类的GUI逻辑
         OnGUI();

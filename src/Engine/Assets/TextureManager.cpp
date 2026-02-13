@@ -97,4 +97,15 @@ std::shared_ptr<Renderer::Texture2D> TextureManager::LoadTexture2D(const std::st
     return nullptr;
 }
 
+bool TextureManager::SaveTexture2D(const std::string &path, const std::shared_ptr<Renderer::Texture2D> &texture)
+{
+    bool result = Renderer::Texture2D::SaveTexture2DPNG(path, texture);
+    if (!result)
+    {
+        LOG_CORE_ERROR("Failed to save texture2D to path: {}", path);
+        return false;
+    }
+    return true;
+}
+
 GSENGINE_NAMESPACE_END
