@@ -63,7 +63,7 @@ void Material::UpdateShaderParams(const std::shared_ptr<Shader> &shader) const
 {
     shader->setVec3("u_diffuseColor", m_diffuseColor.x, m_diffuseColor.y, m_diffuseColor.z);
     shader->setVec3("u_specularColor", m_specularColor.x, m_specularColor.y, m_specularColor.z);
-    shader->setFloat("u_shininess", m_shininess);
+    shader->setFloat("shininess", m_shininess);
     if (m_diffuseTextures.size() > 0)
     {
         m_diffuseTextures[0]->bind(0);

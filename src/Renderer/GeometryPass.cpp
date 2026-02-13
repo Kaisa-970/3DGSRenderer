@@ -10,9 +10,8 @@ GeometryPass::GeometryPass(const int &width, const int &height, const std::share
 {
     m_positionTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
     m_normalTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
-    m_diffuseTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
-    m_specularTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
-    m_shininessTexture = RenderHelper::CreateTexture2D(width, height, GL_R32F, GL_RED, GL_FLOAT);
+    m_diffuseTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
+    m_specularTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     m_uidTexture = RenderHelper::CreateTexture2D(width, height, GL_R32I, GL_RED_INTEGER, GL_INT, GL_NEAREST);
     m_depthTexture = RenderHelper::CreateTexture2D(width, height, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 
@@ -20,16 +19,14 @@ GeometryPass::GeometryPass(const int &width, const int &height, const std::share
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color1, m_normalTexture);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color2, m_diffuseTexture);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color3, m_specularTexture);
-    m_frameBuffer.Attach(FrameBuffer::Attachment::Color4, m_shininessTexture);
-    m_frameBuffer.Attach(FrameBuffer::Attachment::Color5, m_uidTexture);
+    m_frameBuffer.Attach(FrameBuffer::Attachment::Color4, m_uidTexture);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Depth, m_depthTexture);
 
     m_frameBuffer.Bind();
     GLenum drawBuffers[] = {
-        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
-        GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5,
+        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4,
     };
-    glDrawBuffers(6, drawBuffers);
+    glDrawBuffers(5, drawBuffers);
     m_frameBuffer.Unbind();
 }
 
@@ -50,8 +47,6 @@ GeometryPass::~GeometryPass()
         glDeleteTextures(1, &m_diffuseTexture);
     if (m_specularTexture != 0)
         glDeleteTextures(1, &m_specularTexture);
-    if (m_shininessTexture != 0)
-        glDeleteTextures(1, &m_shininessTexture);
     if (m_uidTexture != 0)
         glDeleteTextures(1, &m_uidTexture);
     if (m_depthTexture != 0)
@@ -65,7 +60,7 @@ void GeometryPass::Execute(RenderContext &ctx)
     m_frameBuffer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     m_frameBuffer.ClearDepthStencil(1.0f, 0);
     GLint clearValue[] = {-1};
-    glClearBufferiv(GL_COLOR, 5, clearValue);
+    glClearBufferiv(GL_COLOR, 4, clearValue);
 
     // ---- 设置全局 uniform ----
     m_shader->use();
@@ -96,7 +91,6 @@ void GeometryPass::Execute(RenderContext &ctx)
     ctx.gNormalTex = m_normalTexture;
     ctx.gDiffuseTex = m_diffuseTexture;
     ctx.gSpecularTex = m_specularTexture;
-    ctx.gShininessTex = m_shininessTexture;
     ctx.gUIDTex = m_uidTexture;
     ctx.gDepthTex = m_depthTexture;
 }
@@ -110,9 +104,8 @@ void GeometryPass::Resize(int width, int height)
 
     resizeTex(m_positionTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
     resizeTex(m_normalTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
-    resizeTex(m_diffuseTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
-    resizeTex(m_specularTexture, GL_RGB32F, GL_RGB, GL_FLOAT);
-    resizeTex(m_shininessTexture, GL_R32F, GL_RED, GL_FLOAT);
+    resizeTex(m_diffuseTexture, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
+    resizeTex(m_specularTexture, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     resizeTex(m_uidTexture, GL_R32I, GL_RED_INTEGER, GL_INT);
     resizeTex(m_depthTexture, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -140,7 +133,7 @@ void GeometryPass::RenderRenderable(Renderable *renderable)
 int GeometryPass::GetCurrentSelectedUID(unsigned int mouseX, unsigned int mouseY)
 {
     m_frameBuffer.Bind();
-    glReadBuffer(GL_COLOR_ATTACHMENT5);
+    glReadBuffer(GL_COLOR_ATTACHMENT4);
     int uid;
     glReadPixels(mouseX, mouseY, 1, 1, GL_RED_INTEGER, GL_INT, &uid);
     m_frameBuffer.Unbind();

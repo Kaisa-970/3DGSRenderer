@@ -69,7 +69,7 @@ void LightingPass::Execute(RenderContext &ctx)
     }
 
     // ---- 从 ctx 读取 G-Buffer 纹理 ----
-    m_shader->setInt("shininess", 32);
+    m_shader->setFloat("shininess", ctx.shininess);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ctx.gPositionTex);
@@ -83,9 +83,6 @@ void LightingPass::Execute(RenderContext &ctx)
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, ctx.gSpecularTex);
     m_shader->setInt("u_specularTexture", 3);
-    glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, ctx.gShininessTex);
-    m_shader->setInt("u_shininessTexture", 4);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

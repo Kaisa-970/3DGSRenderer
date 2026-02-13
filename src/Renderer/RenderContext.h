@@ -73,7 +73,6 @@ struct RENDERER_API RenderContext
     unsigned int gNormalTex = 0;
     unsigned int gDiffuseTex = 0;
     unsigned int gSpecularTex = 0;
-    unsigned int gShininessTex = 0;
     unsigned int gUIDTex = 0;
     unsigned int gDepthTex = 0;
 
@@ -82,6 +81,8 @@ struct RENDERER_API RenderContext
 
     // 后处理结果（PostProcessPass 输出）
     unsigned int postProcessColorTex = 0;
+
+    float shininess = 32.0f;
 
     // ==== HDR / Tone Mapping 参数 ====
     float exposure = 1.0f; // 曝光度（默认 1.0）

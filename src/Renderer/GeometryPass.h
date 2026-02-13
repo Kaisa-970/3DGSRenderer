@@ -37,7 +37,6 @@ private:
     unsigned int m_normalTexture;
     unsigned int m_diffuseTexture;
     unsigned int m_specularTexture;
-    unsigned int m_shininessTexture;
     unsigned int m_uidTexture;
     unsigned int m_depthTexture;
 };

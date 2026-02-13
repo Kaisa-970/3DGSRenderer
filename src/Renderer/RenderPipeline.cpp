@@ -15,7 +15,7 @@
 RENDERER_NAMESPACE_BEGIN
 
 static const std::vector<const char *> s_viewModeLabels = {
-    "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Shininess", "Depth"};
+    "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Depth"};
 
 RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManager) : m_width(width), m_height(height)
 {
@@ -146,9 +146,6 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
         break;
     case ViewMode::Specular:
         ctx.displayTex = ctx.gSpecularTex;
-        break;
-    case ViewMode::Shininess:
-        ctx.displayTex = ctx.gShininessTex;
         break;
     case ViewMode::Depth:
         ctx.displayTex = ctx.gDepthTex;

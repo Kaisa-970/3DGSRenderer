@@ -24,7 +24,6 @@ enum class ViewMode
     Normal,
     Diffuse,
     Specular,
-    Shininess,
     Depth,
 };
 
