@@ -53,6 +53,11 @@ void LightingPass::Execute(RenderContext &ctx)
     m_shader->setInt("numLights", ctx.lights->size());
     if (ctx.lights && !ctx.lights->empty())
     {
+        auto directionalLight = ctx.lights->at(0);
+        m_shader->setMat4("lightSpaceMat", directionalLight->GetViewProjectionMatrix().data());
+        m_shader->setVec3("directionalLightDirection", directionalLight->direction.x, directionalLight->direction.y,
+                          directionalLight->direction.z);
+
         for (int i = 0; i < ctx.lights->size(); i++)
         {
             const std::shared_ptr<Light> light = ctx.lights->at(i);
@@ -89,6 +94,9 @@ void LightingPass::Execute(RenderContext &ctx)
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, ctx.gSpecularTex);
     m_shader->setInt("u_specularTexture", 3);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, ctx.shadowTex);
+    m_shader->setInt("u_shadowTexture", 4);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

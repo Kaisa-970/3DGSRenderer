@@ -9,7 +9,8 @@ class RENDERER_API RenderHelper
 public:
     static unsigned int CreateTexture2D(int width, int height, int internalFormat, int format, int type);
 
-    static unsigned int CreateTexture2D(int width, int height, int internalFormat, int format, int type, int filter);
+    static unsigned int CreateTexture2D(int width, int height, int internalFormat, int format, int type, int filter,
+                                        int wrap);
 };
 
 RENDERER_NAMESPACE_END

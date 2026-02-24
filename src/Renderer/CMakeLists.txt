@@ -13,6 +13,7 @@ set(RENDERER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ForwardPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FinalPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GeometryPass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ShadowPass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Texture2D.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stbimage/stb_image.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Material.cpp
@@ -69,6 +70,7 @@ set(RENDERER_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/IRenderPass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ShaderManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Transform.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ShadowPass.h
 )
 
 if(USE_GLES3)

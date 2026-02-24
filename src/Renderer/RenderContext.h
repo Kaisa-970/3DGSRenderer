@@ -76,6 +76,9 @@ struct RENDERER_API RenderContext
     unsigned int gUIDTex = 0;
     unsigned int gDepthTex = 0;
 
+    // 阴影结果（ShadowPass 输出）
+    unsigned int shadowTex = 0;
+
     // 光照结果（LightingPass 输出）
     unsigned int lightingTex = 0;
 

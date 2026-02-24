@@ -24,9 +24,28 @@ uniform sampler2D u_positionTexture;
 uniform sampler2D u_normalTexture;
 uniform sampler2D u_diffuseTexture;
 uniform sampler2D u_specularTexture;
+uniform sampler2D u_shadowTexture;
 
 uniform int numLights;
 
+uniform mat4 lightSpaceMat;
+uniform vec3 directionalLightDirection;
+
+float CalculateShadow(vec2 texCoord, float currentDepth, float bias)
+{
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(u_shadowTexture, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(u_shadowTexture, texCoord + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+    return shadow;
+}
 void main()
 {
     vec3 FragPos = texture(u_positionTexture, texCoord).rgb;
@@ -37,6 +56,19 @@ void main()
 
     vec3 diffuseColor = texture(u_diffuseTexture, texCoord).rgb;
     vec3 specularColor = texture(u_specularTexture, texCoord).rgb;
+    vec4 shadowCoord = lightSpaceMat * vec4(FragPos, 1.0);
+    shadowCoord.xyz /= shadowCoord.w;
+    shadowCoord.xyz = shadowCoord.xyz * 0.5 + 0.5;
+    float shadow = 0.0;
+    if (shadowCoord.z > 0.0 && shadowCoord.z < 1.0 &&
+    shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 &&
+    shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0) {
+        //float closestDepth = texture(u_shadowTexture, shadowCoord.xy).r;
+        float currentDepth = shadowCoord.z;
+        float bias = max(0.02 * (1.0 - dot(norm, -directionalLightDirection)), 0.002);
+
+        shadow = CalculateShadow(shadowCoord.xy, currentDepth, bias);//currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    }
 
     vec3 baseColor = diffuseColor;
 
@@ -47,9 +79,18 @@ void main()
     vec3 specular = vec3(0.0);
     for(int i = 0; i < numLights; i++){
         // 2. 漫反射 (Diffuse)
-        vec3 lightDir = normalize(lights[i].position - FragPos);
-        float dist = length(lights[i].position - FragPos);
-        float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+        vec3 lightDir;
+        float attenuation = 1.0;
+        if(i == 0)
+        {
+            lightDir = normalize(-directionalLightDirection);
+        }
+        else
+        {
+            lightDir = normalize(lights[i].position - FragPos);
+            float dist = length(lights[i].position - FragPos);
+            attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+        }
         float diff = max(dot(norm, lightDir), 0.0);  // Lambert 余弦定律
         diffuse += diff * lights[i].color * diffuseStrength * attenuation;
 
@@ -60,7 +101,7 @@ void main()
     }
 
     // 组合所有光照分量
-    vec3 result = (ambient + diffuse) * baseColor + specular;
+    vec3 result = ambient * baseColor + (diffuse * baseColor + specular) * (1.0 - shadow);
 
     FragColor = vec4(result, 1.0);
 }

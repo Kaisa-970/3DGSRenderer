@@ -44,8 +44,10 @@ bool Application::Init()
     m_materialManager = std::make_shared<MaterialManager>(*m_textureManager);
     m_shaderManager = std::make_shared<Renderer::ShaderManager>();
 
+    Renderer::RenderPipelineConfig config;
+    config.shadowMapResolution = m_renderConfig.shadowMapResolution;
     m_renderPipeline =
-        std::make_shared<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager);
+        std::make_shared<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager, config);
 
     InitInputHandling();
 

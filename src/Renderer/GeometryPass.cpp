@@ -12,7 +12,8 @@ GeometryPass::GeometryPass(const int &width, const int &height, const std::share
     m_normalTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB32F, GL_RGB, GL_FLOAT);
     m_diffuseTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     m_specularTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
-    m_uidTexture = RenderHelper::CreateTexture2D(width, height, GL_R32I, GL_RED_INTEGER, GL_INT, GL_NEAREST);
+    m_uidTexture =
+        RenderHelper::CreateTexture2D(width, height, GL_R32I, GL_RED_INTEGER, GL_INT, GL_NEAREST, GL_CLAMP_TO_EDGE);
     m_depthTexture = RenderHelper::CreateTexture2D(width, height, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_positionTexture);

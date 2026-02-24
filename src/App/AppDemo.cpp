@@ -73,17 +73,21 @@ bool AppDemo::OnInit()
     std::shared_ptr<Renderer::Model> loadedModel2 = modelLoader.loadModel(model2Path);
 
     // 创建场景光源
-    pImpl->mainLight =
-        std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f, 0.0f)));
+    Renderer::Vector3 direction = Renderer::VectorUtils::Normalize(Renderer::Vector3(0.0f, 10.0f, 10.0f));
+    pImpl->mainLight = std::make_shared<Renderer::Light>(
+        Renderer::Light::CreateDirectionalLight(direction, Renderer::Vector3(1.0f, 1.0f, 1.0f), 1.0f));
+    pImpl->mainLight->position = Renderer::Vector3(0.0f, 10.0f, 10.0f);
+    pImpl->mainLight->direction = Renderer::VectorUtils::Normalize(-pImpl->mainLight->position);
     m_scene->AddLight(pImpl->mainLight);
 
-    for (int i = 0; i < 10; i++)
-    {
-        auto pointLight =
-            std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f, 0.0f)));
-        m_scene->AddLight(pointLight);
-        pImpl->pointLights.push_back(pointLight);
-    }
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     auto pointLight =
+    //         std::make_shared<Renderer::Light>(Renderer::Light::CreatePointLight(Renderer::Vector3(0.0f, 5.0f,
+    //         0.0f)));
+    //     m_scene->AddLight(pointLight);
+    //     pImpl->pointLights.push_back(pointLight);
+    // }
 
     // 通过 ShaderManager 加载前向渲染 Shader
     auto forwardEffectShader = m_shaderManager->LoadShader("forward_effect", "res/shaders/forward_effect.vs.glsl",

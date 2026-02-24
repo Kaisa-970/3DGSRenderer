@@ -27,12 +27,17 @@ enum class ViewMode
     Depth,
 };
 
+struct RenderPipelineConfig
+{
+    int shadowMapResolution = 2048;
+};
+
 /// 渲染管线：统一编排所有 RenderPass 的执行顺序
 /// 通过 RenderContext 在 Pass 之间传递数据，形成清晰的数据流
 class RENDERER_API RenderPipeline
 {
 public:
-    RenderPipeline(int width, int height, ShaderManager &shaderManager);
+    RenderPipeline(int width, int height, ShaderManager &shaderManager, const RenderPipelineConfig &config);
     ~RenderPipeline();
 
     // 禁止拷贝（vector<unique_ptr> 不可拷贝，MSVC dllexport 要求显式声明）

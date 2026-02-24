@@ -30,6 +30,7 @@ struct RenderConfig
     int tonemapMode = 2; // 0 = None, 1 = Reinhard, 2 = ACES Filmic
     bool presentToScreen = true;
     int selectedUID = -1;
+    int shadowMapResolution = 4096;
 };
 
 class Window;

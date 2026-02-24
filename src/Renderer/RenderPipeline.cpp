@@ -3,6 +3,7 @@
 #include "ForwardPass.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
+#include "ShadowPass.h"
 #include "PostProcessChain.h"
 #include "Effects/OutlineEffect.h"
 #include "Effects/BloomEffect.h"
@@ -17,7 +18,8 @@ RENDERER_NAMESPACE_BEGIN
 static const std::vector<const char *> s_viewModeLabels = {
     "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Depth"};
 
-RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManager) : m_width(width), m_height(height)
+RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManager, const RenderPipelineConfig &config)
+    : m_width(width), m_height(height)
 {
     // 通过 ShaderManager 统一加载所有内置 Shader
     auto basepassShader =
@@ -27,7 +29,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
     auto outlineShader =
         shaderManager.LoadShader("outline", "res/shaders/final.vs.glsl", "res/shaders/outline.fs.glsl");
     auto finalShader = shaderManager.LoadShader("final", "res/shaders/final.vs.glsl", "res/shaders/final.fs.glsl");
-
+    auto shadowShader = shaderManager.LoadShader("shadow", "res/shaders/shadow.vs.glsl", "res/shaders/shadow.fs.glsl");
     // Bloom Shaders
     auto bloomThresholdShader =
         shaderManager.LoadShader("bloom_threshold", "res/shaders/final.vs.glsl", "res/shaders/bloom_threshold.fs.glsl");
@@ -37,7 +39,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
         shaderManager.LoadShader("bloom_composite", "res/shaders/final.vs.glsl", "res/shaders/bloom_composite.fs.glsl");
 
     if (!basepassShader || !lambertShader || !outlineShader || !finalShader || !bloomThresholdShader ||
-        !bloomBlurShader || !bloomCompositeShader)
+        !bloomBlurShader || !bloomCompositeShader || !shadowShader)
     {
         throw std::runtime_error("RenderPipeline initialization failed: required shader load failed");
     }
@@ -47,6 +49,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
     m_geometryPass = geometry.get();
 
     m_passes.push_back(std::move(geometry));
+    m_passes.push_back(std::make_unique<ShadowPass>(config.shadowMapResolution, shadowShader));
     m_passes.push_back(std::make_unique<LightingPass>(width, height, lambertShader));
     m_passes.push_back(std::make_unique<ForwardPass>());
 
