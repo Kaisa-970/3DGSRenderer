@@ -1,6 +1,7 @@
 #include "ShadowPass.h"
 #include "RenderContext.h"
 #include "RenderHelper/RenderHelper.h"
+#include "Light.h"
 #include <glad/glad.h>
 
 RENDERER_NAMESPACE_BEGIN
@@ -13,6 +14,13 @@ ShadowPass::ShadowPass(int shadowMapResolution, const std::shared_ptr<Shader> &s
     glReadBuffer(GL_NONE);
     m_lightDepthTexture = RenderHelper::CreateTexture2D(shadowMapResolution, shadowMapResolution, GL_DEPTH_COMPONENT24,
                                                         GL_DEPTH_COMPONENT, GL_FLOAT);
+    // 阴影贴图边缘采样用 1.0（表示“无遮挡”），避免光锥外错误阴影
+    glBindTexture(GL_TEXTURE_2D, m_lightDepthTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glBindTexture(GL_TEXTURE_2D, 0);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Depth, m_lightDepthTexture);
 }
 
@@ -30,14 +38,26 @@ void ShadowPass::Execute(RenderContext &ctx)
     glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
-    m_shader->use();
-
-    // ---- 从 ctx 读取光源 ----
-    if (ctx.lights->size() > 0)
+    // 无光源或第一盏不是平行光时，不渲染阴影（深度贴图保持清除后的状态，采样结果为“无遮挡”）
+    if (!ctx.lights || ctx.lights->empty())
     {
-        auto directionalLight = ctx.lights->at(0);
-        m_shader->setMat4("projViewMat", directionalLight->GetViewProjectionMatrix().data());
+        m_frameBuffer.Unbind();
+        glViewport(0, 0, ctx.width, ctx.height);
+        ctx.shadowTex = m_lightDepthTexture;
+        return;
     }
+
+    const auto &firstLight = ctx.lights->at(0);
+    if (firstLight->type != LightType::Directional)
+    {
+        m_frameBuffer.Unbind();
+        glViewport(0, 0, ctx.width, ctx.height);
+        ctx.shadowTex = m_lightDepthTexture;
+        return;
+    }
+
+    m_shader->use();
+    m_shader->setMat4("projViewMat", firstLight->GetViewProjectionMatrix().data());
 
     // ---- 遍历场景物体 ----
     if (ctx.sceneRenderables)
