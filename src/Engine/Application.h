@@ -28,6 +28,7 @@ struct RenderConfig
     int viewMode = static_cast<int>(Renderer::ViewMode::Final);
     float exposure = 1.0f;
     int tonemapMode = 2; // 0 = None, 1 = Reinhard, 2 = ACES Filmic
+    bool ssaoEnabled = true;
     bool presentToScreen = true;
     int selectedUID = -1;
     int shadowMapResolution = 4096;

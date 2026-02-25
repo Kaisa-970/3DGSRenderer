@@ -25,6 +25,8 @@ uniform sampler2D u_normalTexture;
 uniform sampler2D u_diffuseTexture;
 uniform sampler2D u_specularTexture;
 uniform sampler2D u_shadowTexture;
+uniform sampler2D u_ssaoTexture;
+uniform int u_useSSAO;
 
 uniform int numLights;
 
@@ -72,8 +74,10 @@ void main()
 
     vec3 baseColor = diffuseColor;
 
-    // 1. 环境光 (Ambient)
-    vec3 ambient = ambientStrength * baseColor;
+    float ao = (u_useSSAO != 0) ? texture(u_ssaoTexture, texCoord).r : 1.0;
+
+    // 1. 环境光 (Ambient)，用 SSAO 调制
+    vec3 ambient = ambientStrength * baseColor * ao;
 
     vec3 diffuse = vec3(0.0);
     vec3 specular = vec3(0.0);
@@ -101,7 +105,7 @@ void main()
     }
 
     // 组合所有光照分量
-    vec3 result = ambient * baseColor + (diffuse * baseColor + specular) * (1.0 - shadow);
+    vec3 result = ambient + (diffuse * baseColor + specular) * (1.0 - shadow);
 
     FragColor = vec4(result, 1.0);
 }

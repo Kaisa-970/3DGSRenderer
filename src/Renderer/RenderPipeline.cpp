@@ -3,7 +3,10 @@
 #include "ForwardPass.h"
 #include "GeometryPass.h"
 #include "LightingPass.h"
+#include "PostProcessPass.h"
 #include "ShadowPass.h"
+#include "SSAOPass.h"
+#include "SSAOBlurPass.h"
 #include "PostProcessChain.h"
 #include "Effects/OutlineEffect.h"
 #include "Effects/BloomEffect.h"
@@ -16,7 +19,7 @@
 RENDERER_NAMESPACE_BEGIN
 
 static const std::vector<const char *> s_viewModeLabels = {
-    "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Depth"};
+    "Final (PostProcess)", "Lighting", "Position", "Normal", "Diffuse", "Specular", "Depth", "SSAO"};
 
 RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManager, const RenderPipelineConfig &config)
     : m_width(width), m_height(height)
@@ -30,6 +33,9 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
         shaderManager.LoadShader("outline", "res/shaders/final.vs.glsl", "res/shaders/outline.fs.glsl");
     auto finalShader = shaderManager.LoadShader("final", "res/shaders/final.vs.glsl", "res/shaders/final.fs.glsl");
     auto shadowShader = shaderManager.LoadShader("shadow", "res/shaders/shadow.vs.glsl", "res/shaders/shadow.fs.glsl");
+    auto ssaoShader = shaderManager.LoadShader("ssao", "res/shaders/ssao.vs.glsl", "res/shaders/ssao.fs.glsl");
+    auto ssaoBlurShader =
+        shaderManager.LoadShader("ssao_blur", "res/shaders/ssao.vs.glsl", "res/shaders/ssao_blur.fs.glsl");
     // Bloom Shaders
     auto bloomThresholdShader =
         shaderManager.LoadShader("bloom_threshold", "res/shaders/final.vs.glsl", "res/shaders/bloom_threshold.fs.glsl");
@@ -39,7 +45,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
         shaderManager.LoadShader("bloom_composite", "res/shaders/final.vs.glsl", "res/shaders/bloom_composite.fs.glsl");
 
     if (!basepassShader || !lambertShader || !outlineShader || !finalShader || !bloomThresholdShader ||
-        !bloomBlurShader || !bloomCompositeShader || !shadowShader)
+        !bloomBlurShader || !bloomCompositeShader || !shadowShader || !ssaoShader || !ssaoBlurShader)
     {
         throw std::runtime_error("RenderPipeline initialization failed: required shader load failed");
     }
@@ -50,6 +56,8 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
 
     m_passes.push_back(std::move(geometry));
     m_passes.push_back(std::make_unique<ShadowPass>(config.shadowMapResolution, shadowShader));
+    m_passes.push_back(std::make_unique<SSAOPass>(width, height, ssaoShader));
+    m_passes.push_back(std::make_unique<SSAOBlurPass>(width, height, ssaoBlurShader));
     m_passes.push_back(std::make_unique<LightingPass>(width, height, lambertShader));
     m_passes.push_back(std::make_unique<ForwardPass>());
 
@@ -117,6 +125,7 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
     ctx.forwardShader = m_forwardShader;
     ctx.exposure = m_exposure;
     ctx.tonemapMode = m_tonemapMode;
+    ctx.ssaoEnabled = m_ssaoEnabled;
 
     // 预计算矩阵
     camera.getViewMatrix(ctx.viewMatrix);
@@ -130,6 +139,7 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
     }
 
     // ---- 3. 根据 ViewMode 选择 FinalPass 的输入纹理 ----
+    ctx.displaySingleChannelR = false;
     switch (viewMode)
     {
     case ViewMode::Final:
@@ -152,6 +162,10 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
         break;
     case ViewMode::Depth:
         ctx.displayTex = ctx.gDepthTex;
+        break;
+    case ViewMode::SSAO:
+        ctx.displayTex = ctx.ssaoTex;
+        ctx.displaySingleChannelR = true;
         break;
     }
 

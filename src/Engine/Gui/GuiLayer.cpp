@@ -181,6 +181,11 @@ void GuiLayer::SetBloomControls(float *thresholdPtr, float *intensityPtr, int *i
     bloomEnabledPtr_ = enabledPtr;
 }
 
+void GuiLayer::SetSSAOEnabled(bool *enabledPtr)
+{
+    ssaoEnabledPtr_ = enabledPtr;
+}
+
 void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
 {
     if (!materialManager)
@@ -383,6 +388,14 @@ void GuiLayer::RenderInspectorPanel()
             static const char *tonemapLabels[] = {"None (Clamp)", "Reinhard", "ACES Filmic"};
             ImGui::Combo("Tonemap", tonemapModePtr_, tonemapLabels, 3);
         }
+    }
+
+    // SSAO 开关
+    if (ssaoEnabledPtr_)
+    {
+        ImGui::Separator();
+        ImGui::Text("SSAO");
+        ImGui::Checkbox("Enable SSAO", ssaoEnabledPtr_);
     }
 
     // Bloom 控制

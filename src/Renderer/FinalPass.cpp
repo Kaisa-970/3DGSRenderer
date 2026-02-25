@@ -58,6 +58,7 @@ void FinalPass::Execute(RenderContext &ctx)
     // 传入 HDR / Tone Mapping 参数
     m_shader->setFloat("u_exposure", ctx.exposure);
     m_shader->setInt("u_tonemapMode", ctx.tonemapMode);
+    m_shader->setInt("u_displaySingleChannelR", ctx.displaySingleChannelR ? 1 : 0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ctx.displayTex);

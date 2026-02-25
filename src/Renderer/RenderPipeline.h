@@ -25,6 +25,7 @@ enum class ViewMode
     Diffuse,
     Specular,
     Depth,
+    SSAO,
 };
 
 struct RenderPipelineConfig
@@ -83,6 +84,16 @@ public:
         return m_tonemapMode;
     }
 
+    // ---- SSAO 开关 ----
+    void SetSSAOEnabled(bool enabled)
+    {
+        m_ssaoEnabled = enabled;
+    }
+    bool GetSSAOEnabled() const
+    {
+        return m_ssaoEnabled;
+    }
+
     /// 获取 G-Buffer 可视化模式的标签列表（供 GUI 使用）
     static const std::vector<const char *> &GetViewModeLabels();
     /// 获取上一帧根据 ViewMode 选择的显示纹理（供编辑器 Scene View 使用）
@@ -137,6 +148,7 @@ private:
     // HDR / Tone Mapping 参数
     float m_exposure = 1.0f;
     int m_tonemapMode = 2; // 0 = None, 1 = Reinhard, 2 = ACES Filmic
+    bool m_ssaoEnabled = true;
 
     // Pass 查找辅助
     int FindPassIndex(const char *name) const;

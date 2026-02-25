@@ -79,6 +79,10 @@ struct RENDERER_API RenderContext
     // 阴影结果（ShadowPass 输出）
     unsigned int shadowTex = 0;
 
+    // SSAO 结果（SSAOPass 输出，用于调制环境光）
+    unsigned int ssaoTex = 0;
+    bool ssaoEnabled = true;
+
     // 光照结果（LightingPass 输出）
     unsigned int lightingTex = 0;
 
@@ -99,6 +103,8 @@ struct RENDERER_API RenderContext
 
     // 显示纹理（由 RenderPipeline 根据 ViewMode 选择，FinalPass 的输入）
     unsigned int displayTex = 0;
+    /// 为 true 时 FinalPass 将 displayTex 按单通道 R 复制为 RGB（用于 SSAO 等灰度预览）
+    bool displaySingleChannelR = false;
 
     // FinalPass 输出（经过 ToneMapping + Gamma 的 LDR 纹理）
     unsigned int finalTex = 0;

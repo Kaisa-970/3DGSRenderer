@@ -6,6 +6,7 @@ out vec4 finalColor;
 uniform sampler2D u_colorTexture;
 uniform float u_exposure;       // 曝光度（默认 1.0）
 uniform int   u_tonemapMode;    // 0 = None, 1 = Reinhard, 2 = ACES Filmic
+uniform int   u_displaySingleChannelR; // 1 = 单通道 R 复制为 RGB（SSAO 等灰度预览）
 
 // ---- ACES Filmic Tone Mapping ----
 // 参考：Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
@@ -29,8 +30,12 @@ vec3 Reinhard(vec3 x)
 
 void main()
 {
-    // 1. 采样 HDR 颜色
-    vec3 hdrColor = texture(u_colorTexture, texCoord).rgb;
+    // 1. 采样颜色（单通道 R 时复制为 RGB，用于 SSAO 等灰度预览）
+    vec3 hdrColor;
+    if (u_displaySingleChannelR != 0)
+        hdrColor = vec3(texture(u_colorTexture, texCoord).r);
+    else
+        hdrColor = texture(u_colorTexture, texCoord).rgb;
 
     // 2. 应用曝光度（模拟相机曝光控制）
     hdrColor *= u_exposure;

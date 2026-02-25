@@ -289,6 +289,11 @@ void Application::Run()
         // 调用派生类的渲染逻辑
         OnRender(deltaTime);
 
+        // 将 GUI/Config 中的渲染选项同步到管线后执行
+        m_renderPipeline->SetExposure(m_renderConfig.exposure);
+        m_renderPipeline->SetTonemapMode(m_renderConfig.tonemapMode);
+        m_renderPipeline->SetSSAOEnabled(m_renderConfig.ssaoEnabled);
+
         // 渲染
         m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(),
                                   m_renderConfig.selectedUID, static_cast<Renderer::ViewMode>(m_renderConfig.viewMode),
