@@ -75,6 +75,7 @@ struct RENDERER_API RenderContext
     unsigned int gSpecularTex = 0;
     unsigned int gUIDTex = 0;
     unsigned int gDepthTex = 0;
+    unsigned int gMetallicRoughnessTex = 0;
 
     // 阴影结果（ShadowPass 输出）
     unsigned int shadowTex = 0;
@@ -82,6 +83,8 @@ struct RENDERER_API RenderContext
     // SSAO 结果（SSAOPass 输出，用于调制环境光）
     unsigned int ssaoTex = 0;
     bool ssaoEnabled = true;
+    /// SSAO 强度 [0,1]，用于 mix(1, ao, strength)，避免整体过暗
+    float ssaoStrength = 0.75f;
 
     // 光照结果（LightingPass 输出）
     unsigned int lightingTex = 0;

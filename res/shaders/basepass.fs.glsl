@@ -9,7 +9,7 @@ layout(location = 1) out vec3 gNormal;
 layout(location = 2) out vec3 gDiffuse;
 layout(location = 3) out vec3 gSpecular;
 layout(location = 4) out int gUID;
-//layout(location = 6) out float gDepth;
+layout(location = 5) out vec2 gMetallicRoughness;
 
 uniform sampler2D u_diffuseTexture;
 uniform sampler2D u_specularTexture;
@@ -17,6 +17,8 @@ uniform vec3 u_diffuseColor;
 uniform vec3 u_specularColor;
 uniform vec3 uColor;
 uniform int uUID;
+uniform float u_metallic = 0.0;
+uniform float u_roughness = 0.5;
 void main() {
     gPosition = worldPos;
     gNormal = normalize(worldNormal);
@@ -24,5 +26,5 @@ void main() {
     gDiffuse = u_diffuseColor * diffuseColor * uColor;
     gSpecular = u_specularColor * texture(u_specularTexture, texCoord).rgb;
     gUID = uUID;
-    //gDepth = gl_FragCoord.z;
+    gMetallicRoughness = vec2(u_metallic, u_roughness);
 }

@@ -21,6 +21,8 @@ void Model::draw(const std::shared_ptr<Shader>& shader)
         if (subMesh.material) 
         {
             shader->setFloat("u_shininess", subMesh.material->getShininess());
+            shader->setFloat("u_metallic", subMesh.material->getMetallic());
+            shader->setFloat("u_roughness", subMesh.material->getRoughness());
             shader->setVec3("u_diffuseColor", subMesh.material->getDiffuseColor().x, subMesh.material->getDiffuseColor().y, subMesh.material->getDiffuseColor().z);
             shader->setVec3("u_specularColor", subMesh.material->getSpecularColor().x, subMesh.material->getSpecularColor().y, subMesh.material->getSpecularColor().z);
 

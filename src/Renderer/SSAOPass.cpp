@@ -116,7 +116,8 @@ void SSAOPass::Execute(RenderContext &ctx)
     m_shader->setMat4("projMat", ctx.projMatrix);
     m_shader->setVec2("u_noiseScale", static_cast<float>(ctx.width) / 4.0f, static_cast<float>(ctx.height) / 4.0f);
     m_shader->setFloat("u_radius", 0.5f);
-    m_shader->setFloat("u_bias", 0.025f);
+    // 适当增大 bias，避免平整地面等因深度误差被判成遮挡导致整体偏暗
+    m_shader->setFloat("u_bias", 0.065f);
 
     for (int i = 0; i < KERNEL_SIZE; ++i)
     {

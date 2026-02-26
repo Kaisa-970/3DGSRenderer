@@ -44,6 +44,16 @@ void Material::setShininess(float shininess)
     m_shininess = shininess;
 }
 
+void Material::setMetallic(float metallic)
+{
+    m_metallic = metallic;
+}
+
+void Material::setRoughness(float roughness)
+{
+    m_roughness = roughness;
+}
+
 void Material::addDiffuseTexture(const std::shared_ptr<Texture2D> &diffuseTexture)
 {
     m_diffuseTextures.push_back(diffuseTexture);
@@ -64,6 +74,8 @@ void Material::UpdateShaderParams(const std::shared_ptr<Shader> &shader) const
     shader->setVec3("u_diffuseColor", m_diffuseColor.x, m_diffuseColor.y, m_diffuseColor.z);
     shader->setVec3("u_specularColor", m_specularColor.x, m_specularColor.y, m_specularColor.z);
     shader->setFloat("shininess", m_shininess);
+    shader->setFloat("u_metallic", m_metallic);
+    shader->setFloat("u_roughness", m_roughness);
     if (m_diffuseTextures.size() > 0)
     {
         m_diffuseTextures[0]->bind(0);

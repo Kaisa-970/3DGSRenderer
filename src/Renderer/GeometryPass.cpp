@@ -14,6 +14,8 @@ GeometryPass::GeometryPass(const int &width, const int &height, const std::share
     m_specularTexture = RenderHelper::CreateTexture2D(width, height, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     m_uidTexture =
         RenderHelper::CreateTexture2D(width, height, GL_R32I, GL_RED_INTEGER, GL_INT, GL_NEAREST, GL_CLAMP_TO_EDGE);
+    m_metallicRoughnessTexture =
+        RenderHelper::CreateTexture2D(width, height, GL_RG8, GL_RG, GL_UNSIGNED_BYTE);
     m_depthTexture = RenderHelper::CreateTexture2D(width, height, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color0, m_positionTexture);
@@ -21,13 +23,15 @@ GeometryPass::GeometryPass(const int &width, const int &height, const std::share
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color2, m_diffuseTexture);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color3, m_specularTexture);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Color4, m_uidTexture);
+    m_frameBuffer.Attach(FrameBuffer::Attachment::Color5, m_metallicRoughnessTexture);
     m_frameBuffer.Attach(FrameBuffer::Attachment::Depth, m_depthTexture);
 
     m_frameBuffer.Bind();
     GLenum drawBuffers[] = {
-        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4,
+        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3,
+        GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5,
     };
-    glDrawBuffers(5, drawBuffers);
+    glDrawBuffers(6, drawBuffers);
     m_frameBuffer.Unbind();
 }
 
@@ -50,6 +54,8 @@ GeometryPass::~GeometryPass()
         glDeleteTextures(1, &m_specularTexture);
     if (m_uidTexture != 0)
         glDeleteTextures(1, &m_uidTexture);
+    if (m_metallicRoughnessTexture != 0)
+        glDeleteTextures(1, &m_metallicRoughnessTexture);
     if (m_depthTexture != 0)
         glDeleteTextures(1, &m_depthTexture);
 }
@@ -93,6 +99,7 @@ void GeometryPass::Execute(RenderContext &ctx)
     ctx.gDiffuseTex = m_diffuseTexture;
     ctx.gSpecularTex = m_specularTexture;
     ctx.gUIDTex = m_uidTexture;
+    ctx.gMetallicRoughnessTex = m_metallicRoughnessTexture;
     ctx.gDepthTex = m_depthTexture;
 }
 
@@ -108,6 +115,7 @@ void GeometryPass::Resize(int width, int height)
     resizeTex(m_diffuseTexture, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     resizeTex(m_specularTexture, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
     resizeTex(m_uidTexture, GL_R32I, GL_RED_INTEGER, GL_INT);
+    resizeTex(m_metallicRoughnessTexture, GL_RG8, GL_RG, GL_UNSIGNED_BYTE);
     resizeTex(m_depthTexture, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
     glBindTexture(GL_TEXTURE_2D, 0);
 }

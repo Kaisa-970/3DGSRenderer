@@ -101,6 +101,10 @@ void LightingPass::Execute(RenderContext &ctx)
     glBindTexture(GL_TEXTURE_2D, ctx.ssaoTex);
     m_shader->setInt("u_ssaoTexture", 5);
     m_shader->setInt("u_useSSAO", ctx.ssaoTex != 0 ? 1 : 0);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, ctx.gMetallicRoughnessTex);
+    m_shader->setInt("u_metallicRoughnessTexture", 6);
+    m_shader->setFloat("u_ssaoStrength", ctx.ssaoStrength);
 
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

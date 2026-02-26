@@ -27,6 +27,7 @@ uniform sampler2D u_specularTexture;
 uniform sampler2D u_shadowTexture;
 uniform sampler2D u_ssaoTexture;
 uniform int u_useSSAO;
+uniform float u_ssaoStrength;
 
 uniform int numLights;
 
@@ -75,6 +76,7 @@ void main()
     vec3 baseColor = diffuseColor;
 
     float ao = (u_useSSAO != 0) ? texture(u_ssaoTexture, texCoord).r : 1.0;
+    ao = (u_useSSAO != 0) ? mix(1.0, ao, u_ssaoStrength) : 1.0;
 
     // 1. 环境光 (Ambient)，用 SSAO 调制
     vec3 ambient = ambientStrength * baseColor * ao;

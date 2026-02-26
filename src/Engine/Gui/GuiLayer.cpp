@@ -331,6 +331,12 @@ void GuiLayer::RenderInspectorPanel()
                 float shininess = mat->getShininess();
                 if (ImGui::SliderFloat("Shininess", &shininess, 1.0f, 256.0f, "%.1f"))
                     mat->setShininess(shininess);
+                float metallic = mat->getMetallic();
+                if (ImGui::SliderFloat("Metallic (PBR)", &metallic, 0.0f, 1.0f, "%.2f"))
+                    mat->setMetallic(metallic);
+                float roughness = mat->getRoughness();
+                if (ImGui::SliderFloat("Roughness (PBR)", &roughness, 0.04f, 1.0f, "%.2f"))
+                    mat->setRoughness(roughness);
                 ImGui::Text("Textures: diffuse %zu, specular %zu, normal %zu", mat->getDiffuseTextures().size(),
                             mat->getSpecularTextures().size(), mat->getNormalTextures().size());
             }
@@ -353,6 +359,12 @@ void GuiLayer::RenderInspectorPanel()
                     float shininess = mat->getShininess();
                     if (ImGui::SliderFloat("Material[0] Shininess", &shininess, 1.0f, 256.0f, "%.1f"))
                         mat->setShininess(shininess);
+                    float metallic = mat->getMetallic();
+                    if (ImGui::SliderFloat("Material[0] Metallic (PBR)", &metallic, 0.0f, 1.0f, "%.2f"))
+                        mat->setMetallic(metallic);
+                    float roughness = mat->getRoughness();
+                    if (ImGui::SliderFloat("Material[0] Roughness (PBR)", &roughness, 0.04f, 1.0f, "%.2f"))
+                        mat->setRoughness(roughness);
                     ImGui::Text("Material[0] Textures: diffuse %zu, specular %zu, normal %zu",
                                 mat->getDiffuseTextures().size(), mat->getSpecularTextures().size(),
                                 mat->getNormalTextures().size());

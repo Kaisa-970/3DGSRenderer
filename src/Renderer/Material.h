@@ -22,6 +22,8 @@ public:
     void setSpecularColor(const Vector3 &specularColor);
     void setAmbientColor(const Vector3 &ambientColor);
     void setShininess(float shininess);
+    void setMetallic(float metallic);
+    void setRoughness(float roughness);
 
     void addDiffuseTexture(const std::shared_ptr<Texture2D> &diffuseTexture);
     void addNormalTexture(const std::shared_ptr<Texture2D> &normalTexture);
@@ -47,6 +49,14 @@ public:
     {
         return m_shininess;
     }
+    float getMetallic() const
+    {
+        return m_metallic;
+    }
+    float getRoughness() const
+    {
+        return m_roughness;
+    }
     const std::vector<std::shared_ptr<Texture2D>> &getDiffuseTextures() const
     {
         return m_diffuseTextures;
@@ -68,6 +78,8 @@ private:
     Vector3 m_specularColor;
     Vector3 m_ambientColor;
     float m_shininess;
+    float m_metallic = 0.0f;
+    float m_roughness = 0.5f;
     std::vector<std::shared_ptr<Texture2D>> m_diffuseTextures;
     std::vector<std::shared_ptr<Texture2D>> m_normalTextures;
     std::vector<std::shared_ptr<Texture2D>> m_specularTextures;

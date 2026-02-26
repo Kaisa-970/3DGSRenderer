@@ -29,6 +29,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
         shaderManager.LoadShader("basepass", "res/shaders/basepass.vs.glsl", "res/shaders/basepass.fs.glsl");
     auto lambertShader =
         shaderManager.LoadShader("lambert", "res/shaders/lambert.vs.glsl", "res/shaders/lambert.fs.glsl");
+    auto pbrShader = shaderManager.LoadShader("pbr", "res/shaders/pbr.vs.glsl", "res/shaders/pbr.fs.glsl");
     auto outlineShader =
         shaderManager.LoadShader("outline", "res/shaders/final.vs.glsl", "res/shaders/outline.fs.glsl");
     auto finalShader = shaderManager.LoadShader("final", "res/shaders/final.vs.glsl", "res/shaders/final.fs.glsl");
@@ -44,7 +45,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
     auto bloomCompositeShader =
         shaderManager.LoadShader("bloom_composite", "res/shaders/final.vs.glsl", "res/shaders/bloom_composite.fs.glsl");
 
-    if (!basepassShader || !lambertShader || !outlineShader || !finalShader || !bloomThresholdShader ||
+    if (!basepassShader || !lambertShader || !pbrShader || !outlineShader || !finalShader || !bloomThresholdShader ||
         !bloomBlurShader || !bloomCompositeShader || !shadowShader || !ssaoShader || !ssaoBlurShader)
     {
         throw std::runtime_error("RenderPipeline initialization failed: required shader load failed");
@@ -58,7 +59,7 @@ RenderPipeline::RenderPipeline(int width, int height, ShaderManager &shaderManag
     m_passes.push_back(std::make_unique<ShadowPass>(config.shadowMapResolution, shadowShader));
     m_passes.push_back(std::make_unique<SSAOPass>(width, height, ssaoShader));
     m_passes.push_back(std::make_unique<SSAOBlurPass>(width, height, ssaoBlurShader));
-    m_passes.push_back(std::make_unique<LightingPass>(width, height, lambertShader));
+    m_passes.push_back(std::make_unique<LightingPass>(width, height, pbrShader));
     m_passes.push_back(std::make_unique<ForwardPass>());
 
     // 后处理效果链（替代原来的 PostProcessPass）
