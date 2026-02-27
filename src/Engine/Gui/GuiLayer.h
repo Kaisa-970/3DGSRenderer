@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "MathUtils/Vector.h"
 #include "Scene/Scene.h"
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -35,6 +36,9 @@ public:
     void SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager);
     void SetSceneViewTexture(unsigned int textureId, int texWidth, int texHeight);
     void GetSceneViewportSize(int &width, int &height) const;
+
+    /// 设置“加载模型”按钮的回调（点击后由 App 打开文件对话框并加载）
+    void SetOnLoadModelRequested(std::function<void()> callback);
 
     /// 获取当前 GUI 选中的物体 UID（0 表示无选中）
     unsigned int GetSelectedUid() const
@@ -79,6 +83,8 @@ private:
     bool sceneHovered_{false};
     bool sceneFocused_{false};
     bool dockLayoutInitialized_{false};
+
+    std::function<void()> onLoadModelRequested_;
 
     // 场景图像在屏幕上的位置和尺寸（用于鼠标坐标映射）
     float sceneImageScreenX_{0.0f};

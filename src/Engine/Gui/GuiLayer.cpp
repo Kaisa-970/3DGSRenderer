@@ -206,6 +206,11 @@ void GuiLayer::GetSceneViewportSize(int &width, int &height) const
     height = sceneViewportHeight_;
 }
 
+void GuiLayer::SetOnLoadModelRequested(std::function<void()> callback)
+{
+    onLoadModelRequested_ = std::move(callback);
+}
+
 void GuiLayer::RenderScenePanel()
 {
     sceneHovered_ = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
@@ -253,6 +258,13 @@ void GuiLayer::RenderHierarchyPanel()
         if (auto matMgr = materialManager_.lock())
             sphereRenderable->setMaterial(matMgr->GetDefaultMaterial());
         scene->AddRenderable(sphereRenderable);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Load Model"))
+    {
+        if (onLoadModelRequested_)
+            onLoadModelRequested_();
     }
 
     ImGui::SameLine();

@@ -90,6 +90,10 @@ target_link_libraries(${PROJECT_NAME}
         GSEngine
     )
 
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} comdlg32)
+endif()
+
 # 包含Assimp生成的头文件目录
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/src/vendor/assimp/include)
 

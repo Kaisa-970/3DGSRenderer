@@ -14,10 +14,44 @@
 #include "Renderer/ShaderManager.h"
 #include <memory>
 
+#if defined(GSENGINE_OS_WINDOWS) || defined(_WIN32)
+#include <windows.h>
+#include <commdlg.h>
+#endif
+
 using namespace GSEngine;
 
 constexpr float DEG_TO_RAD = 3.1415926f / 180.0f;
 #define DEG2RAD(x) (x * DEG_TO_RAD)
+
+#if defined(GSENGINE_OS_WINDOWS) || defined(_WIN32)
+namespace
+{
+std::string OpenModelFileDialog()
+{
+    OPENFILENAMEA ofn = {};
+    char buf[1024] = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFilter =
+        "Model files (*.glb;*.gltf;*.fbx;*.obj)\0*.glb;*.gltf;*.fbx;*.obj\0All (*.*)\0*.*\0";
+    ofn.lpstrFile = buf;
+    ofn.nMaxFile = sizeof(buf);
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+    if (GetOpenFileNameA(&ofn) != 0)
+        return std::string(buf);
+    return {};
+}
+}
+#else
+namespace
+{
+std::string OpenModelFileDialog()
+{
+    (void)0;
+    return {};
+}
+}
+#endif
 
 #ifdef RENDERER_DEBUG
 std::string modelPath = "./res/backpack/backpack.obj";
@@ -67,6 +101,7 @@ bool AppDemo::OnInit()
     m_guiLayer->SetSSAOEnabled(&m_renderConfig.ssaoEnabled);
     m_guiLayer->SetScene(m_scene);
     m_guiLayer->SetMaterialManager(m_materialManager);
+    m_guiLayer->SetOnLoadModelRequested([this]() { OnLoadModelRequested(); });
 
     // 加载模型（注入资源管理器）
     AssimpModelLoader modelLoader(*m_textureManager, *m_materialManager);
@@ -203,6 +238,25 @@ void AppDemo::OnGUI()
     unsigned int guiUID = m_guiLayer->GetSelectedUid();
     m_renderConfig.selectedUID = (guiUID > 0) ? static_cast<int>(guiUID) : -1;
     pImpl->selectedRenderable = (guiUID > 0) ? m_scene->GetRenderableByUID(guiUID) : nullptr;
+}
+
+void AppDemo::OnLoadModelRequested()
+{
+    std::string path = OpenModelFileDialog();
+    if (path.empty())
+        return;
+    AssimpModelLoader loader(*m_textureManager, *m_materialManager);
+    std::shared_ptr<Renderer::Model> model = loader.loadModel(path);
+    if (!model)
+    {
+        LOG_ERROR("Failed to load model: {}", path);
+        return;
+    }
+    auto renderable = std::make_shared<Renderer::Renderable>();
+    renderable->setModel(model);
+    renderable->m_transform.position = Renderer::Vector3(0.0f, 1.0f, 0.0f);
+    m_scene->AddRenderable(renderable);
+    LOG_INFO("Loaded model: {}", path);
 }
 
 void AppDemo::HandleKeyEvent(int key, int scancode, int action, int mods)

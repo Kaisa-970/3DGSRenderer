@@ -22,6 +22,10 @@ public:
     unsigned int getTextureId() const;
 
     static std::shared_ptr<Texture2D> createFromFile(const std::string &path);
+    /// 从内存创建纹理（RGBA 或 RGB）
+    static std::shared_ptr<Texture2D> createFromMemory(const unsigned char *data, int width, int height, int channels);
+    /// 从压缩数据（如 PNG/JPEG 字节流）创建纹理
+    static std::shared_ptr<Texture2D> createFromMemoryCompressed(const unsigned char *data, size_t size);
     static bool SaveTexture2DPNG(const std::string &path, const std::shared_ptr<Texture2D> &texture);
     static bool SaveTexture2DPNG(const std::string &path, unsigned int textureId, int width, int height,
                                  int channels = 4);

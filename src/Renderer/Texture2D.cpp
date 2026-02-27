@@ -22,7 +22,8 @@ void Texture2D::setData(const void *data, int width, int height, int channels)
     m_height = height;
     m_channels = channels;
     glBindTexture(GL_TEXTURE_2D, m_textureId);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    GLenum format = (channels == 4) ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -79,6 +80,29 @@ std::shared_ptr<Texture2D> Texture2D::createFromFile(const std::string &path)
     }
     texture->setData(data, width, height, channels);
     stbi_image_free(data);
+    return texture;
+}
+
+std::shared_ptr<Texture2D> Texture2D::createFromMemory(const unsigned char *data, int width, int height, int channels)
+{
+    if (!data || width <= 0 || height <= 0 || (channels != 3 && channels != 4))
+        return nullptr;
+    std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>();
+    texture->setData(data, width, height, channels);
+    return texture;
+}
+
+std::shared_ptr<Texture2D> Texture2D::createFromMemoryCompressed(const unsigned char *data, size_t size)
+{
+    if (!data || size == 0)
+        return nullptr;
+    int width, height, channels;
+    unsigned char *decoded = stbi_load_from_memory(data, static_cast<int>(size), &width, &height, &channels, 0);
+    if (!decoded)
+        return nullptr;
+    std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>();
+    texture->setData(decoded, width, height, channels);
+    stbi_image_free(decoded);
     return texture;
 }
 

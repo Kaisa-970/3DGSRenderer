@@ -25,6 +25,8 @@ public:
     virtual void HandleKeyEvent(int key, int scancode, int action, int mods) override;
 
 private:
+    /// 由 UI “加载模型” 按钮触发：打开文件对话框并加载选中模型到场景
+    void OnLoadModelRequested();
     // 场景设置
     void SetupScene(
         std::shared_ptr<Renderer::CubePrimitive> cubePrimitive,
