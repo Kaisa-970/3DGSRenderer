@@ -83,6 +83,10 @@ struct RENDERER_API RenderContext
     // SSAO 结果（SSAOPass 输出，用于调制环境光）
     unsigned int ssaoTex = 0;
     bool ssaoEnabled = true;
+    /// SSAO 采样半径（视图空间）
+    float ssaoRadius = 0.5f;
+    /// SSAO 深度偏移，减小自遮挡
+    float ssaoBias = 0.045f;
     /// SSAO 强度 [0,1]，用于 mix(1, ao, strength)，避免整体过暗
     float ssaoStrength = 0.75f;
 

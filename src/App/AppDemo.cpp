@@ -98,7 +98,8 @@ bool AppDemo::OnInit()
     // 设置GUI - 使用 RenderPipeline 提供的标签列表
     m_guiLayer->SetGBufferViewModes(&m_renderConfig.viewMode, Renderer::RenderPipeline::GetViewModeLabels());
     m_guiLayer->SetHDRControls(&m_renderConfig.exposure, &m_renderConfig.tonemapMode);
-    m_guiLayer->SetSSAOEnabled(&m_renderConfig.ssaoEnabled);
+    m_guiLayer->SetSSAOControls(&m_renderConfig.ssaoEnabled, &m_renderConfig.ssaoRadius,
+                                &m_renderConfig.ssaoBias, &m_renderConfig.ssaoStrength);
     m_guiLayer->SetScene(m_scene);
     m_guiLayer->SetMaterialManager(m_materialManager);
     m_guiLayer->SetOnLoadModelRequested([this]() { OnLoadModelRequested(); });

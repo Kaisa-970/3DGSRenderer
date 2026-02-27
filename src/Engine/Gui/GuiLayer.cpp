@@ -186,6 +186,14 @@ void GuiLayer::SetSSAOEnabled(bool *enabledPtr)
     ssaoEnabledPtr_ = enabledPtr;
 }
 
+void GuiLayer::SetSSAOControls(bool *enabledPtr, float *radiusPtr, float *biasPtr, float *strengthPtr)
+{
+    ssaoEnabledPtr_ = enabledPtr;
+    ssaoRadiusPtr_ = radiusPtr;
+    ssaoBiasPtr_ = biasPtr;
+    ssaoStrengthPtr_ = strengthPtr;
+}
+
 void GuiLayer::SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager)
 {
     if (!materialManager)
@@ -414,12 +422,21 @@ void GuiLayer::RenderInspectorPanel()
         }
     }
 
-    // SSAO 开关
+    // SSAO 开关与参数（启用时可调节）
     if (ssaoEnabledPtr_)
     {
         ImGui::Separator();
         ImGui::Text("SSAO");
         ImGui::Checkbox("Enable SSAO", ssaoEnabledPtr_);
+        if (*ssaoEnabledPtr_)
+        {
+            if (ssaoRadiusPtr_)
+                ImGui::SliderFloat("Radius", ssaoRadiusPtr_, 0.01f, 2.0f, "%.3f");
+            if (ssaoBiasPtr_)
+                ImGui::SliderFloat("Bias", ssaoBiasPtr_, 0.0f, 0.2f, "%.3f");
+            if (ssaoStrengthPtr_)
+                ImGui::SliderFloat("Strength", ssaoStrengthPtr_, 0.0f, 2.0f, "%.2f");
+        }
     }
 
     // Bloom 控制

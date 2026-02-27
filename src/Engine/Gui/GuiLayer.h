@@ -32,6 +32,8 @@ public:
     void SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels);
     void SetHDRControls(float *exposurePtr, int *tonemapModePtr);
     void SetSSAOEnabled(bool *enabledPtr);
+    /// SSAO 参数：启用时可调节 radius / bias / strength（传 nullptr 表示不绑定）
+    void SetSSAOControls(bool *enabledPtr, float *radiusPtr, float *biasPtr, float *strengthPtr);
     void SetBloomControls(float *thresholdPtr, float *intensityPtr, int *iterationsPtr, bool *enabledPtr);
     void SetMaterialManager(const std::shared_ptr<MaterialManager> &materialManager);
     void SetSceneViewTexture(unsigned int textureId, int texWidth, int texHeight);
@@ -71,6 +73,9 @@ private:
     float *exposurePtr_{nullptr};
     int *tonemapModePtr_{nullptr};
     bool *ssaoEnabledPtr_{nullptr};
+    float *ssaoRadiusPtr_{nullptr};
+    float *ssaoBiasPtr_{nullptr};
+    float *ssaoStrengthPtr_{nullptr};
     float *bloomThresholdPtr_{nullptr};
     float *bloomIntensityPtr_{nullptr};
     int *bloomIterationsPtr_{nullptr};

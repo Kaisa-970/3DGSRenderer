@@ -93,6 +93,18 @@ public:
     {
         return m_ssaoEnabled;
     }
+    void SetSSAORadius(float radius)
+    {
+        m_ssaoRadius = radius;
+    }
+    void SetSSAOBias(float bias)
+    {
+        m_ssaoBias = bias;
+    }
+    void SetSSAOStrength(float strength)
+    {
+        m_ssaoStrength = strength;
+    }
 
     /// 获取 G-Buffer 可视化模式的标签列表（供 GUI 使用）
     static const std::vector<const char *> &GetViewModeLabels();
@@ -149,6 +161,9 @@ private:
     float m_exposure = 1.0f;
     int m_tonemapMode = 2; // 0 = None, 1 = Reinhard, 2 = ACES Filmic
     bool m_ssaoEnabled = true;
+    float m_ssaoRadius = 0.5f;
+    float m_ssaoBias = 0.065f;
+    float m_ssaoStrength = 0.75f;
 
     // Pass 查找辅助
     int FindPassIndex(const char *name) const;

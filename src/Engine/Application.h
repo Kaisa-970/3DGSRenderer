@@ -29,6 +29,9 @@ struct RenderConfig
     float exposure = 1.0f;
     int tonemapMode = 2; // 0 = None, 1 = Reinhard, 2 = ACES Filmic
     bool ssaoEnabled = true;
+    float ssaoRadius = 0.5f;    // SSAO 采样半径
+    float ssaoBias = 0.045f;    // SSAO 深度偏移，减小自遮挡
+    float ssaoStrength = 0.75f; // SSAO 强度 [0,1]，光照时 mix
     bool presentToScreen = true;
     int selectedUID = -1;
     int shadowMapResolution = 4096;

@@ -127,6 +127,9 @@ void RenderPipeline::Execute(Camera &camera, const std::vector<std::shared_ptr<R
     ctx.exposure = m_exposure;
     ctx.tonemapMode = m_tonemapMode;
     ctx.ssaoEnabled = m_ssaoEnabled;
+    ctx.ssaoRadius = m_ssaoRadius;
+    ctx.ssaoBias = m_ssaoBias;
+    ctx.ssaoStrength = m_ssaoStrength;
 
     // 预计算矩阵
     camera.getViewMatrix(ctx.viewMatrix);

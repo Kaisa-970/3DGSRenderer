@@ -293,6 +293,9 @@ void Application::Run()
         m_renderPipeline->SetExposure(m_renderConfig.exposure);
         m_renderPipeline->SetTonemapMode(m_renderConfig.tonemapMode);
         m_renderPipeline->SetSSAOEnabled(m_renderConfig.ssaoEnabled);
+        m_renderPipeline->SetSSAORadius(m_renderConfig.ssaoRadius);
+        m_renderPipeline->SetSSAOBias(m_renderConfig.ssaoBias);
+        m_renderPipeline->SetSSAOStrength(m_renderConfig.ssaoStrength);
 
         // 渲染
         m_renderPipeline->Execute(*m_camera, m_scene->GetRenderables(), m_scene->GetLights(),
