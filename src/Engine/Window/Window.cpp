@@ -1,6 +1,5 @@
 #include "Window.h"
 #include "Logger/Log.h"
-#include "Renderer/RendererContext.h"
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
@@ -24,6 +23,11 @@ void Window::terminateGLFW()
 double Window::getTime()
 {
     return glfwGetTime();
+}
+
+void *Window::getProcAddress(const char *name)
+{
+    return reinterpret_cast<void *>(glfwGetProcAddress(name));
 }
 
 Window::Window(int width, int height, const std::string &title) : width_(width), height_(height), title_(title)
@@ -52,7 +56,6 @@ Window::Window(int width, int height, const std::string &title) : width_(width),
     // 设置window的user pointer为this，用于回调
     glfwSetWindowUserPointer(window_, this);
 
-    Renderer::RendererContext::Init((void *(*)(const char *))glfwGetProcAddress);
 }
 
 Window::~Window()

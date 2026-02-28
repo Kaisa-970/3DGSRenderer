@@ -81,6 +81,10 @@ public:
     virtual void OnHandleInput();
     virtual void OnGUI();
     virtual void OnResize(int width, int height);
+    virtual std::shared_ptr<Renderer::ShaderManager> CreateShaderManager();
+    virtual std::shared_ptr<Renderer::RenderPipeline> CreateRenderPipeline(
+        int width, int height, Renderer::ShaderManager &shaderManager,
+        const Renderer::RenderPipelineConfig &config);
 
 protected:
     std::shared_ptr<Window> m_window;

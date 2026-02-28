@@ -5,9 +5,10 @@
 #include "Gui/GuiLayer.h"
 #include "Logger/Log.h"
 #include "Renderer/Camera.h"
+#include "Renderer/RenderPipeline.h"
 #include "Scene/Scene.h"
 #include "Window/Window.h"
-#include "Renderer/RenderPipeline.h"
+#include "Renderer/RendererContext.h"
 
 GSENGINE_NAMESPACE_BEGIN
 
@@ -39,15 +40,26 @@ bool Application::Init()
         return false;
     }
 
+    Renderer::RendererContext::Init(&Window::getProcAddress);
+
     // 创建资源管理器（窗口/GL上下文就绪后）
     m_textureManager = std::make_shared<TextureManager>();
     m_materialManager = std::make_shared<MaterialManager>(*m_textureManager);
-    m_shaderManager = std::make_shared<Renderer::ShaderManager>();
+    m_shaderManager = CreateShaderManager();
+    if (!m_shaderManager)
+    {
+        LOG_ERROR("ShaderManager 创建失败");
+        return false;
+    }
 
     Renderer::RenderPipelineConfig config;
     config.shadowMapResolution = m_renderConfig.shadowMapResolution;
-    m_renderPipeline =
-        std::make_shared<Renderer::RenderPipeline>(m_appConfig.width, m_appConfig.height, *m_shaderManager, config);
+    m_renderPipeline = CreateRenderPipeline(m_appConfig.width, m_appConfig.height, *m_shaderManager, config);
+    if (!m_renderPipeline)
+    {
+        LOG_ERROR("RenderPipeline 创建失败");
+        return false;
+    }
 
     InitInputHandling();
 
@@ -353,8 +365,8 @@ void Application::Shutdown()
     m_eventBus.reset();
     m_guiLayer.reset();
     m_renderPipeline.reset();
-
     // 最后销毁窗口并终止 GLFW
+    Renderer::RendererContext::Shutdown();
     m_window.reset();
     Window::terminateGLFW();
 
@@ -382,5 +394,17 @@ void Application::OnGUI()
 }
 void Application::OnResize(int width, int height)
 {
+}
+
+std::shared_ptr<Renderer::ShaderManager> Application::CreateShaderManager()
+{
+    return std::make_shared<Renderer::ShaderManager>();
+}
+
+std::shared_ptr<Renderer::RenderPipeline>
+Application::CreateRenderPipeline(int width, int height, Renderer::ShaderManager &shaderManager,
+                                  const Renderer::RenderPipelineConfig &config)
+{
+    return std::make_shared<Renderer::RenderPipeline>(width, height, shaderManager, config);
 }
 GSENGINE_NAMESPACE_END

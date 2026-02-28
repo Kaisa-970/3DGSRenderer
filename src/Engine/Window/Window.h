@@ -148,6 +148,7 @@ public:
     static bool initGLFW();
     static void terminateGLFW();
     static double getTime();
+    static void *getProcAddress(const char *name);
 
 private:
     GLFWwindow *window_ = nullptr;
