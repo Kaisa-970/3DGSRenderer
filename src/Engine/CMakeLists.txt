@@ -2,6 +2,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DGSENGINE_DEBUG)
 endif()
 
+set(IMGUIZMO_DIR ${CMAKE_SOURCE_DIR}/src/vendor/ImGuizmo)
 set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Window/Window.cpp
@@ -11,6 +12,7 @@ set(ENGINE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Assets/TextureManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Assets/MaterialManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Scene/Scene.cpp
+    ${IMGUIZMO_DIR}/ImGuizmo.cpp
 )
 
 set(ENGINE_HEADERS
@@ -56,6 +58,7 @@ target_include_directories(${MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/Render
 target_include_directories(${MODULE_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src/vendor/assimp/include)
 target_include_directories(${MODULE_NAME} PRIVATE ${IMGUI_DIR})
 target_include_directories(${MODULE_NAME} PRIVATE ${IMGUI_DIR}/backends)
+target_include_directories(${MODULE_NAME} PRIVATE ${IMGUIZMO_DIR})
 
 target_link_libraries(${MODULE_NAME} PUBLIC Renderer Logger glfw assimp::assimp)
 

@@ -7,6 +7,13 @@
 #include <memory>
 #include <vector>
 
+// 前向声明：使用全局 Renderer 模块，避免与 GSEngine 内部命名空间混淆
+namespace Renderer
+{
+class Camera;
+class Renderable;
+}
+
 GSENGINE_NAMESPACE_BEGIN
 
 class Window;
@@ -28,7 +35,8 @@ public:
     bool WantCaptureKeyboard() const;
 
     void SetScene(const std::shared_ptr<Scene> &scene);
-    void SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid);
+    void SetCamera(::Renderer::Camera *camera);
+    void SetSelectedRenderable(const std::shared_ptr<::Renderer::Renderable> &renderable, unsigned int uid);
     void SetGBufferViewModes(int *modePtr, const std::vector<const char *> &labels);
     void SetHDRControls(float *exposurePtr, int *tonemapModePtr);
     void SetSSAOEnabled(bool *enabledPtr);
@@ -57,16 +65,17 @@ private:
     void RenderHierarchyPanel();
     void RenderInspectorPanel();
     void ClearSelection();
-    void SyncEditableFromTransform(const Renderer::Renderable &renderable);
-    void ApplyEditableToRenderable(Renderer::Renderable &renderable);
+    void SyncEditableFromTransform(const ::Renderer::Renderable &renderable);
+    void ApplyEditableToRenderable(::Renderer::Renderable &renderable);
 
     std::weak_ptr<Scene> scene_;
-    std::weak_ptr<Renderer::Renderable> selected_;
+    ::Renderer::Camera *camera_{nullptr};
+    std::weak_ptr<::Renderer::Renderable> selected_;
     std::weak_ptr<MaterialManager> materialManager_;
     unsigned int selectedUid_{0};
-    Renderer::Vector3 editPosition_{0.0f, 0.0f, 0.0f};
-    Renderer::Vector3 editRotationDeg_{0.0f, 0.0f, 0.0f}; // pitch(y), yaw(x), roll(z) approximate
-    Renderer::Vector3 editScale_{1.0f, 1.0f, 1.0f};
+    ::Renderer::Vector3 editPosition_{0.0f, 0.0f, 0.0f};
+    ::Renderer::Vector3 editRotationDeg_{0.0f, 0.0f, 0.0f}; // pitch(y), yaw(x), roll(z) approximate
+    ::Renderer::Vector3 editScale_{1.0f, 1.0f, 1.0f};
     bool hasEditState_{false};
     int *gbufferViewMode_{nullptr};
     std::vector<const char *> gbufferViewLabels_;
@@ -88,6 +97,8 @@ private:
     bool sceneHovered_{false};
     bool sceneFocused_{false};
     bool dockLayoutInitialized_{false};
+    int gizmoOperation_{0}; // 0=Translate, 1=Rotate, 2=Scale (ImGuizmo::OPERATION)
+    int gizmoMode_{1};     // 0=Local, 1=World (ImGuizmo::MODE)
 
     std::function<void()> onLoadModelRequested_;
 

@@ -69,6 +69,8 @@ bool Application::Init()
         return false;
     }
 
+    m_guiLayer->SetCamera(m_camera.get());
+
     // 调用派生类的初始化
     if (!OnInit())
     {

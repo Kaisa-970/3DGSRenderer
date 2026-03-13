@@ -1,15 +1,19 @@
 #include "GuiLayer.h"
 #include "Assets/MaterialManager.h"
+#include "Renderer/Camera.h"
+#include "Renderer/MathUtils/Matrix.h"
 #include "Renderer/MathUtils/Random.h"
 #include "Renderer/Material.h"
 #include "Renderer/Primitives/SpherePrimitive.h"
 #include "Window/Window.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <ImGuizmo.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <string>
 
 GSENGINE_NAMESPACE_BEGIN
@@ -49,6 +53,7 @@ void GuiLayer::BeginFrame()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void GuiLayer::EndFrame()
@@ -126,6 +131,9 @@ bool GuiLayer::WantCaptureMouse() const
 {
     if (!ImGui::GetCurrentContext())
         return false;
+    // 正在拖拽 Gizmo 时由 ImGui 捕获，避免相机同时响应
+    if (ImGuizmo::IsUsing())
+        return true;
     // Scene 面板交互时，把鼠标输入交给相机/场景控制
     if (sceneHovered_ || sceneFocused_)
         return false;
@@ -147,6 +155,11 @@ void GuiLayer::SetScene(const std::shared_ptr<Scene> &scene)
     if (!scene)
         return;
     scene_ = std::weak_ptr<Scene>(scene);
+}
+
+void GuiLayer::SetCamera(Renderer::Camera *camera)
+{
+    camera_ = camera;
 }
 
 void GuiLayer::SetSelectedRenderable(const std::shared_ptr<Renderer::Renderable> &renderable, unsigned int uid)
@@ -245,6 +258,59 @@ void GuiLayer::RenderScenePanel()
 
     // OpenGL 纹理坐标原点在左下，ImGui 默认左上，因此 V 方向翻转
     ImGui::Image((ImTextureID)(intptr_t)sceneViewTexture_, avail, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+    // Gizmo：在选中物体且场景视口有效时绘制并交互
+    if (camera_ && sceneViewportWidth_ > 0 && sceneViewportHeight_ > 0)
+    {
+        auto selected = selected_.lock();
+        if (selected)
+        {
+            // 使用当前窗口的 DrawList，与 example 一致；SetRect 用场景图像区域（与渲染视口一致）
+            ImGuizmo::SetDrawlist();
+            float rectX = sceneImageScreenX_;
+            float rectY = sceneImageScreenY_;
+            float rectW = sceneImageWidth_;
+            float rectH = sceneImageHeight_;
+            if (rectW < 1.0f)
+                rectW = 1.0f;
+            if (rectH < 1.0f)
+                rectH = 1.0f;
+            ImGuizmo::SetRect(rectX, rectY, rectW, rectH);
+            ImGuizmo::SetGizmoSizeClipSpace(0.2f);
+            ImGuizmo::Enable(true);
+            ImGuizmo::AllowAxisFlip(false); // 禁止轴向随视角翻转，X/Y/Z 始终指向固定方向
+
+            float aspect = static_cast<float>(sceneViewportWidth_) / static_cast<float>(sceneViewportHeight_);
+            ::Renderer::Mat4 view = camera_->getViewMatrix();
+            ::Renderer::Mat4 proj = camera_->getPerspectiveMatrix(
+                camera_->getFov(), aspect, 0.01f, 1000.0f);
+            ::Renderer::Mat4 model = selected->m_transform.GetMatrix();
+
+            // 直接使用列主序（与 OpenGL/GLM 一致），ImGuizmo 可接受
+            float modelBuf[16];
+            std::memcpy(modelBuf, model.data(), sizeof(modelBuf));
+
+            ImGuizmo::OPERATION op = static_cast<ImGuizmo::OPERATION>(
+                gizmoOperation_ == 0 ? ImGuizmo::TRANSLATE : (gizmoOperation_ == 1 ? ImGuizmo::ROTATE : ImGuizmo::SCALE));
+            ImGuizmo::MODE mode = static_cast<ImGuizmo::MODE>(gizmoMode_);
+
+            if (ImGuizmo::Manipulate(view.data(), proj.data(), op, mode, modelBuf))
+            {
+                float translation[3], rotation[3], scale[3];
+                ImGuizmo::DecomposeMatrixToComponents(modelBuf, translation, rotation, scale);
+                editPosition_.x = translation[0];
+                editPosition_.y = translation[1];
+                editPosition_.z = translation[2];
+                editRotationDeg_.x = rotation[0];
+                editRotationDeg_.y = rotation[1];
+                editRotationDeg_.z = rotation[2];
+                editScale_.x = scale[0];
+                editScale_.y = scale[1];
+                editScale_.z = scale[2];
+                ApplyEditableToRenderable(*selected);
+            }
+        }
+    }
 }
 
 void GuiLayer::RenderHierarchyPanel()
@@ -315,6 +381,21 @@ void GuiLayer::RenderInspectorPanel()
     {
         ImGui::Text("UID: %u", selectedUid_);
         ImGui::Text("Type: %s", selected->getType() == Renderer::RenderableType::Model ? "Model" : "Primitive");
+
+        ImGui::Separator();
+        ImGui::Text("Gizmo");
+        ImGui::RadioButton("Translate", &gizmoOperation_, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton("Rotate", &gizmoOperation_, 1);
+        ImGui::SameLine();
+        ImGui::RadioButton("Scale", &gizmoOperation_, 2);
+        if (gizmoOperation_ != 2)
+        {
+            ImGui::RadioButton("Local", &gizmoMode_, 0);
+            ImGui::SameLine();
+            ImGui::RadioButton("World", &gizmoMode_, 1);
+        }
+        ImGui::Separator();
 
         bool changed = false;
         changed |= ImGui::DragFloat3("Position", &editPosition_.x, 0.01f, -FLT_MAX, FLT_MAX, "%.3f");
